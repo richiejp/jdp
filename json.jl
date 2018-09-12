@@ -1,3 +1,5 @@
+module json
+
 using JSON
 using HTTP
 
@@ -66,3 +68,5 @@ function save_job_results_json(dir_path::String, group_id::Int64)
         i += 1
     end
 end
+
+end # json
