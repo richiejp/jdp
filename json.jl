@@ -3,27 +3,28 @@ module json
 using JSON
 using HTTP
 
-openqa_url = "https://openqa.opensuse.org/api/v1"
-
-function get_json(path::String)
-    req = HTTP.request("GET", "$openqa_url/$path")
-    if req.status == 200
-        JSON.parse(String(req.body))
-    else
-        throw("Request failed: $req")
-    end
+struct OpenQAHost
+    url::String
 end
 
-function get_machines()
-    get_json("machines")["Machines"]
+o3 = OpenQAHost("https://openqa.opensuse.org/api/v1")
+osd = OpenQAHost("http://openqa.suse.de/api/v1")
+
+function get_json(host::OpenQAHost, path::String)
+    HTTP.get(joinpath(host.url, path), status_exception=true).body |>
+        String |> JSON.parse
 end
 
-function get_group_jobs(group_id::Int64)
-    get_json("job_groups/$group_id/jobs")["ids"]
+function get_machines(host::OpenQAHost)
+    get_json(host, "machines")["Machines"]
 end
 
-function get_job_results(job_id::Int64)
-    get_json("jobs/$job_id/details")["job"]
+function get_group_jobs(host::OpenQAHost, group_id::Int64)::Array{Int64}
+    get_json(host, "job_groups/$group_id/jobs")["ids"]
+end
+
+function get_job_results(host::OpenQAHost, job_id::Int64)
+    get_json(host, "jobs/$job_id/details")["job"]
 end
 
 function flatten(arr::Array)
@@ -49,18 +50,18 @@ function load_job_results_json(dir_path::String)
         files -> map(f -> JSON.parsefile(f)["job"], files)
 end
 
-function save_job_results_json(dir_path::String, group_id::Int64)
+function save_job_results_json(host::OpenQAHost, dir_path::String, group_id::Int64)
     dir_path = realpath(dir_path)
     if !isdir(dir_path)
         throw("Not a directory $dir_path")
     end
 
-    jgrps = get_group_jobs(group_id)
+    jgrps = get_group_jobs(host, group_id)
     i = 1
     N = length(jgrps)
     for jid in jgrps
-        url = "$openqa_url/jobs/$jid"
-        file = "$dir_path/$jid.json"
+        url = joinpath(host.url, "jobs", "$jid")
+        file = joinpath(dir_path, "$jid.json")
         @info "$i/$N GET $url"
         req = HTTP.get(url, status_exception = true)
         @info "$i/$N WRITE $file"
