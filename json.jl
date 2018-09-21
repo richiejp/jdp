@@ -50,6 +50,23 @@ function load_job_results_json(dir_path::String)
         files -> map(f -> JSON.parsefile(f)["job"], files)
 end
 
+function save_job_json(host::OpenQAHost,
+                       jid::Integer,
+                       dir_path::String,
+                       i::Integer, N::Integer,
+                       ext::String="")
+    url = joinpath(host.url, "jobs", "$jid", ext)
+    file = joinpath(dir_path, "$jid-job-$ext.json")
+    if !isfile(file)
+        @info "$i/$N GET $url"
+        req = HTTP.get(url, status_exception = true)
+        @info "$i/$N WRITE $file"
+        open(f -> write(f, req.body), file, "w")
+    else
+        @debug "$i/$N SKIP $url"
+    end
+end
+
 function save_job_results_json(host::OpenQAHost, dir_path::String, group_id::Int64)
     dir_path = realpath(dir_path)
     if !isdir(dir_path)
@@ -60,12 +77,9 @@ function save_job_results_json(host::OpenQAHost, dir_path::String, group_id::Int
     i = 1
     N = length(jgrps)
     for jid in jgrps
-        url = joinpath(host.url, "jobs", "$jid")
-        file = joinpath(dir_path, "$jid.json")
-        @info "$i/$N GET $url"
-        req = HTTP.get(url, status_exception = true)
-        @info "$i/$N WRITE $file"
-        open(f -> write(f, req.body), file, "w")
+        sjob = ext -> save_job_json(host, jid, dir_path, i, N, ext)
+        sjob("details")
+        sjob("comments")
         i += 1
     end
 end
