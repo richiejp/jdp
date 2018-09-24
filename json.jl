@@ -45,9 +45,20 @@ end
 function load_job_results_json(dir_path::String)
     dir = realpath(dir_path)
     readdir(dir) |>
-        names -> map(n -> "$dir/$n", names) |>
+        names -> map(n -> joinpath(dir, n), names) |>
         paths -> filter(isfile, paths) |>
-        files -> map(f -> JSON.parsefile(f)["job"], files)
+        files -> filter(f -> endswith(f, "job-details.json"), files) |>
+        files -> asyncmap(files) do f
+            js = JSON.parsefile(f)["job"]
+            cfile = joinpath(dir, "$(js["id"])-job-comments.json")
+            if isfile(cfile)
+                js["comments"] = JSON.parsefile(cfile)
+            else
+                @debug "Missing comments file for job $(js["id"])"
+                js["comments"] = []
+            end
+            js
+        end
 end
 
 function save_job_json(host::OpenQAHost,
