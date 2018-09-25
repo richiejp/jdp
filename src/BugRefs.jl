@@ -136,7 +136,8 @@ end
 """
 Try to extract the test-name:bug-ref pairs from a comment
 
-Possible syntaxes
+Syntax:
+<test name 1>[, <test name 2>...]: <bug ref 1>[, <bug ref 2>...][, <test name n>...]
 
 """
 function parse_bugref!(spec::Dict{String, Array{String}}, gen::Array{String}, text::String)
