@@ -1,0 +1,11 @@
+name = "JDP"
+uuid = "6d7e372e-c0bd-11e8-2b07-216b8359d694"
+authors = ["Richard Palethorpe <rpalethorpe@suse.com>"]
+version = "0.1.0"
+
+[deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Match = "7eb4fadd-790c-5f42-8a69-bfa0b872bfbf"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

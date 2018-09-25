@@ -1,4 +1,4 @@
-module json
+module OpenQA
 
 using JSON
 using HTTP
