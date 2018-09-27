@@ -13,16 +13,42 @@ function Base.show(io::IO, cur::Cursor)
     write(io, "($(cur.line),$(cur.col);$(cur.i))='$(cur.c)'")
 end
 
+abstract type AbstractToken end
+
+struct Token{T} <: AbstractToken
+    src::String
+    range::UnitRange
+end
+
+const TestName = Token{:TestName}
+const Tracker = Token{:Tracker}
+const Reference = Token{:Reference}
+
+function tokval(tok::Token)
+    tok.src[tok.range]
+end
+
+struct BugRef <: AbstractToken
+    tracker::Tracker
+    reference::Reference
+end
+
+function tokval(br::BugRef)
+    br.tracker.src[br.tracker.range.start:br.reference.range.stop]
+end
+
 abstract type ParseError end
 struct InvalidNameChar <: ParseError end
 struct InvalidTrackerChar <: ParseError end
 struct InvalidRefChar <: ParseError end
 struct EndOfString <: ParseError end
+struct ZeroLengthRef <: ParseError end
 
 Base.show(io::IO, ::InvalidNameChar) = write(io, "Invalid character in test name")
 Base.show(io::IO, ::InvalidTrackerChar) = write(io, "Invalid character in tracker ID")
 Base.show(io::IO, ::InvalidRefChar) = write(io, "Invalid character in bug reference")
 Base.show(io::IO, ::EndOfString) = write(io, "Unexpectedly reached the end of the string")
+Base.show(io::IO, ::ZeroLengthRef) = write(io, "Expected a bug reference after '#'")
 
 mutable struct ParseContext
     itr::Union{Tuple{Char, Int}, Nothing}
@@ -39,7 +65,11 @@ end
 function Base.show(io::IO, ctx::ParseContext)
     write(io, "ParseContext { ($(ctx.col), $(ctx.line)), errors: [")
     for (e, loc) in ctx.errors
-        write(io, "\n\t$loc: $e")
+        if loc !== nothing
+            write(io, "\n\t$loc: $e")
+        else
+            write(io, "\n\tN/A: $e")
+        end
     end
     write(io, "]}")
 end
@@ -84,35 +114,41 @@ macro pusherr(ctx, err)
     esc(:(pusherr!($ctx, $err()); return nothing))
 end
 
-function parse_name!(text, ctx::ParseContext)::Union{String, Nothing}
-    name = Char[]
-
+function parse_name!(text::String, ctx::ParseContext;
+                     prestart::Union{Int, Nothing}=nothing)::Union{TestName, Nothing}
+    (_, i) = ctx.itr
+    start = prestart !== nothing ? prestart : i - 1
+    
     while ctx.itr !== nothing
         (c, i) = ctx.itr
+
         @match c begin
-            'A':'z' || '0':'9' || '-' || '_' => push!(name, c)
-            ',' || ':' => return String(name)
+            'A':'z' || '0':'9' || '-' || '_' => nothing
+            ',' || ':' || ' ' => begin
+                @pusherr(ctx, :InvalidNameChar, i - start < 2)
+                return TestName(text, start:(i - 2))
+            end
             _ => @pusherr(ctx, :InvalidNameChar)
         end
+
         iterate!(text, ctx)
     end
 
-    String(name)
+    @pusherr(ctx, :EndOfString)
 end
 
-function parse_bugref!(text, ctx::ParseContext; tracker=true)::Union{String, Nothing}
-    ref = Char[]
+function parse_tracker!(text::String, ctx::ParseContext)::Union{Tracker, Nothing}
+    (_, i) = ctx.itr
+    start = i - 1
 
-    while tracker
-        @pusherr(ctx, :EndOfString, ctx.itr === nothing)
+    while ctx.itr !== nothing
         (c, i) = ctx.itr
 
         @match c begin
-            'A':'z' => push!(ref, c)
+            'A':'z' => nothing
             '#' => begin
-                @pusherr(ctx, :InvalidTrackerChar, length(ref) < 1)
-                push!(ref, c)
-                tracker = false
+                @pusherr(ctx, :InvalidTrackerChar, i - start < 2)
+                return Tracker(text, start:(i - 2))
             end
             _ => @pusherr(ctx, :InvalidTrackerChar)
         end
@@ -120,42 +156,66 @@ function parse_bugref!(text, ctx::ParseContext; tracker=true)::Union{String, Not
         iterate!(text, ctx)
     end
 
-    while ctx.itr !== nothing
-        (c, i) = ctx.itr
-
-        cont = @match c begin
-            '0':'9' || 'A':'z' => push!(ref, c); true
-            _ => false
-        end
-
-        cont ? iterate!(text, ctx) : break
-    end
-
-    @pusherr(ctx, :EndOfString, length(ref) < 1)
-
-    String(ref)
+    @pusherr(ctx, :EndOfString)
 end
 
-function parse_name_or_bugref!(text, ctx::ParseContext)::Union{String, Nothing}
-    buf = Char[]
-    rest = nothing
+function parse_ref!(text::String, ctx::ParseContext)::Union{Reference, Nothing}
+    (c, i) = ctx.itr
+    start = i - 1
+
+    if c === '#'
+        iterate!(text, ctx)
+        start += 1
+    end
 
     while ctx.itr !== nothing
         (c, i) = ctx.itr
 
-        cont = @match c begin
-            'A':'z' => push!(buf, c); true
-            '#' => (rest = parse_bugref!(text, ctx); false)
-            _ => (rest = parse_name!(text, ctx); false)
+        @match c begin
+            '0':'9' || 'A':'z' => iterate!(text, ctx)
+            _ => :break
         end
-
-        cont ? iterate!(text, ctx) : break
     end
 
-    if rest !== nothing
-        String(buf) * rest
-    else
-        nothing
+    @pusherr(ctx, :ZeroLengthRef, i - start < 2)
+    return Reference(text, start:(i - 1))
+end
+
+function parse_name_or_bugref!(text::String,
+                               ctx::ParseContext)::Union{TestName, BugRef, Nothing}
+    (_, i) = ctx.itr
+    start = i - 1
+
+    while ctx.itr !== nothing
+        (c, i) = ctx.itr
+
+        @match c begin
+            'A':'z' => iterate!(text, ctx)
+            '#' => begin
+                tracker = Tracker(text, start:(i - 1))
+                ref = parse_ref!(text, ctx)
+                if ref !== nothing
+                    return BugRef(tracker, ref)
+                end
+
+                # If parsing the ref failed start trying to parse something
+                # again from the point where we failed
+                start = ctx.itr[2] - 1
+            end
+            _ => begin
+                name = parse_name!(text, ctx; prestart=start)
+                if name !== nothing
+                    return name
+                end
+
+                # If parsing the name failed start trying to parse again from
+                # just after the point where we failed because the character
+                # which caused the failure won't be valid as the first
+                # character in a name or tracker
+                start = ctx.itr[2]
+                iterate!(text, ctx)
+             end
+        end
     end
 end
 
