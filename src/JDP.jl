@@ -1,6 +1,9 @@
 module JDP
 
-export OpenQA, TableDB
+export OpenQA, TableDB, BugRefs
 
-include("src/OpenQA.jl")
-include("src/TableDB.jl")
+include("OpenQA.jl")
+include("TableDB.jl")
+include("BugRefs.jl")
+
+end

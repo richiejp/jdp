@@ -1,5 +1,5 @@
 using Test
 
-using ..JDP
+using JDP
 
-include("")
+include("BugRefs.jl")
