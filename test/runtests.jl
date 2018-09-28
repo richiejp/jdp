@@ -2,4 +2,6 @@ using Test
 
 using JDP
 
-include("BugRefs.jl")
+@testset "All" begin
+    include("BugRefs.jl")
+end

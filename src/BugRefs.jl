@@ -37,16 +37,35 @@ function tokval(br::BugRef)
     br.tracker.src[br.tracker.range.start:br.reference.range.stop]
 end
 
+struct Tagging
+    test::TestName
+    tests::Union{Array{TestName}, Nothing}
+    ref::BugRef
+    refs::Union{Array{BugRef}, Nothing}
+end
+
+function Tagging(test::TestName,
+                 tests::Array{TestName},
+                 ref::BugRef,
+                 refs::Array{BugRef})
+    Tagging(test,
+            length(tests) > 0 ? copy(tests) : nothing,
+            ref,
+            length(refs) > 0 ? copy(refs) : nothing)
+end
+
 abstract type ParseError end
 struct InvalidNameChar <: ParseError end
 struct InvalidTrackerChar <: ParseError end
 struct InvalidRefChar <: ParseError end
+struct ExpectedPunct <: ParseError end
 struct EndOfString <: ParseError end
 struct ZeroLengthRef <: ParseError end
 
 Base.show(io::IO, ::InvalidNameChar) = write(io, "Invalid character in test name")
 Base.show(io::IO, ::InvalidTrackerChar) = write(io, "Invalid character in tracker ID")
 Base.show(io::IO, ::InvalidRefChar) = write(io, "Invalid character in bug reference")
+Base.show(io::IO, ::ExpectedPunct) = write(io, "Expected ',' or ':'")
 Base.show(io::IO, ::EndOfString) = write(io, "Unexpectedly reached the end of the string")
 Base.show(io::IO, ::ZeroLengthRef) = write(io, "Expected a bug reference after '#'")
 
@@ -85,6 +104,8 @@ function iterate!(text::String, ctx::ParseContext)
             ctx.col += 1
         end
     end
+
+    ctx.itr
 end
 
 function pusherr!(ctx::ParseContext, err::ParseError)
@@ -181,6 +202,20 @@ function parse_ref!(text::String, ctx::ParseContext)::Union{Reference, Nothing}
     return Reference(text, start:(i - 1))
 end
 
+function parse_bugref!(text::String, ctx::ParseContext)::Union{BugRef, Nothing}
+    t = parse_tracker!(text, ctx)
+
+    if t !== nothing
+        r = parse_ref!(text, ctx)
+
+        if r !== nothing
+            return BugRef(t, r)
+        end
+    end
+
+    nothing
+end
+
 function parse_name_or_bugref!(text::String,
                                ctx::ParseContext)::Union{TestName, BugRef, Nothing}
     (_, i) = ctx.itr
@@ -219,30 +254,137 @@ function parse_name_or_bugref!(text::String,
     end
 end
 
+function chomp!(text::String, ctx::ParseContext)
+    while ctx.itr !== nothing
+        (c, i) = ctx.itr
+
+        if c !== ' ' && c !== '\t'
+            break
+        end
+
+        iterate!(text, ctx)
+    end
+end
+
 """
 Try to extract the test-name:bug-ref pairs from a comment
 
-Syntax:
-<test name 1>[, <test name 2>...]: <bug ref 1>[, <bug ref 2>...][, <test name n>...]
+Below is the approximate syntax in EBNF. Assume letter ∈ [a-Z] and digit ∈
+[0-9] and whitespace is allowed between testnames, bugrefs, ':' and ',':
+
+testname = letter | digit { letter | digit | '_' | '-' }
+tracker = letter { letter }
+reference = letter | digit { letter | digit }
+bugref = tracker '#' reference
+tagging = testname {',' testname} ':' bugref {',' bugref}
+taggings = tagging { tagging }
+
+So a tagging can assign many bug references to many testnames, which means you
+can have something like: test1, test2: bsc#1234, git#a33f4. Which tags tests 1
+and 2 with both bug references.
+
+Comments many contain many taggings along with other random text. If the
+algorithm finds an error it discards the current tagging and starts trying to
+parse a new tagging from the point where it failed.
 
 """
-function parse_bugref!(spec::Dict{String, Array{String}}, gen::Array{String}, text::String)
+function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
     ctx = ParseContext(text)
-    curnames::Array{String} = String[]
-    currefs::Array{String} = String[]
+    names = TestName[]
+    refs = BugRef[]
+    taggings = Tagging[]
 
-    while itr !== nothing
-        name = parse_name(text, itr)
+    chomp!(text, ctx)
+    while ctx.itr !== nothing
+        name = parse_name!(text, ctx)
         if name === nothing
             iterate!(text, ctx)
             continue
         end
 
-        (c, _) = ctx.itr
-        @match c begin
-            
+        @label NAME_LIST
+        chomp!(text, ctx)
+
+        restart = false
+        while ctx.itr !== nothing && ctx.itr[1] === ','
+            iterate!(text, ctx)
+            name2 = parse_name!(text, ctx)
+            if name2 === nothing
+                restart = true
+                break
+            end
+
+            push!(names, name2)
+            chomp!(text, ctx)
         end
+
+        if ctx.itr === nothing
+            pusherr!(ctx, EndOfString())
+            break
+        end
+
+        if restart
+            empty!(names)
+            continue
+        end
+
+        if ctx.itr[1] !== ':'
+            pusherr!(ctx, ExpectedPunct())
+            empty!(names)
+            continue
+        end
+
+        iterate!(text, ctx)
+        if ctx.itr === nothing
+            pusherr!(ctx, EndOfString())
+            break
+        end
+
+        chomp!(text, ctx)
+        back_track = ctx.itr
+        ref = parse_bugref!(text, ctx)
+
+        # Handle scenario where users writes "Some non-bugref text: testname:poo#123"
+        if ref === nothing
+            empty!(names)
+            ctx.itr = back_track
+            continue
+        end
+
+        chomp!(text, ctx)
+        while ctx.itr !== nothing && ctx.itr[1] === ','
+            iterate!(text, ctx)
+            chomp!(text, ctx)
+            if ctx.itr === nothing
+                break
+            end
+
+            thing = parse_name_or_bugref!(text, ctx)
+            if thing === nothing
+                break
+            end
+
+            # We may have started parsing a new tagging, so save this one and
+            # jump back
+            if isa(thing, TestName)
+                push!(taggings, Tagging(name, names, ref, refs))
+                empty!(names)
+                empty!(refs)
+                name = thing
+                @goto NAME_LIST
+            end
+
+            push!(refs, thing)
+            chomp!(text, ctx)
+        end
+
+        push!(taggings, Tagging(name, names, ref, refs))
+        empty!(names)
+        empty!(refs)
+        chomp!(text, ctx)
     end
+
+    taggings, ctx
 end
 
 end
