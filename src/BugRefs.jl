@@ -42,23 +42,25 @@ struct Tagging
     tests::Union{Array{TestName}, Nothing}
     ref::BugRef
     refs::Union{Array{BugRef}, Nothing}
-end
 
-function Tagging(test::TestName,
-                 tests::Array{TestName},
-                 ref::BugRef,
-                 refs::Array{BugRef})
-    Tagging(test,
+    function Tagging(test::TestName,
+                     tests::Array{TestName},
+                     ref::BugRef,
+                     refs::Array{BugRef})
+        new(test,
             length(tests) > 0 ? copy(tests) : nothing,
             ref,
             length(refs) > 0 ? copy(refs) : nothing)
+    end
 end
+
 
 abstract type ParseError end
 struct InvalidNameChar <: ParseError end
 struct InvalidTrackerChar <: ParseError end
 struct InvalidRefChar <: ParseError end
 struct ExpectedPunct <: ParseError end
+struct OnlyFoundName <: ParseError end
 struct EndOfString <: ParseError end
 struct ZeroLengthRef <: ParseError end
 
@@ -66,6 +68,7 @@ Base.show(io::IO, ::InvalidNameChar) = write(io, "Invalid character in test name
 Base.show(io::IO, ::InvalidTrackerChar) = write(io, "Invalid character in tracker ID")
 Base.show(io::IO, ::InvalidRefChar) = write(io, "Invalid character in bug reference")
 Base.show(io::IO, ::ExpectedPunct) = write(io, "Expected ',' or ':'")
+Base.show(io::IO, ::OnlyFoundName) = write(io, "Expected Bugref, but only found name")
 Base.show(io::IO, ::EndOfString) = write(io, "Unexpectedly reached the end of the string")
 Base.show(io::IO, ::ZeroLengthRef) = write(io, "Expected a bug reference after '#'")
 
@@ -192,14 +195,19 @@ function parse_ref!(text::String, ctx::ParseContext)::Union{Reference, Nothing}
     while ctx.itr !== nothing
         (c, i) = ctx.itr
 
-        @match c begin
-            '0':'9' || 'A':'z' => iterate!(text, ctx)
-            _ => :break
+        if !('A' <= c <= 'z' || '0' <= c <= '9')
+            break
         end
+
+        iterate!(text, ctx)
     end
 
     @pusherr(ctx, :ZeroLengthRef, i - start < 2)
-    return Reference(text, start:(i - 1))
+    if ctx.itr !== nothing
+        Reference(text, start:(i - 2))
+    else
+        Reference(text, start:(i - 1))
+    end
 end
 
 function parse_bugref!(text::String, ctx::ParseContext)::Union{BugRef, Nothing}
@@ -227,6 +235,7 @@ function parse_name_or_bugref!(text::String,
         @match c begin
             'A':'z' => iterate!(text, ctx)
             '#' => begin
+                @pusherr(ctx, InvalidTrackerChar, i - start < 2)
                 tracker = Tracker(text, start:(i - 1))
                 ref = parse_ref!(text, ctx)
                 if ref !== nothing
@@ -235,7 +244,9 @@ function parse_name_or_bugref!(text::String,
 
                 # If parsing the ref failed start trying to parse something
                 # again from the point where we failed
-                start = ctx.itr[2] - 1
+                if ctx.itr !== nothing
+                    start = ctx.itr[2] - 1
+                end
             end
             _ => begin
                 name = parse_name!(text, ctx; prestart=start)
@@ -247,8 +258,10 @@ function parse_name_or_bugref!(text::String,
                 # just after the point where we failed because the character
                 # which caused the failure won't be valid as the first
                 # character in a name or tracker
-                start = ctx.itr[2]
-                iterate!(text, ctx)
+                if ctx.itr !== nothing
+                    start = ctx.itr[2]
+                    iterate!(text, ctx)
+                end
              end
         end
     end
@@ -308,6 +321,7 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
         restart = false
         while ctx.itr !== nothing && ctx.itr[1] === ','
             iterate!(text, ctx)
+            chomp!(text, ctx)
             name2 = parse_name!(text, ctx)
             if name2 === nothing
                 restart = true
@@ -341,15 +355,24 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
         end
 
         chomp!(text, ctx)
-        back_track = ctx.itr
-        ref = parse_bugref!(text, ctx)
+        thing = parse_name_or_bugref!(text, ctx)
 
-        # Handle scenario where users writes "Some non-bugref text: testname:poo#123"
-        if ref === nothing
+        # Handle scenario where user writes "Some non-bugref text: testname:poo#123"
+        if isa(thing, TestName)
+            pusherr!(ctx, OnlyFoundName)
             empty!(names)
-            ctx.itr = back_track
+            name = thing
+            @goto NAME_LIST
+        end
+
+        if thing === nothing
+            empty!(names)
+            iterate!(text, ctx)
+            chomp!(text, ctx)
             continue
         end
+
+        ref = thing
 
         chomp!(text, ctx)
         while ctx.itr !== nothing && ctx.itr[1] === ','
