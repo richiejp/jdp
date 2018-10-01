@@ -317,7 +317,9 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
     while ctx.itr !== nothing
         name = parse_name_or_bugref!(text, ctx)
         if name === nothing
-            iterate!(text, ctx)
+            if ctx.itr !== nothing
+                iterate!(text, ctx)
+            end
             continue
         end
 
@@ -384,7 +386,7 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
 
         # Handle scenario where user writes "Some non-bugref text: testname:poo#123"
         if isa(thing, TestName)
-            pusherr!(ctx, OnlyFoundName)
+            pusherr!(ctx, OnlyFoundName())
             empty!(names)
             name = thing
             @goto NAME_LIST
@@ -392,7 +394,9 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
 
         if thing === nothing
             empty!(names)
-            iterate!(text, ctx)
+            if ctx.itr !== nothing
+                iterate!(text, ctx)
+            end
             chomp!(text, ctx)
             continue
         end

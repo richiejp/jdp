@@ -35,7 +35,7 @@ function get_test_results!(cols::Array{Any},
     setts = jr["settings"]
 
     if haskey(setts, "XFSTESTS") && tr["name"] == "1_"
-        get_fstest_results!(cols, jr, tr, setts)
+        get_fstest_results!(cols, jr, tr)
         return
     end
         
