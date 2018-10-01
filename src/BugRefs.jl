@@ -1,5 +1,7 @@
 module BugRefs
 
+export tokval, parse_comment
+
 using Match
 
 struct Cursor
@@ -13,7 +15,10 @@ function Base.show(io::IO, cur::Cursor)
     write(io, "($(cur.line),$(cur.col);$(cur.i))='$(cur.c)'")
 end
 
+"Some kind of symbol or even an expression; so long as it can be represented by SubString"
 abstract type AbstractToken end
+
+Base.:(==)(t1::AbstractToken, t2::AbstractToken) = false
 
 struct Token{T} <: AbstractToken
     src::String
@@ -24,17 +29,32 @@ const TestName = Token{:TestName}
 const Tracker = Token{:Tracker}
 const Reference = Token{:Reference}
 
-function tokval(tok::Token)
-    tok.src[tok.range]
+"""
+Get the textual value of any AbstractToken. 
+
+Implement using SubString and not [n:m] because the former is zero-copy.
+"""
+function tokval(tok::Token)::SubString{String}
+    SubString(tok.src, tok.range)
 end
+
+Base.:(==)(t1::Token{T}, t2::Token{T}) where {T} = tokval(t1) == tokval(t2)
+
+const WILDCARD = TestName("*", 1:1)
 
 struct BugRef <: AbstractToken
     tracker::Tracker
     reference::Reference
 end
 
-function tokval(br::BugRef)
-    br.tracker.src[br.tracker.range.start:br.reference.range.stop]
+function tokval(br::BugRef)::SubString{String}
+    SubString(br.tracker.src, br.tracker.range.start, br.reference.range.stop)
+end
+
+Base.:(==)(t1::BugRef, t2::BugRef) = tokval(t1) == tokval(t2)
+
+function Base.hash(token::AbstractToken, h::UInt)
+    hash(tokval(token), h)
 end
 
 struct Tagging
@@ -51,6 +71,10 @@ struct Tagging
             length(tests) > 0 ? copy(tests) : nothing,
             ref,
             length(refs) > 0 ? copy(refs) : nothing)
+    end
+
+    function Tagging(test::TestName, ref::BugRef)
+        new(test, nothing, ref, nothing)
     end
 end
 
@@ -147,7 +171,7 @@ function parse_name!(text::String, ctx::ParseContext;
         (c, i) = ctx.itr
 
         @match c begin
-            'A':'z' || '0':'9' || '-' || '_' => nothing
+            'A':'z' || '0':'9' || '-' || '_' || '*' => nothing
             ',' || ':' || ' ' => begin
                 @pusherr(ctx, :InvalidNameChar, i - start < 2)
                 return TestName(text, start:(i - 2))
@@ -240,29 +264,11 @@ function parse_name_or_bugref!(text::String,
                 ref = parse_ref!(text, ctx)
                 if ref !== nothing
                     return BugRef(tracker, ref)
-                end
-
-                # If parsing the ref failed start trying to parse something
-                # again from the point where we failed
-                if ctx.itr !== nothing
-                    start = ctx.itr[2] - 1
+                else
+                    return nothing
                 end
             end
-            _ => begin
-                name = parse_name!(text, ctx; prestart=start)
-                if name !== nothing
-                    return name
-                end
-
-                # If parsing the name failed start trying to parse again from
-                # just after the point where we failed because the character
-                # which caused the failure won't be valid as the first
-                # character in a name or tracker
-                if ctx.itr !== nothing
-                    start = ctx.itr[2]
-                    iterate!(text, ctx)
-                end
-             end
+            _ => return parse_name!(text, ctx; prestart=start)
         end
     end
 end
@@ -309,21 +315,39 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
 
     chomp!(text, ctx)
     while ctx.itr !== nothing
-        name = parse_name!(text, ctx)
+        name = parse_name_or_bugref!(text, ctx)
         if name === nothing
             iterate!(text, ctx)
             continue
+        end
+
+        # If the user supplies a naked BugRef, we assume they just want to tag
+        # every test failure with that BugRef
+        if isa(name, BugRef)
+            push!(taggings, Tagging(WILDCARD, name))
         end
 
         @label NAME_LIST
         chomp!(text, ctx)
 
         restart = false
+        # If we get a comma after a valid test name then this might be a
+        # many-to-one or many-to-many tagging. So try to parse a list of test
+        # names.
         while ctx.itr !== nothing && ctx.itr[1] === ','
             iterate!(text, ctx)
             chomp!(text, ctx)
-            name2 = parse_name!(text, ctx)
+            name2 = parse_name_or_bugref!(text, ctx)
             if name2 === nothing
+                restart = true
+                break
+            end
+
+            # Again not clear what user wanted because we have not seen ':'
+            # yet, so discard the name list and just tag everything with the
+            # bug ref
+            if isa(name2, BugRef)
+                push!(taggings, Tagging(WILDCARD, name2))
                 restart = true
                 break
             end
@@ -342,6 +366,7 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
             continue
         end
 
+        # We expect a bug ref after ':'
         if ctx.itr[1] !== ':'
             pusherr!(ctx, ExpectedPunct())
             empty!(names)
@@ -375,6 +400,8 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
         ref = thing
 
         chomp!(text, ctx)
+        # So we found one bugref and have a valid tagging already, but there
+        # may be more bugrefs for this tagging.
         while ctx.itr !== nothing && ctx.itr[1] === ','
             iterate!(text, ctx)
             chomp!(text, ctx)
