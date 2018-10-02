@@ -1,3 +1,5 @@
+Work in progress...
+
 If you are feeling brave and want to try this out, then install the *official*
 Julia 1.0 distro (SUSE's won't work because of some wierd issue with compiling
 a maths library) somewhere in your path and see `src/startup.jl` for using JDP
@@ -7,3 +9,7 @@ You will need to get the data from OpenQA somehow, see `src/OpenQA.jl` and
 `src/TableDB.jl`. I still need to host the data in a cache somewhere, script
 installation and cleanup some dead code. However the current priority is to
 prove the technology works for reporting.
+
+Note that if you have Jupyter installed you can probably view
+`src/report.ipynb` without doing any other setup. You just won't be able to
+rerun the code snippets.
