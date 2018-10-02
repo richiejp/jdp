@@ -53,8 +53,10 @@ function load_job_results_json(dir_path::String)
             cfile = joinpath(dir, "$(js["id"])-job-comments.json")
             if isfile(cfile)
                 js["comments"] = JSON.parsefile(cfile, use_mmap=true)
+                if length(js["comments"]) < 1
+                    rm(cfile)
+                end
             else
-                @debug "Missing comments file for job $(js["id"])"
                 js["comments"] = []
             end
             js
