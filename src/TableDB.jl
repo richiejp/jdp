@@ -3,6 +3,8 @@ module TableDB
 using DataFrames
 using Match
 
+import FileIO
+
 using ..BugRefs
 
 BugRefDict = Dict{Union{BugRefs.TestName, String}, Array{BugRefs.BugRef}}
@@ -123,6 +125,14 @@ function get_module_results(job_results::Array{Dict{String, Any}})
     end
 
     DataFrame(columns, [:build, :name, :result, :arch, :suit, :bugrefs])
+end
+
+function save_module_results(path::String, df::DataFrame)
+    FileIO.save(path, "test_results", df)
+end
+
+function load_module_results(path::String)::DataFrame
+    FileIO.load(path, "test_results")
 end
 
 end
