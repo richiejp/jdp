@@ -14,7 +14,9 @@ datadir = "/home/rich/qa/data/osd"
 json = nothing
 df = nothing
 
-@match request("Load from JSON cache or JLD2 cache?", ["JSON", "JLD2"]) do
+selected = request("Load from JSON cache or JLD2 cache?", RadioMenu(["JSON", "JLD2"]))
+
+@match selected begin
     -1 => nothing
     1 => begin
         println("Loading from JSON...")
