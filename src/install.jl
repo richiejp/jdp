@@ -1,8 +1,8 @@
-import Pkg
+#!julia
+using Pkg
 
-Pkg.add(["DataFrames",
-         "JSON",
-         "LightGraphs",
-         "HTTP",
-         "DataStructures",
-         "DataStreams"])
+println("Installing project deps...")
+Pkg.activate(joinpath(@__FILE__, ".."))
+Pkg.instantiate()
+
+# TODO install data sets
