@@ -3,9 +3,9 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[BinaryProvider]]
 deps = ["Libdl", "Pkg", "SHA", "Test"]
-git-tree-sha1 = "48c147e63431adbcee69bc40b04c3f0fec0a4982"
+git-tree-sha1 = "38be61810f280c3c478f5c38aaf387f8f9199275"
 uuid = "b99e7846-7c00-51b0-8f62-c81ae34c0232"
-version = "0.5.0"
+version = "0.5.1"
 
 [[CategoricalArrays]]
 deps = ["Compat", "Future", "JSON", "Missings", "Printf", "Reexport"]
@@ -27,9 +27,9 @@ version = "1.2.0"
 
 [[DataFrames]]
 deps = ["CategoricalArrays", "CodecZlib", "Compat", "DataStreams", "Dates", "InteractiveUtils", "IteratorInterfaceExtensions", "LinearAlgebra", "Missings", "Pkg", "Printf", "Random", "Reexport", "SortingAlgorithms", "Statistics", "StatsBase", "TableTraits", "Tables", "Test", "TranscodingStreams", "Unicode", "WeakRefStrings"]
-git-tree-sha1 = "0fcb0c9914f31e0607b1965dc5a9e15c969c4806"
+git-tree-sha1 = "ad34fefb72b18a8dd5c17fab9089d11111b61935"
 uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-version = "0.14.0"
+version = "0.14.1"
 
 [[DataStreams]]
 deps = ["Dates", "Missings", "Pkg", "Test", "WeakRefStrings"]
@@ -57,9 +57,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[FileIO]]
 deps = ["Pkg", "Random", "Test"]
-git-tree-sha1 = "b80161b7e679a1241f9441ebfa60b62d4239cf99"
+git-tree-sha1 = "481e4db939f005db39f7296599d0543c0744fe30"
 uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-version = "1.0.1"
+version = "1.0.2"
 
 [[Future]]
 deps = ["Random"]
@@ -204,6 +204,14 @@ git-tree-sha1 = "723193a13e8078cec6dcd0b8fe245c8bfd81690e"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.25.0"
 
+[[TOML]]
+deps = ["Dates"]
+git-tree-sha1 = "9147badf11f7e4ed1d82f26cc59a491b1c098b3f"
+repo-rev = "master"
+repo-url = "https://github.com/wildart/TOML.jl.git"
+uuid = "191fdcea-f9f2-43e0-b922-d33f71e2abc3"
+version = "0.4.0"
+
 [[TableTraits]]
 deps = ["IteratorInterfaceExtensions", "Test"]
 git-tree-sha1 = "afee1fb3bc99c28eb4533ff0f22e33f6effcec18"
@@ -212,9 +220,9 @@ version = "0.3.1"
 
 [[Tables]]
 deps = ["Pkg", "Requires", "Test"]
-git-tree-sha1 = "277464179bc7cfb1b4d5a4f3ccde0fc75792157f"
+git-tree-sha1 = "7b7e95a34c2c2504f1403aa9005399e239f461b9"
 uuid = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
-version = "0.1.8"
+version = "0.1.9"
 
 [[Test]]
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
