@@ -27,6 +27,20 @@ function get_job_results(host::OpenQAHost, job_id::Int64)
     get_json(host, "jobs/$job_id/details")["job"]
 end
 
+function get_jobs_overview(host::OpenQAHost; kwargs...)
+    uri = "jobs/overview"
+
+    if length(kwargs) > 0
+        uri *= "?"
+    end
+
+    for (k, v) in pairs(kwargs)
+        uri *= "$k=$v&"
+    end
+
+    map(j -> j["id"], get_json(host, uri))
+end
+
 function flatten(arr::Array)
     map(flatten, arr)
 end
@@ -87,6 +101,23 @@ function save_job_results_json(host::OpenQAHost, dir_path::String, group_id::Int
     end
 
     jgrps = get_group_jobs(host, group_id)
+    i = 1
+    N = length(jgrps)
+    for jid in jgrps
+        sjob = ext -> save_job_json(host, jid, dir_path, i, N, ext)
+        sjob("details")
+        sjob("comments")
+        i += 1
+    end
+end
+
+function save_job_results_json(host::OpenQAHost, dir_path::String; kwargs...)
+    dir_path = realpath(dir_path)
+    if !isdir(dir_path)
+        throw("Not a directory $dir_path")
+    end
+
+    jgrps = get_jobs_overview(host; kwargs...)
     i = 1
     N = length(jgrps)
     for jid in jgrps
