@@ -5,9 +5,9 @@ using Match
 
 import FileIO
 
-using ..BugRefs
+using ..BugRefsParser
 
-BugRefDict = Dict{Union{BugRefs.TestName, String}, Array{BugRefs.BugRef}}
+BugRefDict = Dict{Union{BugRefsParser.Test, String}, Array{BugRefsParser.Ref}}
 
 function map_result_str(res::String)::String
     if res === "ok"
@@ -22,8 +22,8 @@ end
 function map_bugrefs_to_test(name::String, refs::BugRefDict)::Array{SubString}
     arefs = SubString[]
 
-    if haskey(refs, BugRefs.WILDCARD)
-        append!(arefs, map(tokval, refs[BugRefs.WILDCARD]))
+    if haskey(refs, BugRefsParser.WILDCARD)
+        append!(arefs, map(tokval, refs[BugRefsParser.WILDCARD]))
     end
     if haskey(refs, name)
         append!(arefs, map(tokval, refs[columns[2]]))
@@ -79,10 +79,10 @@ function get_test_results!(cols::Array{Any},
 end
 
 "Push one test name to many bugrefs mapping"
-function push_tag!(tags::Dict{Union{BugRefs.TestName, String}, Array{BugRefs.BugRef}},
-                   name::BugRefs.TestName,
-                   head_ref::BugRefs.BugRef,
-                   rest_refs::Union{Array{BugRefs.BugRef}, Nothing})
+function push_tag!(tags::Dict{Union{BugRefsParser.Test, String}, Array{BugRefsParser.Ref}},
+                   name::BugRefsParser.Test,
+                   head_ref::BugRefsParser.Ref,
+                   rest_refs::Union{Array{BugRefsParser.Ref}, Nothing})
     refs = get!(tags, name, String[])
 
     push!(refs, head_ref)
@@ -97,7 +97,7 @@ function parse_comments(comments::Array)::BugRefDict
     spec = BugRefDict()
 
     for c in comments
-        (tags, _) = BugRefs.parse_comment(c["text"])
+        (tags, _) = parse_comment(c["text"])
         for t in tags
             push_tag!(spec, t.test, t.ref, t.refs)
             if t.tests !== nothing
