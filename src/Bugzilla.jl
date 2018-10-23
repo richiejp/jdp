@@ -2,6 +2,8 @@ module Bugzilla
 
 using HTTP
 using HTTP.URIs: escapeuri, URI
+using Markdown
+import Markdown: MD, Link, Paragraph, LineBreak, Bold, Italic
 using XMLDict
 
 const bsc_host = "apibugzilla.suse.com"
@@ -33,6 +35,15 @@ end
 
 function get_bug(ses::Session, id::Int64)::Dict
     get_xml(ses, "/show_bug.cgi", query="id=$id")["bug"]
+end
+
+function to_md(bug::Dict)::MD
+    stat = bug["bug_status"]
+    sevr = bug["bug_severity"]
+    prio = bug["priority"]
+    desc = bug["short_desc"]
+
+    MD(Paragraph([Bold(prio), "(", Italic(sevr), ") ", stat, ": ", desc]))
 end
 
 end # module
