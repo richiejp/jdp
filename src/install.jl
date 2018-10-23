@@ -1,8 +1,9 @@
 #!julia
 using Pkg
 
-println("Installing project deps...")
-Pkg.activate(joinpath(@__FILE__, ".."))
-Pkg.instantiate()
+pkgpath = normpath(joinpath(dirname(@__FILE__), ".."))
+println("Activating JDP package at $pkgpath")
+Pkg.activate(pkgpath)
 
-# TODO install data sets
+println("Installing project deps if necessary...")
+Pkg.instantiate()

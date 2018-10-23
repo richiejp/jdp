@@ -1,12 +1,14 @@
 module Bugzilla
 
+import TOML
 using HTTP
 using HTTP.URIs: escapeuri, URI
 using Markdown
 import Markdown: MD, Link, Paragraph, LineBreak, Bold, Italic
 using XMLDict
+import IJulia
 
-const bsc_host = "apibugzilla.suse.com"
+import JDP.IOHelpers: prompt
 
 mutable struct Session
     host::String
@@ -17,6 +19,34 @@ mutable struct Session
     function Session(host::String, user::String, pass::String)
         new(host, "https", "$user:$pass", Dict())
     end
+end
+
+function login(host_tla::String)::Union{Session, Nothing}
+    conf = TOML.parsefile(joinpath(dirname(@__FILE__), "../conf/trackers.toml"))[host_tla]
+
+    if conf["api"] != "Bugzilla"
+        throw("$host_tla is not a Bugzilla instance, but instead $(conf["api"])")
+    end
+
+    user = if conf["user"] == ""
+        prompt("User Name")
+    else
+        conf["user"]
+    end
+
+    pass = if conf["pass"] == ""
+        prompt("Password"; password=true)
+    else
+        conf["pass"]
+    end
+
+    login(conf["host"], user, pass)
+end
+
+function login(host::String, user::String, pass::String)::Union{Session, Nothing}
+    ses = Session(host, user, pass)
+
+    login!(ses).status < 300 ? ses : nothing
 end
 
 function login!(ses::Session)

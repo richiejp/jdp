@@ -1,0 +1,8 @@
+# Bug tracker definitions
+
+[bsc]
+api = "Bugzilla"
+host = "apibugzilla.suse.com"
+# Required for BSC
+user = ""
+pass = ""
