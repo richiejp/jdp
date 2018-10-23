@@ -1,49 +1,31 @@
 module Bugzilla
 
 using HTTP
-using HTTP.URIs: escapeuri
+using HTTP.URIs: escapeuri, URI
 using XMLDict
 
-const Host = String
-bsc = Host("https://bugzilla.suse.com/")
+const bsc_host = "apibugzilla.suse.com"
 
-mutable struct Session
-    host::Host
-    jar::Dict{String, Set{HTTP.Cookie}}
+struct Session
+    host::String
+    scheme::String
+    userinfo::String
+
+    function Session(host::String, user::String, pass::String)
+        new(host, "https", "$user:$pass")
+    end
 end
 
-function post_form(ses::Session, path::String, body::String)
-    res = HTTP.get(joinpath(ses.host, path);
-                   redirect=true, status_exception=true,
-                   cookies=true, cookiejar=ses.jar)
-    redirect_host = res.request.headers["Host"]
-    HTTP.post("https://$redirect_host/",
-              ["Content-Type" => "application/x-www-form-urlencoded"],
-              body;
-              redirect=true, status_exception=true,
-              cookies=true, cookiejar=ses.jar)
-end
-
-function login(host::Host, user::String, pass::String)::Session
-    uri = "index.cgi?GoAheadAndLogIn=1"
-    ses = Session(host, Dict())
-    form = "Ecom_User_ID=$(escapeuri(user))&Ecom_password=$(escapeuri(pass))&option=credential&target="
-
-    resp = post_form(ses, uri, form)
-    @debug("POST $uri: $form ⏎\n", resp)
-
-    ses
-end
-
-function get_xml(ses::Session, path::String)::Dict
-    uri = joinpath(ses.host, path)
+function get_xml(ses::Session, path::String; query::String="")::Dict
+    uri = URI(scheme=ses.scheme, host=ses.host, path=path,
+              userinfo=ses.userinfo, query="ctype=xml&$query")
     @debug "GET $uri"
-    HTTP.get(uri, status_exception=true, cookies=true, cookiejar=ses.jar).body |>
+    HTTP.get(uri, status_exception=true, basic_authorization=true).body |>
         String |> parse_xml
 end
 
 function get_bug(ses::Session, id::Int64)::Dict
-    get_xml(host, "show_bug.cgi?ctype=xml&id=$id")
+    get_xml(ses, "/show_bug.cgi", query="id=$id")
 end
 
 end # module
