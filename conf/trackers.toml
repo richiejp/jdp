@@ -3,6 +3,10 @@
 [bsc]
 api = "Bugzilla"
 host = "apibugzilla.suse.com"
-# Required for BSC
-user = ""
-pass = ""
+# Be careful not to commit your password to git if you set this!
+#user = ""
+#pass = ""
+
+[poo]
+api = "Redmine"
+host = "progress.opensuse.org"

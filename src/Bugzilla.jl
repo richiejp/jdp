@@ -28,16 +28,12 @@ function login(host_tla::String)::Union{Session, Nothing}
         throw("$host_tla is not a Bugzilla instance, but instead $(conf["api"])")
     end
 
-    user = if conf["user"] == ""
+    user = get(conf, "user") do
         prompt("User Name")
-    else
-        conf["user"]
     end
 
-    pass = if conf["pass"] == ""
+    pass = get(conf, "pass") do
         prompt("Password"; password=true)
-    else
-        conf["pass"]
     end
 
     login(conf["host"], user, pass)
