@@ -3,6 +3,7 @@ module JDP
 export OpenQA, TableDB, BugRefs, Bugzilla
 
 include("IOHelpers.jl")
+include("Conf.jl")
 
 include("OpenQA.jl")
 include("BugRefsParser.jl")

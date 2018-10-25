@@ -1,6 +1,5 @@
 module Bugzilla
 
-import TOML
 using HTTP
 using HTTP.URIs: escapeuri, URI
 using Markdown
@@ -9,6 +8,7 @@ using XMLDict
 import IJulia
 
 import JDP.IOHelpers: prompt
+import JDP.Conf
 
 mutable struct Session
     host::String
@@ -22,7 +22,7 @@ mutable struct Session
 end
 
 function login(host_tla::String)::Union{Session, Nothing}
-    conf = TOML.parsefile(joinpath(dirname(@__FILE__), "../conf/trackers.toml"))[host_tla]
+    conf = Conf.trackers(host_tla)
 
     if conf["api"] != "Bugzilla"
         throw("$host_tla is not a Bugzilla instance, but instead $(conf["api"])")
