@@ -1,4 +1,4 @@
-include("install.jl")
+include("init.jl")
 
 import REPL
 using REPL.TerminalMenus

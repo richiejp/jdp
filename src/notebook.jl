@@ -10,7 +10,7 @@ using IJulia
 curdir = dirname(@__FILE__)
 
 if curdir != ""
-    notebook(dir = curdir, detached = true)
+    notebook(dir = curdir)
 else
-    notebook(detached = true)
+    notebook()
 end

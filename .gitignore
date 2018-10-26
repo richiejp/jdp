@@ -1,2 +1,5 @@
 *~
-Config.toml
+*.cov
+*/.ipynb_checkpoints
+
+

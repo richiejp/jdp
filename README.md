@@ -16,3 +16,47 @@ off OpenQA.
 Note that if you have Jupyter installed you can probably view
 `src/report.ipynb` without doing any other setup. You just won't be able to
 rerun the code snippets.
+
+# Install
+
+## Docker
+
+You can install using Docker by doing the following from the directory where
+you cloned this repo.
+
+```sh
+docker build -t jdp -f install/Dockerfile .
+docker run -it -p 8889:8889 jdp
+```
+
+Or you can substitute the build command for the following which is less likely
+to be up to date
+
+```sh
+docker pull suserichiejp/jdp
+```
+
+With a bit of luck you will see a message from Jupyter describing what to do
+next. The Docker image also contains two volumes which you may mount. See the
+Dockerfile for more info.
+
+## Other
+
+You can use install/Dockerfile as a guide. Also check `conf/data.toml`.
+
+# Usage
+
+## With Jupyter
+
+Open either the `report.ipynb` or `bugrefs.ipynb` Jupyter notebooks which are
+(hopefully) self documenting. I have only tested them with Jupyter itself, but
+there are fancier alternatives such as JupyterLab and, of course, Emacs.
+
+## Other
+
+You can also use the library from a Julia REPL or another project. For example
+in a julia REPL you could run
+
+```julia
+include("src/startup.jl")
+```
