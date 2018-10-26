@@ -30,6 +30,8 @@ const Tracker = Token{:Tracker}
 const ID = Token{:ID}
 
 """
+    tokval(tok)
+
 Get the textual value of any AbstractToken. 
 
 Implement using SubString and not [n:m] because the former is zero-copy.
@@ -293,19 +295,23 @@ function chomp!(text::String, ctx::ParseContext)
 end
 
 """
+    parse_comment(text)
+
 Try to extract the test-name:bug-ref pairs from a comment
 
 Below is the approximate syntax in EBNF. Assume letter ∈ [a-Z] and digit ∈
 [0-9] and whitespace is allowed between testnames, bugrefs, ':' and ',':
 
+```
 testname = letter | digit { letter | digit | '_' | '-' }
 tracker = letter { letter }
 id = letter | digit { letter | digit }
 bugref = tracker '#' id
 tagging = testname {',' testname} ':' bugref {',' bugref}
 taggings = tagging { tagging }
+```
 
-So a tagging can assign many bug references to many testnames, which means you
+A tagging can assign many bug references to many testnames, which means you
 can have something like: test1, test2: bsc#1234, git#a33f4. Which tags tests 1
 and 2 with both bug references.
 
