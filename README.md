@@ -5,6 +5,9 @@ environment. Initially targeted at SUSE's QA Kernel & Networking team's
 requirements, but this is intended to have general applicability at least
 within SUSE QA.
 
+See [report.ipynb](https://github.com/richiejp/jdp/blob/master/src/report.ipynb)
+to get a better idea of what this is about.
+
 This is work in progress. We desperately need to create a central data cache
 because fetching it from OpenQA and Bugzilla is too slow. However fetching a
 few builds worth of data is OK, so you can try this out now.
