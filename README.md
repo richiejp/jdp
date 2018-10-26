@@ -29,8 +29,8 @@ docker build -t jdp -f install/Dockerfile .
 docker run -it -p 8889:8889 jdp
 ```
 
-Or you can substitute the build command for the following which is less likely
-to be up to date
+Or you can substitute the build command for the following which will get a
+pre-built image from hub.docker.com (it may not be up to date).
 
 ```sh
 docker pull suserichiejp/jdp

@@ -10,10 +10,10 @@ ARG tarurl=https://julialang-s3.julialang.org/bin/linux/x64/1.0/julia-${juliav}-
 # numerical libraries have compilation issues with other libraries and... well
 # we just install from tar ball for now.
 # RUN zypper in julia
-RUN zypper in -y curl tar gzip bzip2
-RUN zypper in -y python3-jupyter python3-jupyter_nbconvert \
-    	      	 python3-jupyter_client python3-jupyter_notebook \
-		 python3-jupyter_wysiwyg
+RUN zypper in -y curl tar gzip bzip2 \
+python3-jupyter python3-jupyter_nbconvert python3-jupyter_client \
+python3-jupyter_notebook && \
+zypper clean --all
 
 # There is no default non-root user in the Tumbleweed image, so we create one
 # because doing everything as root unecessarily is probably immoral or something
