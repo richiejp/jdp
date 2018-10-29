@@ -57,3 +57,11 @@ in a julia REPL you could run
 ```julia
 include("src/startup.jl")
 ```
+
+# Documentation
+
+Further documentation can be found here:
+https://richiejp.github.io/jdp/docs/build/index.html
+
+You can also find documentation at the Julia REPL by typing `?` followed by an
+identifier or in a notebook you can type `@doc identifier` in a code cell.
