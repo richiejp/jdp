@@ -5,7 +5,7 @@ environment. Initially targeted at SUSE's QA Kernel & Networking team's
 requirements, but this is intended to have general applicability at least
 within SUSE QA.
 
-See [report.ipynb](https://github.com/richiejp/jdp/blob/master/src/report.ipynb)
+See [report.ipynb](https://github.com/richiejp/jdp/blob/master/notebooks/report.ipynb)
 to get a better idea of what this is about.
 
 This is work in progress. We desperately need to create a central data cache

@@ -1,3 +1,4 @@
+#!julia
 import Pkg
 
 # We need to add IJulia to the shared/home project, otherwise Jupyter might
@@ -7,10 +8,10 @@ Pkg.add("IJulia")
 
 using IJulia
 
-curdir = dirname(@__FILE__)
+notebookdir = joinpath(dirname(@__FILE__), "..", "notebooks")
 
-if curdir != ""
-    notebook(dir = curdir)
+if notebookdir != ""
+    notebook(dir = notebookdir)
 else
     notebook()
 end

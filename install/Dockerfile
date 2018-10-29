@@ -51,5 +51,5 @@ VOLUME [ "/home/jdp/data", "/home/jdp/src" ]
 EXPOSE 8889
 
 # Default command starts Jupyter in the directory where the notebooks are
-WORKDIR /home/jdp/src/src
+WORKDIR /home/jdp/src/notebooks
 CMD [ "jupyter", "notebook", "--ip=0.0.0.0", "--port=8889" ]
