@@ -1,3 +1,8 @@
+"""Parser for the Bug references (tags) DSL
+
+See [`parse_comment`](@ref)'s docs for the format.
+
+"""
 module BugRefsParser
 
 export tokval, parse_comment

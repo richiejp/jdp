@@ -1,3 +1,14 @@
+"""Bug references are usually a three letter abreviation (TLA) for a tracker
+instance (e.g. bugzilla.suse.com -> bsc) followed by a `#` and then an id
+number, so for example `bsc#12345`.
+
+Test failures can be 'tagged' with a bug reference. This usually looks
+something like `test01:bsc#12345`.
+
+This module provides methods for processing bug references and tags which are
+typically included in a comment on a test failure, but can be taken from any
+text.
+"""
 module BugRefs
 
 using Markdown: MD, Link, Paragraph, LineBreak

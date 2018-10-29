@@ -1,9 +1,9 @@
-# BugRefsParser
+# Bug References
 
 ```@index
-Modules = [JDP.BugRefsParser]
+Modules = [JDP.BugRefs, JDP.BugRefsParser]
 ```
 
 ```@autodocs
-Modules = [JDP.BugRefsParser]
+Modules = [JDP.BugRefs, JDP.BugRefsParser]
 ```
