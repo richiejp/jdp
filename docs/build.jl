@@ -14,7 +14,8 @@ makedocs(
         "Home" => "index.md",
         "Reference" => [
             "JDP.BugRefs" => "bugrefs.md"
-        ]
+        ],
+        "Development" => "development.md"
     ]
 )
 
