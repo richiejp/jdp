@@ -25,7 +25,8 @@ function map_bugrefs_to_test(name::String, refs::BugRefDict)::Array{SubString}
     if haskey(refs, BugRefsParser.WILDCARD)
         append!(arefs, map(tokval, refs[BugRefsParser.WILDCARD]))
     end
-    if haskey(refs, name)
+    # Sero likes to replace '-' with '/' in test names when writing tags
+    if haskey(refs, name) || haskey(refs, replace(name, "-" => "/"))
         append!(arefs, map(tokval, refs[columns[2]]))
     end
 
