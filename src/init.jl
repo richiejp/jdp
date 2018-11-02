@@ -5,5 +5,10 @@ pkgpath = normpath(joinpath(dirname(@__FILE__), ".."))
 @info "Activating JDP package at $pkgpath"
 Pkg.activate(pkgpath)
 
-@info "Installing JDP project deps if necessary..."
-Pkg.instantiate()
+try
+    @eval import JDP
+catch e
+    @warn "Exception while importing JDP: $e"
+    @info "Will try installing JDP project deps..."
+    Pkg.instantiate()
+end
