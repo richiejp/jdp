@@ -15,8 +15,15 @@ many_to_many2 = "$testname1, $testname2, $testname3: $bugref1, $testname2: $bugr
 naked_bugrefs = "$bugref1, $bugref2"
 naked_bugrefs2 = "$bugref1, $bugref3"
 
+pvorel1 = """
+if4-addr-change_ifconfig: poo#40400, if4-mtu-change_ip, f4-mtu-change_ifconfig: poo#40403
+
+(Automatic takeover from t#2007414)
+"""
+pvorel2 = "Numa-testcases: bsc#1099878\n\n(Automatic takeover from t#2224950)\n"
+
 print_errors(ctx::BugRefsParser.ParseContext) = if length(ctx.errors) > 0
-    println("Parser errors: $ctx")
+    @debug "Parser errors: $ctx"
 end
 
 @testset "Bug Reference parsing" begin
@@ -85,6 +92,21 @@ end
     @test BugRefsParser.tokval(taggings[1].ref) == bugref1
     @test taggings[2].test == BugRefsParser.WILDCARD
     @test BugRefsParser.tokval(taggings[2].ref) == bugref2
+
+    (taggings, ctx) = parse_comment(pvorel1)
+    print_errors(ctx)
+    @test length(taggings) == 3
+    @test BugRefsParser.tokval(taggings[1].test) == "if4-addr-change_ifconfig"
+    @test BugRefsParser.tokval(taggings[1].ref) == "poo#40400"
+    @test BugRefsParser.tokval(taggings[2].test) == "if4-mtu-change_ip"
+    @test BugRefsParser.tokval(taggings[2].tests[1]) == "f4-mtu-change_ifconfig"
+    @test BugRefsParser.tokval(taggings[2].ref) == "poo#40403"
+
+    (taggings, ctx) = parse_comment(pvorel2)
+    print_errors(ctx)
+    @test length(taggings) == 2
+    @test BugRefsParser.tokval(taggings[1].test) == "Numa-testcases"
+    @test BugRefsParser.tokval(taggings[1].ref) == "bsc#1099878"
 
     println("Benchmarking:")
     btexts = [text_messy, many_to_many, many_spaces, many_to_many2, naked_bugrefs]
