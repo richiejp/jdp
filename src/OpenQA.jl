@@ -115,23 +115,6 @@ function save_job_json(host::OpenQAHost,
     end
 end
 
-function save_job_results_json(host::OpenQAHost, dir_path::String, group_id::Int64)
-    dir_path = realpath(dir_path)
-    if !isdir(dir_path)
-        throw("Not a directory $dir_path")
-    end
-
-    jgrps = get_group_jobs(host, group_id)
-    i = 1
-    N = length(jgrps)
-    for jid in jgrps
-        sjob = ext -> save_job_json(host, jid, dir_path, i, N, ext)
-        sjob("details")
-        sjob("comments")
-        i += 1
-    end
-end
-
 function save_job_results_json(host::OpenQAHost, dir_path::String; kwargs...)
     dir_path = realpath(dir_path)
     if !isdir(dir_path)
@@ -145,6 +128,21 @@ function save_job_results_json(host::OpenQAHost, dir_path::String; kwargs...)
         sjob = ext -> save_job_json(host, jid, dir_path, i, N, ext)
         sjob("details")
         sjob("comments")
+        i += 1
+    end
+end
+
+function save_job_comments_json(host::OpenQAHost, dir_path::String; kwargs...)
+    dir_path = realpath(dir_path)
+    if !isdir(dir_path)
+        throw("Not a directory $dir_path")
+    end
+
+    jgrps = get_jobs_overview(host; kwargs...)
+    i = 1
+    N = length(jgrps)
+    for jid in jgrps
+        save_job_json(host, jid, dir_path, i, N, "comments")
         i += 1
     end
 end
