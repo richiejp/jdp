@@ -65,33 +65,11 @@ function Base.hash(token::AbstractToken, h::UInt)
 end
 
 struct Tagging
-    test::Test
-    tests::Union{Array{Test}, Nothing}
-    ref::Ref
-    refs::Union{Array{Ref}, Nothing}
-
-    function Tagging(test::Test,
-                     tests::Array{Test},
-                     ref::Ref,
-                     refs::Array{Ref})
-        new(test,
-            length(tests) > 0 ? copy(tests) : nothing,
-            ref,
-            length(refs) > 0 ? copy(refs) : nothing)
-    end
-
-    function Tagging(test::Test, ref::Ref)
-        new(test, nothing, ref, nothing)
-    end
+    tests::Array{Test}
+    refs::Array{Ref}
 end
 
-function all_refs(t::Tagging)::Array{Ref}
-    if t.refs != nothing
-        vcat(t.refs, t.ref)
-    else
-        [t.ref]
-    end
-end
+Tagging(test::Test, ref::Ref) = Tagging([test], [ref])
 
 abstract type ParseError end
 struct InvalidNameChar <: ParseError end
@@ -262,6 +240,13 @@ function parse_bugref!(text::String, ctx::ParseContext)::Union{Ref, Nothing}
     nothing
 end
 
+function parse_bugref(text::String)::Ref
+    ctx = ParseContext(text)
+    r = parse_bugref!(text, ctx)
+
+    r == nothing ? throw("Failed to parse bugref from \"$text\": $ctx") : r
+end
+
 function parse_name_or_bugref!(text::String,
                                ctx::ParseContext)::Union{Test, Ref, Nothing}
     (_, i) = ctx.itr
@@ -327,14 +312,24 @@ parse a new tagging from the point where it failed.
 """
 function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
     ctx = ParseContext(text)
+    name::Union{Nothing, Test} = nothing
     names = Test[]
+    ref::Union{Nothing, Ref} = nothing
     refs = Ref[]
     taggings = Tagging[]
 
+    push_tagging!() = begin
+        push!(names, name)
+        push!(refs, ref)
+        push!(taggings, Tagging(copy(names), copy(refs)))
+        empty!(names)
+        empty!(refs)
+    end
+
     chomp!(text, ctx)
     while ctx.itr !== nothing
-        name = parse_name_or_bugref!(text, ctx)
-        if name === nothing
+        thing::Union{Nothing, Ref, Test} = parse_name_or_bugref!(text, ctx)
+        if thing === nothing
             if ctx.itr !== nothing
                 iterate!(text, ctx)
             end
@@ -343,8 +338,11 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
 
         # If the user supplies a naked Ref, we assume they just want to tag
         # every test failure with that Ref
-        if isa(name, Ref)
-            push!(taggings, Tagging(WILDCARD, name))
+        if isa(thing, Ref)
+            push!(taggings, Tagging(WILDCARD, thing))
+            continue
+        else
+            name = thing
         end
 
         @label NAME_LIST
@@ -357,8 +355,8 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
         while ctx.itr !== nothing && ctx.itr[1] === ','
             iterate!(text, ctx)
             chomp!(text, ctx)
-            name2 = parse_name_or_bugref!(text, ctx)
-            if name2 === nothing
+            thing = parse_name_or_bugref!(text, ctx)
+            if thing === nothing
                 restart = true
                 break
             end
@@ -366,13 +364,13 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
             # Again not clear what user wanted because we have not seen ':'
             # yet, so discard the name list and just tag everything with the
             # bug ref
-            if isa(name2, Ref)
-                push!(taggings, Tagging(WILDCARD, name2))
+            if isa(thing, Ref)
+                push!(taggings, Tagging(WILDCARD, thing))
                 restart = true
                 break
             end
 
-            push!(names, name2)
+            push!(names, thing)
             chomp!(text, ctx)
         end
 
@@ -439,9 +437,7 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
             # We may have started parsing a new tagging, so save this one and
             # jump back
             if isa(thing, Test)
-                push!(taggings, Tagging(name, names, ref, refs))
-                empty!(names)
-                empty!(refs)
+                push_tagging!()
                 name = thing
                 @goto NAME_LIST
             end
@@ -450,9 +446,7 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
             chomp!(text, ctx)
         end
 
-        push!(taggings, Tagging(name, names, ref, refs))
-        empty!(names)
-        empty!(refs)
+        push_tagging!()
         chomp!(text, ctx)
     end
 

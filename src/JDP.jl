@@ -5,6 +5,7 @@ export OpenQA, TableDB, BugRefs, Bugzilla
 include("IOHelpers.jl")
 include("Conf.jl")
 
+include("Trackers.jl")
 include("OpenQA.jl")
 include("BugRefsParser.jl")
 include("BugRefs.jl")

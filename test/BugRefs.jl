@@ -14,6 +14,7 @@ many_spaces = "$testname2 , $testname3 : $bugref1 , $bugref2"
 many_to_many2 = "$testname1, $testname2, $testname3: $bugref1, $testname2: $bugref2"
 naked_bugrefs = "$bugref1, $bugref2"
 naked_bugrefs2 = "$bugref1, $bugref3"
+naked_bugrefs3 = "$bugref1 $bugref3"
 
 pvorel1 = """
 if4-addr-change_ifconfig: poo#40400, if4-mtu-change_ip, f4-mtu-change_ifconfig: poo#40403
@@ -56,57 +57,67 @@ end
     (taggings, ctx) = parse_comment(text_messy)
     print_errors(ctx)
     @test length(taggings) == 1
-    @test BugRefsParser.tokval(taggings[1].test) == testname1
-    @test BugRefsParser.tokval(taggings[1].ref) == bugref1
+    @test BugRefsParser.tokval(taggings[1].tests[1]) == testname1
+    @test BugRefsParser.tokval(taggings[1].refs[1]) == bugref1
 
     (taggings, ctx) = parse_comment(many_to_many)
     print_errors(ctx)
     @test length(taggings) == 1
-    @test BugRefsParser.tokval(taggings[1].test) == testname2
     @test BugRefsParser.tokval(taggings[1].tests[1]) == testname3
-    @test BugRefsParser.tokval(taggings[1].ref) == bugref1
+    @test BugRefsParser.tokval(taggings[1].tests[2]) == testname2
     @test BugRefsParser.tokval(taggings[1].refs[1]) == bugref2
+    @test BugRefsParser.tokval(taggings[1].refs[2]) == bugref1
 
     (taggings, ctx) = parse_comment(many_spaces)
     print_errors(ctx)
     @test length(taggings) == 1
-    @test BugRefsParser.tokval(taggings[1].test) == testname2
     @test BugRefsParser.tokval(taggings[1].tests[1]) == testname3
-    @test BugRefsParser.tokval(taggings[1].ref) == bugref1
+    @test BugRefsParser.tokval(taggings[1].tests[2]) == testname2
     @test BugRefsParser.tokval(taggings[1].refs[1]) == bugref2
+    @test BugRefsParser.tokval(taggings[1].refs[2]) == bugref1
 
     (taggings, ctx) = parse_comment(many_to_many2)
     print_errors(ctx)
     @test length(taggings) == 2
-    @test BugRefsParser.tokval(taggings[1].test) == testname1
     @test BugRefsParser.tokval(taggings[1].tests[1]) == testname2
     @test BugRefsParser.tokval(taggings[1].tests[2]) == testname3
-    @test BugRefsParser.tokval(taggings[1].ref) == bugref1
-    @test BugRefsParser.tokval(taggings[2].test) == testname2
-    @test BugRefsParser.tokval(taggings[2].ref) == bugref2
+    @test BugRefsParser.tokval(taggings[1].tests[3]) == testname1
+    @test BugRefsParser.tokval(taggings[1].refs[1]) == bugref1
+    @test BugRefsParser.tokval(taggings[2].tests[1]) == testname2
+    @test BugRefsParser.tokval(taggings[2].refs[1]) == bugref2
 
     (taggings, ctx) = parse_comment(naked_bugrefs)
     print_errors(ctx)
     @test length(taggings) == 2
-    @test taggings[1].test == BugRefsParser.WILDCARD
-    @test BugRefsParser.tokval(taggings[1].ref) == bugref1
-    @test taggings[2].test == BugRefsParser.WILDCARD
-    @test BugRefsParser.tokval(taggings[2].ref) == bugref2
+    @test taggings[1].tests[1] == BugRefsParser.WILDCARD
+    @test BugRefsParser.tokval(taggings[1].refs[1]) == bugref1
+    @test taggings[2].tests[1] == BugRefsParser.WILDCARD
+    @test BugRefsParser.tokval(taggings[2].refs[1]) == bugref2
 
+    (taggings, ctx) = parse_comment(naked_bugrefs2)
+    print_errors(ctx)
+    @test length(taggings) == 2
+    @test taggings[1].tests[1] == BugRefsParser.WILDCARD
+    @test BugRefsParser.tokval(taggings[1].refs[1]) == bugref1
+    @test taggings[2].tests[1] == BugRefsParser.WILDCARD
+    @test BugRefsParser.tokval(taggings[2].refs[1]) == bugref3
+    
     (taggings, ctx) = parse_comment(pvorel1)
     print_errors(ctx)
     @test length(taggings) == 3
-    @test BugRefsParser.tokval(taggings[1].test) == "if4-addr-change_ifconfig"
-    @test BugRefsParser.tokval(taggings[1].ref) == "poo#40400"
-    @test BugRefsParser.tokval(taggings[2].test) == "if4-mtu-change_ip"
+    @test BugRefsParser.tokval(taggings[1].tests[1]) == "if4-addr-change_ifconfig"
+    @test BugRefsParser.tokval(taggings[1].refs[1]) == "poo#40400"
     @test BugRefsParser.tokval(taggings[2].tests[1]) == "f4-mtu-change_ifconfig"
-    @test BugRefsParser.tokval(taggings[2].ref) == "poo#40403"
+    @test BugRefsParser.tokval(taggings[2].tests[2]) == "if4-mtu-change_ip"
+    @test BugRefsParser.tokval(taggings[2].refs[1]) == "poo#40403"
+    @test taggings[3].tests[1] == BugRefsParser.WILDCARD
+    @test BugRefsParser.tokval(taggings[3].refs[1]) == "t#2007414"
 
     (taggings, ctx) = parse_comment(pvorel2)
     print_errors(ctx)
     @test length(taggings) == 2
-    @test BugRefsParser.tokval(taggings[1].test) == "Numa-testcases"
-    @test BugRefsParser.tokval(taggings[1].ref) == "bsc#1099878"
+    @test BugRefsParser.tokval(taggings[1].tests[1]) == "Numa-testcases"
+    @test BugRefsParser.tokval(taggings[1].refs[1]) == "bsc#1099878"
 
     println("Benchmarking:")
     btexts = [text_messy, many_to_many, many_spaces, many_to_many2, naked_bugrefs]
@@ -116,7 +127,20 @@ end
 end
 
 @testset "Bug reference structures" begin
-    refs = extract_refs(naked_bugrefs2)
+    using JDP.Trackers
 
+    trackers = TrackerRepo(Dict(), Dict())
+    bref(s) = BugRefs.Ref(s, trackers)
+    
+    refs = extract_refs(naked_bugrefs2, trackers)
     @test length(refs) == 2
+
+    tags = extract_tags!(BugRefs.Tags(), pvorel1, trackers)
+    @test length(tags) == 4
+    @test tags[BugRefs.WILDCARD] == [bref("t#2007414")]
+
+    ref = bref("foo#bar")
+    @test ref.tracker.tla == "foo"
+    @test ref.id == "bar"
+    @test ref == bref("foo#bar")
 end

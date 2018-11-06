@@ -12,6 +12,7 @@ using Test
 
 @testset "All" begin
     include("Conf.jl")
+    include("Trackers.jl")
     include("BugRefs.jl")
     include("Integration.jl")
 end

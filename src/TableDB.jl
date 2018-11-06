@@ -5,9 +5,8 @@ using Match
 
 import FileIO
 
-using ..BugRefsParser
-
-BugRefDict = Dict{Union{BugRefsParser.Test, String}, Array{BugRefsParser.Ref}}
+using JDP.Trackers
+using JDP.BugRefs
 
 function map_result_str(res::String)::String
     if res === "ok"
@@ -19,24 +18,10 @@ function map_result_str(res::String)::String
     end
 end
 
-function map_bugrefs_to_test(name::String, refs::BugRefDict)::Array{SubString}
-    arefs = SubString[]
-
-    if haskey(refs, BugRefsParser.WILDCARD)
-        append!(arefs, map(tokval, refs[BugRefsParser.WILDCARD]))
-    end
-    # Sero likes to replace '-' with '/' in test names when writing tags
-    if haskey(refs, name) || haskey(refs, replace(name, "-" => "/"))
-        append!(arefs, map(tokval, refs[columns[2]]))
-    end
-
-    arefs
-end
-
 function get_fstest_results!(cols::Array{Any},
                              jr::Dict{String, Any},
                              tr::Dict{String, Any},
-                             refs::BugRefDict)
+                             tags::Tags)
     setts = jr["settings"]
 
     for dt in tr["details"]
@@ -47,18 +32,18 @@ function get_fstest_results!(cols::Array{Any},
         push!(cols[3], map_result_str(dt["result"]))
         push!(cols[4], setts["ARCH"])
         push!(cols[5], ("fstests", setts["XFSTESTS"]))
-        push!(cols[6], map_bugrefs_to_test(name, refs))
+        push!(cols[6], get_refs(tags, name))
     end
 end
 
 function get_test_results!(cols::Array{Any},
                            jr::Dict{String, Any},
                            tr::Dict{String, Any},
-                           refs::BugRefDict)
+                           tags::Tags)
     setts = jr["settings"]
 
     if haskey(setts, "XFSTESTS") && tr["name"] == "1_"
-        get_fstest_results!(cols, jr, tr, refs)
+        get_fstest_results!(cols, jr, tr, tags)
         return
     end
 
@@ -75,53 +60,31 @@ function get_test_results!(cols::Array{Any},
     else
           ("OpenQA", get(tr, "category", missing))
     end)
-    push!(cols[6], map_bugrefs_to_test(name, refs))
+    push!(cols[6], get_refs(tags, name))
     
 end
 
-"Push one test name to many bugrefs mapping"
-function push_tag!(tags::Dict{Union{BugRefsParser.Test, String}, Array{BugRefsParser.Ref}},
-                   name::BugRefsParser.Test,
-                   head_ref::BugRefsParser.Ref,
-                   rest_refs::Union{Array{BugRefsParser.Ref}, Nothing})
-    refs = get!(tags, name, String[])
-
-    push!(refs, head_ref)
-    if rest_refs !== nothing
-        for rr in rest_refs
-            push!(refs, rr)
-        end
-    end
-end
-
-function parse_comments(comments::Array)::BugRefDict
-    spec = BugRefDict()
+function parse_comments(comments::Array, trackers::TrackerRepo)::Tags
+    tags = Tags()
 
     for c in comments
-        (tags, _) = parse_comment(c["text"])
-        for t in tags
-            push_tag!(spec, t.test, t.ref, t.refs)
-            if t.tests !== nothing
-                for tn in t.tests
-                    push_tag!(spec, tn, t.ref, t.refs)
-                end
-            end
-        end
+        extract_tags!(tags, c["text"], trackers)
     end
 
-    spec
+    tags
 end
 
 function get_module_results(job_results::Array{Dict{String, Any}})
+    trackers = load_trackers()
     columns::Array{Any} = [String[] for _ in 1:4]
     push!(columns, Tuple{String, Union{String, Missing}}[])
-    push!(columns, Array{SubString}[])
+    push!(columns, Array{BugRefs.Ref}[])
 
     for jr in job_results
-        refs = parse_comments(jr["comments"])
+        tags = parse_comments(jr["comments"], trackers)
 
         for tr in jr["testresults"]
-            get_test_results!(columns, jr, tr, refs)
+            get_test_results!(columns, jr, tr, tags)
         end
     end
 

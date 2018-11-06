@@ -12,7 +12,6 @@ function substitute_home(path::String)::String
     replace(path, '~' => homedir(); count = 1)
 end
 
-trackers(tracker::String) = get_conf(:trackers)[tracker]
 data(setting::Symbol) = if setting == :datadir
     get_conf(:data)["datadir"] |> substitute_home
 else

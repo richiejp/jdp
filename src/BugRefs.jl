@@ -11,14 +11,17 @@ text.
 """
 module BugRefs
 
+using Match
 using Markdown: MD, Link, Paragraph, LineBreak
+
+using JDP.Trackers
 
 import ..BugRefsParser
 import ..BugRefsParser: tokval
 
-export extract_refs
+WILDCARD = String(tokval(BugRefsParser.WILDCARD))
 
-abstract type Tracker end
+export BugRef, Tags, extract_refs, extract_tags!, get_refs
 
 function get_uris(t::Tracker, ids::Array{Int64})::Array{String}
     map(id -> get_uri(t, id), ids)
@@ -35,20 +38,6 @@ function get_uris_md(t::Tracker, ids::Array{Int64})::MD
     MD(Paragraph(md))
 end
 
-abstract type Bugzilla <: Tracker end
-struct Bsc <: Bugzilla end
-
-bsc = Bsc()
-Tracker(::Val{:bsc}) = bsc
-get_uri(::Bsc, id::Int64) = "https://bugzilla.suse.com/show_bug.cgi?id=$id"
-get_tla(::Bsc) = "bsc"
-
-struct Poo <: Tracker end
-poo = Poo()
-Tracker(::Val{:poo}) = poo
-get_uri(::Poo, id::Int64) = "https://progress.opensuse.org/issues/$id"
-get_tla(::Poo) = "poo"
-
 const ID = String
 
 struct Ref
@@ -56,9 +45,34 @@ struct Ref
     id::ID
 end
 
-function Ref(ref::BugRefsParser.Ref)::Ref
-    Ref(Tracker(Val(Symbol(tokval(ref.tracker)))),
-        ID(tokval(ref.id)))
+Ref(pref::BugRefsParser.Ref, trackers::TrackerRepo)::Ref =
+    Ref(get_tracker(trackers, tokval(pref.tracker)), ID(tokval(pref.id)))
+
+Ref(sref::String, trackers::TrackerRepo)::Ref =
+    Ref(BugRefsParser.parse_bugref(sref), trackers)
+
+Base.:(==)(r::Ref, ro::Ref) = r.tracker == ro.tracker && r.id == ro.id
+
+function Base.show(io::IO, ::MIME"text/plain", ref::Ref)
+    write(io, ref.tracker.tla, "#", ref.id)
+end
+
+function Base.show(io::IO, ::MIME"text/html", ref::Ref)
+    @match (ref.tracker.host, ref.tracker.api) begin
+        (nothing, _) => Base.show(io, MIME("text/plain"), ref)
+        (host, nothing) => begin
+            write(io, "<a href=\"", host, "\">")
+            show(io, MIME("text/plain"), ref)
+            write(io, "</a>")
+        end
+        (host, api) => begin
+            write(io, "<a href=\"")
+            Trackers.write_get_bug_html_url(io, ref.tracker, ref.id)
+            write(io, "\">")
+            show(io, MIME("text/plain"), ref)
+            write(io, "</a>")
+        end
+    end
 end
 
 function to_md_link(ref::Ref)::Link
@@ -76,15 +90,37 @@ function to_md(refs::Array{Ref})::MD
     MD(Paragraph(md))
 end
 
-function extract_refs(text::String)::Array{Ref}
+const Tags = Dict{String, Array{Ref}}
+
+function get_refs(tags::Tags, name::String)::Array{Ref}
+    refs = Ref[]
+
+    haskey(tags, WILDCARD) && append!(refs, tags[WILDCARD])
+    haskey(tags, name) && append!(refs, tags[name])
+
+    refs
+end
+
+function extract_refs(text::String, trackers::TrackerRepo)::Array{Ref}
     (tags, _) = BugRefsParser.parse_comment(text)
     refs = Ref[]
 
-    for tag = tags, ref = BugRefsParser.all_refs(tag)
-        push!(refs, Ref(ref))
+    for tag = tags, ref = tag.refs
+        push!(refs, Ref(ref, trackers))
     end
 
     refs
+end
+
+function extract_tags!(index::Tags, text::String, trackers::TrackerRepo)::Tags
+    (tags, _) = BugRefsParser.parse_comment(text)
+
+    for tag = tags, test = tag.tests
+        refs = get!(() -> [], index, replace(tokval(test), "/" => "-"))
+        append!(refs, map(pref -> Ref(pref, trackers), tag.refs))
+    end
+
+    index
 end
 
 end #module

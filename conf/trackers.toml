@@ -1,12 +1,37 @@
-# Bug tracker definitions
+# (Bug) Tracker definitions
 
-[bsc]
+# Tracker API definitions
+[apis]
+
+[apis.Bugzilla]
+get-bug-html = "{host}/show_bug.cgi?id={id}"
+get-bug-xml = "{host}/show_bug.cgi?ctype=xml&id={id}"
+
+[apis.Redmine]
+get-bug-html = "{host}/issues/{id}"
+
+[apis.OpenQA]
+get-bug-html = "{host}/tests/{id}"
+
+# Instances of trackers
+[instances]
+
+[instances.bsc]
 api = "Bugzilla"
-host = "apibugzilla.suse.com"
+host = "https://apibugzilla.suse.com"
 # Be careful not to commit your password to git if you set this!
 #user = ""
 #pass = ""
 
-[poo]
+[instances.boo]
+api = "Bugzilla"
+host = "https://apibugzilla.opensuse.org"
+
+[instances.poo]
 api = "Redmine"
-host = "progress.opensuse.org"
+host = "https://progress.opensuse.org"
+
+[instances.t]
+api = "OpenQA"
+tla = "t"
+host = "https://openqa.suse.de"
