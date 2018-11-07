@@ -11,7 +11,6 @@ text.
 """
 module BugRefs
 
-using Match
 using Markdown: MD, Link, Paragraph, LineBreak
 
 using JDP.Trackers
@@ -53,26 +52,30 @@ Ref(sref::String, trackers::TrackerRepo)::Ref =
 
 Base.:(==)(r::Ref, ro::Ref) = r.tracker == ro.tracker && r.id == ro.id
 
-function Base.show(io::IO, ::MIME"text/plain", ref::Ref)
+Base.show(io::IO, ::MIME"text/plain", ref::Ref) =
     write(io, ref.tracker.tla, "#", ref.id)
-end
+
+Base.show(io::IO, ref::Ref) = show(io, MIME("text/plain"), ref)
 
 function Base.show(io::IO, ::MIME"text/html", ref::Ref)
-    @match (ref.tracker.host, ref.tracker.api) begin
-        (nothing, _) => Base.show(io, MIME("text/plain"), ref)
-        (host, nothing) => begin
-            write(io, "<a href=\"", host, "\">")
-            show(io, MIME("text/plain"), ref)
-            write(io, "</a>")
-        end
-        (host, api) => begin
-            write(io, "<a href=\"")
-            Trackers.write_get_bug_html_url(io, ref.tracker, ref.id)
-            write(io, "\">")
-            show(io, MIME("text/plain"), ref)
-            write(io, "</a>")
-        end
+    if ref.tracker.host == nothing
+        return show(io, ref)
     end
+
+    write(io, "<a href=\"")
+    if ref.tracker.api == nothing
+        write(io, host)
+    else
+        Trackers.write_get_bug_html_url(io, ref.tracker, ref.id)
+    end
+    write(io, "\">")
+    show(io, ref)
+    write(io, "</a>")
+end
+
+Base.show(io::IO, ::MIME"text/html", refs::Vector{Ref}) = foreach(refs) do ref
+    show(io, MIME("text/html"), ref)
+    write(io, "&nbsp;")
 end
 
 function to_md_link(ref::Ref)::Link
@@ -92,8 +95,8 @@ end
 
 const Tags = Dict{String, Array{Ref}}
 
-function get_refs(tags::Tags, name::String)::Array{Ref}
-    refs = Ref[]
+function get_refs(tags::Tags, name::String)::Vector{Ref}
+    refs = Vector{Ref}()
 
     haskey(tags, WILDCARD) && append!(refs, tags[WILDCARD])
     haskey(tags, name) && append!(refs, tags[name])

@@ -78,7 +78,7 @@ function get_module_results(job_results::Array{Dict{String, Any}})
     trackers = load_trackers()
     columns::Array{Any} = [String[] for _ in 1:4]
     push!(columns, Tuple{String, Union{String, Missing}}[])
-    push!(columns, Array{BugRefs.Ref}[])
+    push!(columns, Vector{BugRefs.Ref}[])
 
     for jr in job_results
         tags = parse_comments(jr["comments"], trackers)

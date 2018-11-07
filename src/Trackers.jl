@@ -1,48 +1,56 @@
 module Trackers
 
-export Api, Tracker, TrackerRepo, get_tracker, load_trackers
+export Api, Tracker, TrackerRepo, get_tracker, load_trackers, @api_str
 
 using Match
 
 using JDP.Conf
 
+struct OpenBracketError <: Exception msg::String end
+struct CloseBracketError <: Exception msg::String end
+struct EOSError <: Exception msg::String end
+
 struct UrlVar
     name::String
 end
+
+Base.:(==)(u::UrlVar, uo::UrlVar) = u.name == uo.name
 
 const ApiUrl = Array{Union{String, UrlVar}, 1}
 
 function ApiUrl(template::String)::ApiUrl
     url = ApiUrl()
-    part = Char[]
-    itr = iterate(url, 1)
+    part = IOBuffer()
     seen_bracket = false
 
-    while itr != nothing
-        @match (itr, seen_bracket) begin
-            (('{', i), true) => throw("Found nested '{' at $i: $template")
-            (('}', i), false) => throw("Found '}' without matching '{' at $i: $template")
-            (('}' || '{', i), _) => begin
-                if length(part) > 0
-                    push!(url, seen_bracket ? UrlVar(String(part)) : String(part))
-                    part = Char[]
-                end
-
-                seen_bracket = !seen_bracket
+    for (i::Int, c::Char) in enumerate(template)
+        if c == '{' && seen_bracket
+            throw(OpenBracketError("Found nested '{' at $i: $template"))
+        elseif c == '}' && !seen_bracket
+            throw(CloseBracketError("Found '}' without matching '{' at $i: $template"))
+        elseif c == '{' || c == '}'
+            if part.size > 0
+                s = String(take!(part))
+                push!(url, seen_bracket ? UrlVar(s) : s)
             end
-            ((c, i), _) => push!(part, c)
-        end
 
-        itr = iterate(url, i)
+            seen_bracket = !seen_bracket
+        else
+            write(part, c)
+        end
     end
 
     if seen_bracket
-        throw("Expected '}' found end of string: $template")
-    elseif length(part) > 0
-        push!(url, String(part))
+        throw(EOSError("Expected '}' found end of string: $template"))
+    elseif part.size > 0
+        push!(url, String(take!(part)))
     end
 
     url
+end
+
+macro api_str(template)
+    ApiUrl(template)
 end
 
 struct Api
@@ -65,7 +73,7 @@ Base.:(==)(t::Tracker, to::Tracker) =
 function write_get_bug_html_url(io::IO, tracker::Tracker, id::AbstractString)
     for part in tracker.api.get_bug_html
         if part isa UrlVar
-            @match part begin
+            @match part.name begin
                 "host" => write(io, tracker.host)
                 "id" => write(io, id)
                 _ => throw("Unknown Tracker.UrlVar: $part")

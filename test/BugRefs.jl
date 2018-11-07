@@ -129,7 +129,10 @@ end
 @testset "Bug reference structures" begin
     using JDP.Trackers
 
-    trackers = TrackerRepo(Dict(), Dict())
+    apis = Dict("foo" => Api("Foo", api"{host}/bar/{id}", nothing))
+    trackers = TrackerRepo(apis, Dict("foo" => Tracker(apis["foo"],
+                                                       "foo",
+                                                       "https://foo")))
     bref(s) = BugRefs.Ref(s, trackers)
     
     refs = extract_refs(naked_bugrefs2, trackers)
@@ -143,4 +146,12 @@ end
     @test ref.tracker.tla == "foo"
     @test ref.id == "bar"
     @test ref == bref("foo#bar")
+
+    ref = bref("foo#baz")
+    @test ref.tracker.tla == "foo"
+    @test ref.id == "baz"
+
+    io = IOBuffer()
+    show(io, MIME("text/html"), ref)
+    @test String(take!(io)) == """<a href="https://foo/bar/baz">foo#baz</a>"""
 end
