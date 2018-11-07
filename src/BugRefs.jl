@@ -11,8 +11,6 @@ text.
 """
 module BugRefs
 
-using Markdown: MD, Link, Paragraph, LineBreak
-
 using JDP.Trackers
 
 import ..BugRefsParser
@@ -21,21 +19,6 @@ import ..BugRefsParser: tokval
 WILDCARD = String(tokval(BugRefsParser.WILDCARD))
 
 export BugRef, Tags, extract_refs, extract_tags!, get_refs
-
-function get_uris(t::Tracker, ids::Array{Int64})::Array{String}
-    map(id -> get_uri(t, id), ids)
-end
-
-function get_uris_md(t::Tracker, ids::Array{Int64})::MD
-    uris = get_uris(t, ids)
-    md = Any[]
-
-    for (id, uri) in zip(ids, uris)
-        push!(md, Link("$(get_tla(t))#$id", uri), " ")
-    end
-
-    MD(Paragraph(md))
-end
 
 const ID = String
 
@@ -68,9 +51,21 @@ function Base.show(io::IO, ::MIME"text/html", ref::Ref)
     else
         Trackers.write_get_bug_html_url(io, ref.tracker, ref.id)
     end
-    write(io, "\">")
-    show(io, ref)
-    write(io, "</a>")
+    write(io, "\">"); show(io, ref); write(io, "</a>")
+end
+
+function Base.show(io::IO, ::MIME"text/markdown", ref::Ref)
+    if ref.tracker.host == nothing
+        return show(io, ref)
+    end
+
+    write(io, "["); show(io, ref); write(io, "](")
+    if ref.tracker.api == nothing
+        write(io, host)
+    else
+        Trackers.write_get_bug_html_url(io, ref.tracker, ref.id)
+    end
+    write(io, ")")
 end
 
 Base.show(io::IO, ::MIME"text/html", refs::Vector{Ref}) = foreach(refs) do ref
@@ -78,19 +73,9 @@ Base.show(io::IO, ::MIME"text/html", refs::Vector{Ref}) = foreach(refs) do ref
     write(io, "&nbsp;")
 end
 
-function to_md_link(ref::Ref)::Link
-    Link(get_tla(ref.tracker) * "#" * ref.id,
-         get_uri(ref.tracker, parse(Int64, ref.id)))
-end
-
-function to_md(refs::Array{Ref})::MD
-    md = Any[]
-
-    for ref in refs
-        push!(md, to_md_link(ref), LineBreak())
-    end
-
-    MD(Paragraph(md))
+Base.show(io::IO, ::MIME"text/markdown", refs::Vector{Ref}) = foreach(refs) do ref
+    show(io, MIME("text/markdown"), ref)
+    write(io, " ")
 end
 
 const Tags = Dict{String, Array{Ref}}
