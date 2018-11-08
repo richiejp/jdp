@@ -128,11 +128,11 @@ end
 
 @testset "Bug reference structures" begin
     using JDP.Trackers
+    using JDP.Templates
 
-    apis = Dict("foo" => Api("Foo", api"{host}/bar/{id}", nothing))
-    trackers = TrackerRepo(apis, Dict("foo" => Tracker(apis["foo"],
-                                                       "foo",
-                                                       "https://foo")))
+    apis = Dict("foo" => Api("Foo", template"/bar/{id}", nothing))
+    trackers = TrackerRepo(apis, Dict("foo" => Tracker(apis["foo"], nothing,
+                                                       "foo", "https", "foo")))
     bref(s) = BugRefs.Ref(s, trackers)
     
     refs = extract_refs(naked_bugrefs2, trackers)

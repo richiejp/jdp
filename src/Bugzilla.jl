@@ -9,8 +9,9 @@ import IJulia
 
 import JDP.IOHelpers: prompt
 import JDP.Conf
+using JDP.Trackers
 
-mutable struct Session
+mutable struct Session <: Trackers.AbstractSession
     host::String
     scheme::String
     userinfo::String

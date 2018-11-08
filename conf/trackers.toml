@@ -4,34 +4,34 @@
 [apis]
 
 [apis.Bugzilla]
-get-bug-html = "{host}/show_bug.cgi?id={id}"
-get-bug-xml = "{host}/show_bug.cgi?ctype=xml&id={id}"
+get-bug-html = "/show_bug.cgi?id={id}"
+get-bug-xml = "/show_bug.cgi?ctype=xml&id={id}"
 
 [apis.Redmine]
-get-bug-html = "{host}/issues/{id}"
+get-bug-html = "/issues/{id}"
 
 [apis.OpenQA]
-get-bug-html = "{host}/tests/{id}"
+get-bug-html = "/tests/{id}"
 
 # Instances of trackers
 [instances]
 
 [instances.bsc]
 api = "Bugzilla"
-host = "https://apibugzilla.suse.com"
+host = "apibugzilla.suse.com"
 # Be careful not to commit your password to git if you set this!
 #user = ""
 #pass = ""
 
 [instances.boo]
 api = "Bugzilla"
-host = "https://apibugzilla.opensuse.org"
+host = "apibugzilla.opensuse.org"
 
 [instances.poo]
 api = "Redmine"
-host = "https://progress.opensuse.org"
+host = "progress.opensuse.org"
 
 [instances.t]
 api = "OpenQA"
 tla = "t"
-host = "https://openqa.suse.de"
+host = "openqa.suse.de"
