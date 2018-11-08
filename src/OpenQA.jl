@@ -101,11 +101,11 @@ end
 function save_job_json(host::OpenQAHost,
                        jid::Integer,
                        dir_path::String,
-                       i::Integer, N::Integer,
-                       ext::String="")
+                       i::Integer, N::Integer;
+                       ext::String="", overwrite::Bool=false)
     url = joinpath(host.url, "jobs", "$jid", ext)
     file = joinpath(dir_path, "$jid-job-$ext.json")
-    if !isfile(file)
+    if overwrite || !isfile(file)
         @info "$i/$N GET $url"
         req = HTTP.get(url, status_exception = true)
         @info "$i/$N WRITE $file"
@@ -142,7 +142,7 @@ function save_job_comments_json(host::OpenQAHost, dir_path::String; kwargs...)
     i = 1
     N = length(jgrps)
     for jid in jgrps
-        save_job_json(host, jid, dir_path, i, N, "comments")
+        save_job_json(host, jid, dir_path, i, N, "comments"; overwrite=true)
         i += 1
     end
 end
