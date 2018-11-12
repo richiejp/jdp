@@ -2,15 +2,21 @@ module Trackers
 
 export Api, Tracker, TrackerRepo, get_tracker, load_trackers
 
-using Match
+include("Bugzilla.jl")
+#include("Redmine.jl")
+include("OpenQA.jl")
 
 using JDP.Conf
 using JDP.Templates
 
+"""Super type for types which handle Tracker specific operations which can't be
+generalised"""
+abstract type AbstractHandler end
+
 struct Api
     name::String
-    get_bug_html::Union{Template, Nothing}
-    get_bug_xml::Union{Template, Nothing}
+    handler::Union{Nothing, AbstractHandler}
+    get_bug_html::Union{Nothing, Template}
 end
 
 Base.:(==)(a::Api, ao::Api) = a.name == ao.name
@@ -53,8 +59,8 @@ function load_trackers()::TrackerRepo
     tryget(api, thing) = haskey(api, thing) ? Template(api[thing]) : nothing
 
     apis = mapdic(conf["apis"]) do (name, api)
-        name => Api(name, tryget(api, "get-bug-html"),
-                          tryget(api, "get-bug-xml"))
+        
+        name => Api(name, tryget(api, "get-bug-html"))
     end
 
     insts = mapdic(conf["instances"]) do (name, inst)

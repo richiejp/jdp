@@ -6,11 +6,10 @@ include("IOHelpers.jl")
 include("Conf.jl")
 
 include("Templates.jl")
-include("Trackers.jl")
-include("OpenQA.jl")
+include("trackers/Trackers.jl")
 include("BugRefsParser.jl")
 include("BugRefs.jl")
 include("TableDB.jl")
-include("Bugzilla.jl")
+
 
 end
