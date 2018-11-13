@@ -9,23 +9,25 @@ include("OpenQA.jl")
 using JDP.Conf
 using JDP.Templates
 
-"""Super type for types which handle Tracker specific operations which can't be
-generalised"""
-abstract type AbstractHandler end
+abstract type AbstractSession end
+struct StaticSession <: AbstractSession end
 
-struct Api
+struct Api{T <: AbstractSession}
     name::String
-    handler::Union{Nothing, AbstractHandler}
     get_bug_html::Union{Nothing, Template}
 end
 
+ensure_login!(::Tracker{S})::Bool where S <: AbstractSession =
+    error("ensure_login! needs to be defined for Tracker{$S}")
+
+ensure_login!(t::Tracker{StaticSession})::StaticSession =
+    t.session = StaticSession()
+
 Base.:(==)(a::Api, ao::Api) = a.name == ao.name
 
-abstract type AbstractSession end
-
-struct Tracker
-    api::Union{Nothing, Api}
-    session::Union{Nothing, AbstractSession}
+mutable struct Tracker{S <: AbstractSession}
+    api::Union{Nothing, Api{S}}
+    session::Union{Nothing, S}
     tla::String
     scheme::Union{Nothing, String}
     host::Union{Nothing, String}
@@ -52,6 +54,12 @@ get_tracker(repo::TrackerRepo, tla::AbstractString)::Tracker = get(repo.instance
 end
 
 mapdic(fn, m) = map(fn, zip(keys(m), values(m))) |> Dict
+get_session_type(tracker::String) = try
+    getproperty(Trackers, Symbol(tracker)) |> getproperty(:Session)
+catch e
+    @debug "No tracker session type for $tracker: $e"
+    StaticSession
+end
 
 function load_trackers()::TrackerRepo
     conf = Conf.get_conf(:trackers)
@@ -59,8 +67,7 @@ function load_trackers()::TrackerRepo
     tryget(api, thing) = haskey(api, thing) ? Template(api[thing]) : nothing
 
     apis = mapdic(conf["apis"]) do (name, api)
-        
-        name => Api(name, tryget(api, "get-bug-html"))
+        name => Api{get_session_type(name)}(name, tryget(api, "get-bug-html"))
     end
 
     insts = mapdic(conf["instances"]) do (name, inst)

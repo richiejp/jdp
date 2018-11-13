@@ -53,6 +53,12 @@ function login!(ses::Session)
              cookies=true, cookiejar=ses.jar)
 end
 
+Trackers.ensure_login!(t::Tracker{Session}) = if t.session == nothing
+    t.session = login(t.tla)
+else
+    login!(t.session)
+end
+
 function get_xml(ses::Session, path::String; query::String="")::Dict
     uri = URI(scheme=ses.scheme, host=ses.host, path=path, query="ctype=xml&$query")
     @debug "GET $uri"
