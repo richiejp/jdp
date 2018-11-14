@@ -1,6 +1,6 @@
 using JDP.Trackers
 using JDP.BugRefs
-using JDP.OpenQA
+using JDP.Trackers.OpenQA
 using JDP.TableDB
 
 @testset "Integration Tests" begin

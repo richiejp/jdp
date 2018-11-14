@@ -5,7 +5,6 @@
 
 [apis.Bugzilla]
 get-bug-html = "/show_bug.cgi?id={id}"
-get-bug-xml = "/show_bug.cgi?ctype=xml&id={id}"
 
 [apis.Redmine]
 get-bug-html = "/issues/{id}"
