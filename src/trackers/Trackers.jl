@@ -91,9 +91,8 @@ catch e
     StaticSession
 end
 
-function load_trackers()::TrackerRepo
-    conf = Conf.get_conf(:trackers)
-
+load_trackers()::TrackerRepo = load_trackers(Conf.get_conf(:trackers))
+function load_trackers(conf::Dict)::TrackerRepo
     tryget(api, thing) = haskey(api, thing) ? Template(api[thing]) : nothing
 
     apis = mapdic(conf["apis"]) do (name, api)
