@@ -49,7 +49,7 @@ function Base.show(io::IO, ::MIME"text/html", ref::Ref)
     if ref.tracker.api == nothing
         write(io, host)
     else
-        Trackers.write_get_bug_html_url(io, ref.tracker, ref.id)
+        Trackers.write_get_item_html_url(io, ref.tracker, ref.id)
     end
     write(io, "\">"); show(io, ref); write(io, "</a>")
 end

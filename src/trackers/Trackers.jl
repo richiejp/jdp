@@ -35,7 +35,7 @@ enough to configure via conf/trackers.toml. Tracker specific features are
 handled by Tracker specific methods dispatched on the Session type parameter"""
 struct Api{S <: AbstractSession}
     name::String
-    get_bug_html::Union{Nothing, Template}
+    get_item_html::Union{Nothing, Template}
 end
 
 Base.:(==)(a::Api, ao::Api) = a.name == ao.name
@@ -68,9 +68,9 @@ Base.:(==)(t::Tracker, to::Tracker) =
     t.api == to.api && t.tla == to.tla &&
     t.host == to.host && t.scheme == t.scheme
 
-function write_get_bug_html_url(io::IO, tracker::Tracker, id::AbstractString)
+function write_get_item_html_url(io::IO, tracker::Tracker, id::AbstractString)
     write(io, tracker.scheme, "://", tracker.host)
-    render(io, tracker.api.get_bug_html, :id => id)
+    render(io, tracker.api.get_item_html, :id => id)
 end
 
 "Tracker Repository"
@@ -97,7 +97,7 @@ function load_trackers()::TrackerRepo
     tryget(api, thing) = haskey(api, thing) ? Template(api[thing]) : nothing
 
     apis = mapdic(conf["apis"]) do (name, api)
-        name => Api{get_session_type(name)}(name, tryget(api, "get-bug-html"))
+        name => Api{get_session_type(name)}(name, tryget(api, "get-item-html"))
     end
 
     insts = mapdic(conf["instances"]) do (name, inst)
