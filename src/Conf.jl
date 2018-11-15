@@ -1,19 +1,54 @@
+"Gives access to configuration files"
 module Conf
 
 using TOML
 
-confdir = joinpath(dirname(@__FILE__), "../conf/")
-
-function get_conf(name::Symbol)::Dict
-    TOML.parsefile(joinpath(confdir, "$name.toml"))
+function __init__()
+    global tmp_conf = Dict{Symbol, Dict}()
+    global src_path = joinpath(@__DIR__, "../conf")
+    global usr_path = joinpath(homedir(), ".config/jdp")
 end
 
-function substitute_home(path::String)::String
-    replace(path, '~' => homedir(); count = 1)
+"Override the user specific config path for unit testing"
+set_usr_path(path::String) = global usr_path = path
+
+"Used to override the contents of the configuration files for testing (for now)"
+set_conf(name::Symbol, conf::Dict) = global tmp_conf[name] = conf
+
+"Like `Base.merge`, but recurses into Dictionaries"
+confmerge(base::Any, add::Any) = add
+confmerge(base::Any, ::Nothing) = base
+confmerge(base::Dict, add::Dict)::Dict = begin
+    merged = Dict{String, Any}()
+
+    for key in keys(base)
+        merged[key] = confmerge(base[key], get(add, key, nothing))
+    end
+
+    merge(add, merged)
+end
+
+"""
+    get_conf(name::Symbol)::Dict
+
+Get the configuration for `name`. If a temporary in-memory conf has been set
+with `set_conf` then it will return that. Otherwise it will return the
+contents of `../conf/name.toml` merged with `~/.config/jdp/name.toml`. The
+contents of the home directory config win in the event of a conflict."""
+get_conf(name::Symbol)::Dict = get(tmp_conf, name) do
+    fname = "$name.toml"
+    sconf = TOML.parsefile(joinpath(src_path, fname))
+    uconf = joinpath(usr_path, fname)
+    if isfile(uconf)
+        uconf = TOML.parsefile(uconf)
+        confmerge(sconf, uconf)
+    else
+        sconf
+    end
 end
 
 data(setting::Symbol) = if setting == :datadir
-    get_conf(:data)["datadir"] |> substitute_home
+    get_conf(:data)["datadir"] |> expanduser
 else
     get_conf(:data)[String(name)]
 end

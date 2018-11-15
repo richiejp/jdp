@@ -1,16 +1,19 @@
-# (Bug) Tracker definitions
+# Tracker definitions
+#
+# This file is merged with the contents of ~/.config/jdp/trackers.toml. The
+# values defined there will win if there is a conflict.
 
 # Tracker API definitions
 [apis]
 
 [apis.Bugzilla]
-get-bug-html = "/show_bug.cgi?id={id}"
+get-item-html = "/show_bug.cgi?id={id}"
 
 [apis.Redmine]
-get-bug-html = "/issues/{id}"
+get-item-html = "/issues/{id}"
 
 [apis.OpenQA]
-get-bug-html = "/tests/{id}"
+get-item-html = "/tests/{id}"
 
 # Instances of trackers
 [instances]
@@ -18,7 +21,7 @@ get-bug-html = "/tests/{id}"
 [instances.bsc]
 api = "Bugzilla"
 host = "apibugzilla.suse.com"
-# Be careful not to commit your password to git if you set this!
+# It is recommended you set these in ~/.config/jdp/trackers.toml
 #user = ""
 #pass = ""
 

@@ -1,1 +1,2 @@
+# This can be overriden by the file ~/.config/jdp/data.toml
 datadir = "~/data"
