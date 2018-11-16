@@ -17,7 +17,7 @@ module Trackers
 
 export Api, Tracker, TrackerRepo, get_tracker, load_trackers
 
-# Tracker specific files are included in the this module at the end
+# Tracker specific modules are appended to this module in JDP.jl
 
 using JDP.Conf
 using JDP.Templates
@@ -84,6 +84,8 @@ get_tracker(repo::TrackerRepo, tla::AbstractString)::Tracker = get(repo.instance
 end
 
 mapdic(fn, m) = map(fn, zip(keys(m), values(m))) |> Dict
+
+get_session_type(::Nothing) = StaticSession
 get_session_type(tracker::String) = try
     getproperty(Trackers, Symbol(tracker)) |> getproperty(:Session)
 catch e
@@ -92,7 +94,7 @@ catch e
 end
 
 load_trackers()::TrackerRepo = load_trackers(Conf.get_conf(:trackers))
-function load_trackers(conf::Dict)::TrackerRepo
+load_trackers(conf::Dict)::TrackerRepo = begin
     tryget(api, thing) = haskey(api, thing) ? Template(api[thing]) : nothing
 
     apis = mapdic(conf["apis"]) do (name, api)
@@ -100,18 +102,17 @@ function load_trackers(conf::Dict)::TrackerRepo
     end
 
     insts = mapdic(conf["instances"]) do (name, inst)
-        name => Tracker(get(apis, get(inst, "api", nothing), nothing),
-                        nothing,
-                        get(inst, "tla", name),
-                        get(inst, "scheme", haskey(inst, "host") ? "https" : nothing),
-                        get(inst, "host", nothing))
+        api = get(inst, "api", nothing)
+
+        name => Tracker{get_session_type(api)}(
+            get(apis, api, nothing),
+            nothing,
+            get(inst, "tla", name),
+            get(inst, "scheme", haskey(inst, "host") ? "https" : nothing),
+            get(inst, "host", nothing))
     end
 
     TrackerRepo(apis, insts)
 end
-
-include("Bugzilla.jl")
-#include("Redmine.jl")
-include("OpenQA.jl")
 
 end #module
