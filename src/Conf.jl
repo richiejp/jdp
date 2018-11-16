@@ -37,13 +37,14 @@ contents of `../conf/name.toml` merged with `~/.config/jdp/name.toml`. The
 contents of the home directory config win in the event of a conflict."""
 get_conf(name::Symbol)::Dict = get(tmp_conf, name) do
     fname = "$name.toml"
-    sconf = TOML.parsefile(joinpath(src_path, fname))
+    sconf = joinpath(src_path, fname)
     uconf = joinpath(usr_path, fname)
     if isfile(uconf)
-        uconf = TOML.parsefile(uconf)
-        confmerge(sconf, uconf)
+        @debug "Using merge of `$sconf` and `$uconf`"
+        confmerge(TOML.parsefile(sconf), TOML.parsefile(uconf))
     else
-        sconf
+        @debug "Using `$sconf` only"
+        TOML.parsefile(sconf)
     end
 end
 
