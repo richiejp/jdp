@@ -1,0 +1,16 @@
+[apis]
+[apis.Foos]
+get-item-html = "/bar/show_bug.cgi?id={id}"
+
+[instances]
+[instances.foo]
+api = "Foos"
+tla = "foo"
+host = "foo.suse.com"
+user = "Baz"
+pass = "*&^&*%&^%^:~L{{OK1"
+scheme = "wss"
+
+[instances.bsc]
+user = "geekotest"
+pass = "n0ts3cr3t"

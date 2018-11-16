@@ -6,20 +6,7 @@ using JDP.Templates
 const SS = Trackers.StaticSession
 
 @testset "Trackers" begin
-    conf = TOML.parse("""
-[apis]
-[apis.Foos]
-get-item-html = "/bar/show_bug.cgi?id={id}"
-
-[instances]
-[instances.foo]
-api = "Foos"
-tla = "foo"
-host = "foo.suse.com"
-user = "Baz"
-pass = "*&^&*%&^%^:~L{{OK1"
-scheme = "wss"
-""")
+    conf = TOML.parsefile(joinpath(@__DIR__, "conf/trackers.toml"))
     repo = load_trackers(conf)
     api = repo.apis["Foos"]
     @test api == Api{SS}("Foos", template"/bar/show_bug.cgi?id={id}")
