@@ -3,15 +3,20 @@ module OpenQA
 using Distributed
 using JSON
 using HTTP
+import MbedTLS
 
 using JDP.Repository
 using JDP.Trackers
 using JDP.BugRefs
 using JDP.Conf
+using JDP.IOHelpers
 
 struct Session <: Trackers.AbstractSession
     url::String
+    ssl::MbedTLS.SSLConfig
 end
+
+Session(url::String) = Session(url, IOHelpers.sslconfig())
 
 o3 = Session("https://openqa.opensuse.org/api/v1")
 osd = Session("http://openqa.suse.de/api/v1")
@@ -23,8 +28,9 @@ else
 end
 
 function get_json(host::Session, path::String)
-    HTTP.get(joinpath(host.url, path), status_exception=true).body |>
-        String |> JSON.parse
+    HTTP.get(joinpath(host.url, path),
+             status_exception=true, sslconfig=host.ssl).body |>
+                 String |> JSON.parse
 end
 
 function get_machines(host::Session)
