@@ -80,6 +80,7 @@ struct TrackerRepo
 end
 
 get_tracker(repo::TrackerRepo, tla::AbstractString)::Tracker = get(repo.instances, tla) do
+    @warn "Unknown tracker identifier (TLA) `$tla`"
     Tracker(tla)
 end
 
@@ -87,9 +88,10 @@ mapdic(fn, m) = map(fn, zip(keys(m), values(m))) |> Dict
 
 get_session_type(::Nothing) = StaticSession
 get_session_type(tracker::String) = try
-    getproperty(Trackers, Symbol(tracker)) |> getproperty(:Session)
+    tmod = getproperty(Trackers, Symbol(tracker))
+    getproperty(tmod, :Session)
 catch e
-    @debug "No tracker session type for $tracker: $e"
+    @debug "No tracker session type for `$tracker`; inner exception: \n$e"
     StaticSession
 end
 

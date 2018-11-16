@@ -247,7 +247,7 @@ function Repository.retrieve(::TestResult, ::Vector, from::String;
     results = Vector{TestResult}()
 
     if refresh
-        sess = ensure_login!(get_tracker(trackers, from))
+        sess = Trackers.ensure_login!(get_tracker(trackers, from))
         save_job_results_json(sess, datadir; kwargs...)
     end
 
