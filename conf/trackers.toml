@@ -35,5 +35,11 @@ host = "progress.opensuse.org"
 
 [instances.t]
 api = "OpenQA"
-tla = "t"
+
+[instances.osd]
+api = "OpenQA"
 host = "openqa.suse.de"
+
+[instance.o3]
+api = "OpenQA"
+host = "openqa.opensuse.org"
