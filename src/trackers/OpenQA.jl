@@ -4,6 +4,7 @@ using Distributed
 using JSON
 using HTTP
 import MbedTLS
+import DataFrames: DataFrame
 
 using JDP.Repository
 using JDP.Trackers
@@ -268,6 +269,28 @@ function Repository.retrieve(::TestResult, ::Vector, from::String;
     end
 
     results
+end
+
+function Repository.retrieve(item::TestResult, ::DataFrame, from::String;
+                             refresh=false, kwargs...)::DataFrame
+    results = Repository.retrieve(item, [], from; refresh=refresh, kwargs...)
+
+    cols::Array{Any} = [String[]]
+    push!(cols, Vector{String}[])
+    append!(cols, [String[] for _ in 1:4])
+    push!(cols, Vector{BugRefs.Ref}[])
+
+    for r in results
+        push!(cols[1], r.name)
+        push!(cols[2], r.suit)
+        push!(cols[3], r.product)
+        push!(cols[4], r.build)
+        push!(cols[5], r.result)
+        push!(cols[6], r.arch)
+        push!(cols[7], r.refs)
+    end
+
+    DataFrame(cols, [:name, :suit, :product, :build, :result, :arch, :refs])
 end
 
 end # json

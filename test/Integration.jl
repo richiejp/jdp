@@ -1,3 +1,5 @@
+using DataFrames
+
 using JDP.Trackers
 using JDP.BugRefs
 using JDP.Trackers.OpenQA
@@ -19,4 +21,7 @@ using JDP.Conf
     @test bref("poo#41684") in bugrefs
     @test bref("t#779350") in bugrefs
     @test length(unique(bugrefs)) == 6
+
+    df = retrieve(OpenQA.TestResult(), DataFrame(), "osd")
+    @test df.name[1] == tests[1].name
 end
