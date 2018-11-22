@@ -142,7 +142,7 @@ function save_job_results_json(host::Session, dir_path::String; kwargs...)
     i = 1
     N = length(jgrps)
     for jid in jgrps
-        sjob = ext -> save_job_json(host, jid, dir_path, i, N, ext)
+        sjob = ext -> save_job_json(host, jid, dir_path, i, N, ext=ext)
         sjob("details")
         sjob("comments")
         i += 1

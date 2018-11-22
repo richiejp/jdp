@@ -15,9 +15,4 @@ using JDP.Conf
     @test ts["instances"]["bsc"]["user"] == "geekotest"
     @test ts["instances"]["bsc"]["pass"] == "n0ts3cr3t"
 
-    tconf = TOML.parsefile(joinpath(@__DIR__, "conf/trackers.toml"))
-    Conf.set_conf(:trackers, tconf)
-    ts = Conf.get_conf(:trackers)
-    @test !haskey(ts["instances"], "boo")
-    @test haskey(ts["instances"], "foo")
 end

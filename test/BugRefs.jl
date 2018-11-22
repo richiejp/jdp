@@ -134,7 +134,10 @@ end
     apis = Dict("foo" => Api{StaticSession}("Foo", template"/bar/{id}"))
     trackers = TrackerRepo(apis, Dict(
         "foo" => Tracker{StaticSession}(apis["foo"], nothing,
-                                        "foo", "https", "foo")))
+                                        "foo", "https", "foo"),
+        "bsc" => Tracker("bsc"),
+        "poo" => Tracker("poo"),
+        "t" => Tracker("t")))
     bref(s) = BugRefs.Ref(s, trackers)
     
     refs = extract_refs(naked_bugrefs2, trackers)
