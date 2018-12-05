@@ -14,25 +14,27 @@ using JDP.IOHelpers
 
 struct Session <: Trackers.AbstractSession
     url::String
+    api::String
     ssl::MbedTLS.SSLConfig
 end
 
-Session(url::String) = Session(url, IOHelpers.sslconfig())
+Session(url::String) = Session(url, "api/v1", IOHelpers.sslconfig())
 
-o3 = Session("https://openqa.opensuse.org/api/v1")
-osd = Session("http://openqa.suse.de/api/v1")
+o3 = Session("https://openqa.opensuse.org")
+osd = Session("https://openqa.suse.de")
 
 Trackers.ensure_login!(t::Tracker{Session}) = if t.session == nothing
-    t.session = Session("$(t.scheme)://$(t.host)/api/v1")
+    t.session = Session("$(t.scheme)://$(t.host)")
 else
     t.session
 end
 
-function get_json(host::Session, path::String)
-    HTTP.get(joinpath(host.url, path),
-             status_exception=true, sslconfig=host.ssl).body |>
-                 String |> JSON.parse
-end
+get_raw(host::Session, path::String; api::Bool=true) =
+    HTTP.get(api ? joinpath(host.url, host.api, path) : joinpath(host.url, path),
+             status_exception=true, sslconfig=host.ssl)
+
+get_json(host::Session, path::String; api::Bool=true) =
+    get_raw(host, path; api=api).body |> String |> JSON.parse
 
 function get_machines(host::Session)
     get_json(host, "machines")["Machines"]
@@ -117,7 +119,7 @@ end
 function Base.show(io::IO, m::MIME"text/plain", e::MappingException)
     println(io, "Error while mapping JSON to object: ", e.root)
     for j in e.jsonstack
-        show(io, m, j)
+        show(IOContext(io, :limit => true), m, j)
         println(io, "\n")
     end
 end
@@ -135,22 +137,16 @@ macro error_with_json(json, exp)
     end
 end
 
-json_to_steps(details::Vector)::Vector{TestStep} = map(details) do d
-    @error_with_json(d, TestStep(
-        if haskey(d, "title")
-            d["title"]
-        elseif haskey(d, "screenshot")
-            d["screenshot"]
+json_to_steps(details::Vector)::Vector{TestStep} = map(
+    Iterators.filter(details) do d
+        haskey(d, "title") && d["title"] != "wait_serial"
+    end) do d
+        @error_with_json(d, if d["title"] == "Soft Failed"
+            TestStep(d["text_data"], "softfailed")
         else
-            "$(d["num"])"
-        end,
-        if d["result"] isa String
-            d["result"]
-        else
-            d["result"]["result"]
-        end
-    ))
-end
+            TestStep(d["title"], d["result"])
+        end)
+    end
 
 json_to_modules(results::Vector)::Vector{TestModule} = map(results) do r
     @error_with_json(r, TestModule(r["name"],
@@ -372,7 +368,7 @@ function parse_comments(comments::Array, trackers::TrackerRepo)::Tags
     tags
 end
 
-function Repository.retrieve(::TestResult, ::Vector, from::String;
+function Repository.retrieve(::Type{TestResult}, ::Type{Vector}, from::String;
                              refresh=false, kwargs...)::Vector{TestResult}
     datadir = Conf.data(:datadir)
     trackers = load_trackers()
@@ -396,9 +392,9 @@ function Repository.retrieve(::TestResult, ::Vector, from::String;
     results
 end
 
-function Repository.retrieve(item::TestResult, ::DataFrame, from::String;
+function Repository.retrieve(::Type{TestResult}, ::Type{DataFrame}, from::String;
                              refresh=false, kwargs...)::DataFrame
-    results = Repository.retrieve(item, [], from; refresh=refresh, kwargs...)
+    results = Repository.retrieve(TestResult, Vector, from; refresh=refresh, kwargs...)
 
     cols::Array{Any} = [String[]]
     push!(cols, Vector{String}[])
