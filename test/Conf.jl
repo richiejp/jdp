@@ -1,7 +1,3 @@
-using TOML
-
-using JDP.Conf
-
 @testset "Configuration loading" begin
     Conf.set_usr_path(joinpath(@__DIR__, "conf"))
 

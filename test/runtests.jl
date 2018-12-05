@@ -9,11 +9,22 @@ if nprocs() < 5
 end
 
 using Test
+using DataFrames
+import TOML
+
+using JDP.Conf
+using JDP.Templates
+using JDP.Trackers
+using JDP.Trackers.OpenQA
+using JDP.BugRefs
+using JDP.BugRefsParser
+using JDP.Repository
 
 @testset "All" begin
     include("Conf.jl")
     include("Templates.jl")
-    include("Trackers.jl")
+    include("trackers/Trackers.jl")
+    include("trackers/OpenQA.jl")
     include("BugRefs.jl")
     include("Integration.jl")
 end

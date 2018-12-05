@@ -1,6 +1,3 @@
-using JDP.BugRefs
-using JDP.BugRefsParser
-
 testname1 = "a_Test-name12"
 testname2 = "mmap07"
 testname3 = "btrfs_0209"

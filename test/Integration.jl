@@ -1,11 +1,3 @@
-using DataFrames
-
-using JDP.Trackers
-using JDP.BugRefs
-using JDP.Trackers.OpenQA
-using JDP.Repository
-using JDP.Conf
-
 @testset "Integration Tests" begin
     Conf.set_conf(:data, Dict("datadir" => joinpath(@__DIR__, "data")))
 
