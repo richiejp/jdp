@@ -60,6 +60,144 @@ function get_jobs_overview(host::Session; kwargs...)
     map(j -> j["id"], get_json(host, uri))
 end
 
+abstract type Item <: Repository.AbstractItem end
+struct TestResult <: Item
+    name::String
+    suit::Vector{String}
+    product::String
+    build::String
+    result::String
+    arch::String
+    refs::Vector{BugRefs.Ref}
+end
+
+TestResult()::TestResult = TestResult("", [], "", "", "", "", [])
+
+struct TestStep
+    name::String
+    result::String
+end
+
+struct TestModule
+    name::String
+    result::String
+    steps::Vector{TestStep}
+end
+
+struct Comment
+    author::String
+    created::String
+    updated::String
+    text::String
+end
+
+const VarsDict = Dict{String, Union{Int, String, Nothing}}
+
+struct JobResult <: Item
+    name::String
+    id::Int
+    state::String
+    logs::Vector{String}
+    vars::VarsDict
+    result::String
+    start::Union{String, Nothing}
+    finish::Union{String, Nothing}
+    modules::Vector{TestModule}
+    comments::Vector{Comment}
+end
+
+const JsonDict = Dict{String,
+                      Union{String, Int, Float64, Nothing, Dict, Vector}}
+
+struct MappingException <: Exception
+    jsonstack::Vector{Dict}
+    root::Exception
+end
+
+function Base.show(io::IO, m::MIME"text/plain", e::MappingException)
+    println(io, "Error while mapping JSON to object: ", e.root)
+    for j in e.jsonstack
+        show(io, m, j)
+        println(io, "\n")
+    end
+end
+Base.show(io::IO, e::MappingException) = Base.show(io, MIME("text/plain"), e)
+
+macro error_with_json(json, exp)
+    quote
+        try
+            $(esc(exp))
+        catch e
+            rethrow(e isa MappingException ?
+                    MappingException([e.jsonstack..., $(esc(json))], e.root) :
+                    MappingException([$(esc(json))], e))
+        end
+    end
+end
+
+json_to_steps(details::Vector)::Vector{TestStep} = map(details) do d
+    @error_with_json(d, TestStep(
+        if haskey(d, "title")
+            d["title"]
+        elseif haskey(d, "screenshot")
+            d["screenshot"]
+        else
+            "$(d["num"])"
+        end,
+        if d["result"] isa String
+            d["result"]
+        else
+            d["result"]["result"]
+        end
+    ))
+end
+
+json_to_modules(results::Vector)::Vector{TestModule} = map(results) do r
+    @error_with_json(r, TestModule(r["name"],
+                                   r["result"],
+                                   json_to_steps(r["details"])))
+end
+
+function json_to_comments(comments::String)::Vector{Comment}
+    j = JSON.parse(comments; dicttype=JsonDict)
+
+    map(j) do c
+        @error_with_json(c, Comment(c["userName"],
+                                    c["created"],
+                                    c["updated"],
+                                    c["text"]))
+    end
+end
+
+function json_to_job(job::String; vars::String="", comments::String="")::JobResult
+    j = JSON.parse(job; dicttype=JsonDict)["job"]
+
+    @error_with_json(j,
+        JobResult(
+            j["name"],
+            j["id"],
+            j["state"],
+            vcat(j["logs"], j["ulogs"]),
+            isempty(vars) ? j["settings"] : JSON.parse(vars; dicttype=VarsDict),
+            j["result"],
+            j["t_started"],
+            j["t_finished"],
+            json_to_modules(j["testresults"]),
+            isempty(comments) ? Comment[] : json_to_comments(comments)))
+end
+
+function load_job_results(dir_path::String)::Vector{JobResult}
+    dir_path = realpath(dir_path)
+
+    names = filter!(name -> endswith(name, "job.jld2"), readdir(dir_path))
+    map!(name -> joinpath(dir_path, name), names, names)
+    filter!(isfile, names)
+    
+    pmap(names; batch_size=2) do path
+        load(path)
+    end
+end
+
 function flatten(arr::Array)
     map(flatten, arr)
 end
@@ -164,19 +302,6 @@ function save_job_comments_json(host::Session, dir_path::String; kwargs...)
         i += 1
     end
 end
-
-abstract type Item <: Repository.AbstractItem end
-struct TestResult <: Item
-    name::String
-    suit::Vector{String}
-    product::String
-    build::String
-    result::String
-    arch::String
-    refs::Vector{BugRefs.Ref}
-end
-
-TestResult()::TestResult = TestResult("", [], "", "", "", "", [])
 
 function map_result_str(res::String)::String
     if res === "ok"
