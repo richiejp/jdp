@@ -5,6 +5,7 @@ using JSON
 using HTTP
 import MbedTLS
 import DataFrames: DataFrame
+import JLD2: JLDFile, jldopen
 
 using JDP.Repository
 using JDP.Trackers
@@ -182,15 +183,11 @@ function json_to_job(job::String; vars::String="", comments::String="")::JobResu
             isempty(comments) ? Comment[] : json_to_comments(comments)))
 end
 
-function load_job_results(dir_path::String)::Vector{JobResult}
-    dir_path = realpath(dir_path)
-
-    names = filter!(name -> endswith(name, "job.jld2"), readdir(dir_path))
-    map!(name -> joinpath(dir_path, name), names, names)
-    filter!(isfile, names)
-    
-    pmap(names; batch_size=2) do path
-        load(path)
+function load_job_results(jldf::JLDFile)::Vector{JobResult}
+    map(Iterators.filter(keys(jldf)) do k
+        startswith(k, "job")
+    end) do k
+        read(jldf, k)
     end
 end
 
@@ -310,91 +307,88 @@ function map_result_str(res::String)::String
 end
 
 function get_fstest_results!(res::Vector{TestResult},
-                             jr::Dict{String, Any},
-                             tr::Dict{String, Any},
+                             jr::JobResult,
+                             m::TestModule,
                              tags::Tags)
-    setts = jr["settings"]
+    var = jr.vars
 
-    for dt in tr["details"]
-        name = dt["title"]
-
+    for dt in m.details
         push!(res, TestResult(
-            name,
-            ["fstests", setts["XFSTESTS"]],
-            "Unknown",
-            setts["BUILD"],
-            map_result_str(dt["result"]),
-            setts["ARCH"],
-            get_refs(tags, name)
+            dt.name,
+            ["fstests", var["XFSTESTS"]],
+            get(var, "PRODUCT", "Unknown"),
+            var["BUILD"],
+            map_result_str(dt.result),
+            var["ARCH"],
+            get_refs(tags, dt.name)
         ))
     end
 end
 
 function get_test_results!(res::Vector{TestResult},
-                           jr::Dict{String, Any},
-                           tr::Dict{String, Any},
+                           jr::JobResult,
+                           m::TestModule,
                            tags::Tags)
-    setts = jr["settings"]
+    var = jr.vars
 
-    if haskey(setts, "XFSTESTS") && tr["name"] == "1_"
-        get_fstest_results!(res, jr, tr, tags)
+    if haskey(var, "XFSTESTS") && m.name == "1_"
+        get_fstest_results!(res, jr, m, tags)
         return
     end
 
-    name = tr["name"]
-
     push!(res, TestResult(
-        name,
-        if haskey(setts, "LTP_COMMAND_FILE")
-            ["LTP", setts["LTP_COMMAND_FILE"]]
-        elseif haskey(setts, "XFSTESTS")
-            ["fstests", setts["XFSTESTS"]]
+        m.name,
+        if haskey(var, "LTP_COMMAND_FILE")
+            ["LTP", var["LTP_COMMAND_FILE"]]
+        elseif haskey(var, "XFSTESTS")
+            ["fstests", var["XFSTESTS"]]
         else
-            ["OpenQA", get(tr, "category", missing)]
+            ["OpenQA"]
         end,
-        "Unknown",
-        setts["BUILD"],
-        tr["result"],
-        setts["ARCH"],
+        get(var, "PRODUCT", "Unknown"),
+        var["BUILD"],
+        m.result,
+        var["ARCH"],
         get_refs(tags, name)
     ))
 end
 
-function parse_comments(comments::Array, trackers::TrackerRepo)::Tags
+function parse_comments(comments::Vector{Comment}, trackers::TrackerRepo)::Tags
     tags = Tags()
 
-    foreach(c -> extract_tags!(tags, c["text"], trackers), comments)
+    for c in comments
+        extract_tags!(tags, c.text, trackers)
+    end
 
     tags
 end
 
-function Repository.retrieve(::Type{TestResult}, ::Type{Vector}, from::String;
+function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
                              refresh=false, kwargs...)::Vector{TestResult}
     datadir = Conf.data(:datadir)
     trackers = load_trackers()
     results = Vector{TestResult}()
 
     if refresh
-        sess = Trackers.ensure_login!(get_tracker(trackers, from))
-        save_job_results_json(sess, datadir; kwargs...)
+        # not implemented
     end
 
-    json = load_job_results_json(datadir)
+    jldf = jldopen(joinpath(datadir, "$from.jld2"), true, false, false)
 
-    for jr in json
-        tags = parse_comments(jr["comments"], trackers)
+    for jr in load_job_results(jldf)
+        tags = parse_comments(jr.comments, trackers)
 
-        for tr in jr["testresults"]
-            get_test_results!(results, jr, tr, tags)
+        for m in jr.modules
+            get_test_results!(results, jr, m, tags)
         end
     end
 
     results
 end
 
-function Repository.retrieve(::Type{TestResult}, ::Type{DataFrame}, from::String;
+function Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String;
                              refresh=false, kwargs...)::DataFrame
-    results = Repository.retrieve(TestResult, Vector, from; refresh=refresh, kwargs...)
+    results = Repository.fetch(TestResult, Vector, from; refresh=refresh, kwargs...)
 
     cols::Array{Any} = [String[]]
     push!(cols, Vector{String}[])

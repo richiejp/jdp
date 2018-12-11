@@ -1,7 +1,7 @@
 @testset "Integration Tests" begin
     Conf.set_conf(:data, Dict("datadir" => joinpath(@__DIR__, "data")))
 
-    tests = retrieve(OpenQA.TestResult(), Vector(), "osd")
+    tests = Repository.fetch(OpenQA.TestResult, Vector, "osd")
 
     ts = load_trackers()
     bref(s) = BugRefs.Ref(s, ts)
@@ -14,6 +14,6 @@
     @test bref("t#779350") in bugrefs
     @test length(unique(bugrefs)) == 6
 
-    df = retrieve(OpenQA.TestResult(), DataFrame(), "osd")
+    df = Repository.fetch(OpenQA.TestResult, DataFrame, "osd")
     @test df.name[1] == tests[1].name
 end
