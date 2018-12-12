@@ -2,6 +2,7 @@ module JDP
 
 export Repository
 
+include("Functional.jl")
 include("IOHelpers.jl")
 include("Conf.jl")
 
