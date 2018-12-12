@@ -11,7 +11,11 @@ end
 using Test
 using DataFrames
 import TOML
+import JLD2
 
+import JDP
+import JDP.Functional
+import JDP.Functional: cmap, cforeach, cfilter, cifilter, cdoif, cdefault
 using JDP.Conf
 using JDP.Templates
 using JDP.Trackers

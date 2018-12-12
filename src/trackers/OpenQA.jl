@@ -349,7 +349,7 @@ function get_test_results!(res::Vector{TestResult},
         var["BUILD"],
         m.result,
         var["ARCH"],
-        get_refs(tags, name)
+        get_refs(tags, m.name)
     ))
 end
 
