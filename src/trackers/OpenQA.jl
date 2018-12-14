@@ -206,64 +206,6 @@ function flatten(dict::Dict{String, Any})
     dc
 end
 
-"""
-    load_job_results_json(directory_path)
-
-Load the job details and comment JSON files into Julia dictionarys and array
-objects.
-
-"""
-function load_job_results_json(dir_path::String)
-    dir_path = realpath(dir_path)
-
-    names = filter!(name -> endswith(name, "job-details.json"), readdir(dir_path))
-    map!(name -> joinpath(dir_path, name), names, names)
-    filter!(isfile, names)
-    
-    pmap(names; batch_size=2) do file_path
-        js = JSON.parsefile(file_path)["job"]
-        cfile = joinpath(dir_path, "$(js["id"])-job-comments.json")
-
-        if isfile(cfile)
-            js["comments"] = JSON.parsefile(cfile, use_mmap=true)
-            if length(js["comments"]) < 1
-                rm(cfile)
-            end
-        else
-            js["comments"] = []
-        end
-
-        js
-    end
-end
-
-function load_job_results_json(dir_paths::Array{String})::Array
-    results = []
-
-    for dir in dir_paths
-        append!(results, load_job_results_json!(dir, results))
-    end
-
-    results
-end
-
-function save_job_json(host::Session,
-                       jid::Integer,
-                       dir_path::String,
-                       i::Integer, N::Integer;
-                       ext::String="", overwrite::Bool=false)
-    url = joinpath(host.url, "jobs", "$jid", ext)
-    file = joinpath(dir_path, "$jid-job-$ext.json")
-    if overwrite || !isfile(file)
-        @info "$i/$N GET $url"
-        req = HTTP.get(url, status_exception = true)
-        @info "$i/$N WRITE $file"
-        open(f -> write(f, req.body), file, "w")
-    else
-        @debug "$i/$N SKIP $url"
-    end
-end
-
 function save_job_results_json(host::Session, dir_path::String; kwargs...)
     dir_path = realpath(dir_path)
     if !isdir(dir_path)
