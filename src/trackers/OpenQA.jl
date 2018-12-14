@@ -306,18 +306,21 @@ function parse_comments(comments::Vector{Comment}, trackers::TrackerRepo)::Tags
 end
 
 function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
-                             refresh=false, kwargs...)::Vector{TestResult}
+                          refresh=false, kwargs...)::Vector{TestResult}
     datadir = Conf.data(:datadir)
     trackers = load_trackers()
     results = Vector{TestResult}()
 
+    jldf = jldopen(joinpath(datadir, "$from.jld2"), true, false, false)
+    jrs = load_job_results(jldf)
+
     if refresh
-        # not implemented
+        # Get job list A from OpenQA instance
+        # Get job list B from cache with finished states
+        # Fetch jobs that are in A and not B
     end
 
-    jldf = jldopen(joinpath(datadir, "$from.jld2"), true, false, false)
-
-    for jr in load_job_results(jldf)
+    for jr in jrs
         tags = parse_comments(jr.comments, trackers)
 
         for m in jr.modules
