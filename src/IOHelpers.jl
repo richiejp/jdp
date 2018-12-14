@@ -1,5 +1,7 @@
 module IOHelpers
 
+import JLD2
+using FileIO
 using IJulia: readprompt
 import MbedTLS
 
@@ -15,11 +17,16 @@ function prompt(msg::String; password=false)::String
     end
 end
 
+function show_debug(level, filename, number, msg)
+    @debug "[MbedTLS($level) $filename:$number] $msg"
+end
+
 # Should really upstream this into MbedTLS.jl
 sslconfig()::MbedTLS.SSLConfig = begin
-    ssl = MbedTLS.SSLConfig(true)
-    MbedTLS.ca_chain!(ssl, MbedTLS.crt_parse_file("/etc/ssl/ca-bundle.pem"))
-    ssl
+    conf = MbedTLS.SSLConfig(true)
+    MbedTLS.dbg!(conf, show_debug)
+    MbedTLS.ca_chain!(conf, MbedTLS.crt_parse_file("/etc/ssl/ca-bundle.pem"))
+    conf
 end
 
 end #module
