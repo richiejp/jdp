@@ -1,6 +1,8 @@
 "Helpers for functional style programming"
 module Functional
 
+import Base.getindex
+
 """Curry
 
 This allows partial function application by wrapping the passed function `f`
@@ -43,6 +45,7 @@ end
 Note that functions like `cmap` are generally already defined by this module.
 """
 c(f) = (a...) -> (b...) -> f(a..., b...)
+Base.getindex(f::Function, a...) = (b...) -> f(a..., b...)
 
 "Backwards Curry"
 bc(f) = (a...) -> (b...) -> f(b..., a...)
