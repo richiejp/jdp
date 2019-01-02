@@ -7,49 +7,85 @@ import MbedTLS
 import DataFrames: DataFrame
 import JLD2: JLDFile, jldopen
 
+using JDP.Templates
 using JDP.Repository
 using JDP.Trackers
 using JDP.BugRefs
 using JDP.Conf
 using JDP.IOHelpers
 
-struct Session <: Trackers.AbstractSession
+abstract type AbstractSession <: Trackers.AbstractSession end
+
+"""Use native Julia HTTP library to access OpenQA
+
+Unfortunately this doesn't work so well because:
+
+A) JuliaWeb's current HTTP SSL implementation i.e. the MbedTLS wrapper
+B) OpenQA's wierd authentication which is difficult to replicate outside of
+   Perl.
+"""
+struct NativeSession <: AbstractSession
     url::String
     api::String
     ssl::MbedTLS.SSLConfig
 end
+NativeSession(url::String) = NativeSession(url, "api/v1", IOHelpers.sslconfig())
 
-Session(url::String) = Session(url, "api/v1", IOHelpers.sslconfig())
-
-o3 = Session("https://openqa.opensuse.org")
-osd = Session("https://openqa.suse.de")
-
-Trackers.ensure_login!(t::Tracker{Session}) = if t.session == nothing
-    t.session = Session("$(t.scheme)://$(t.host)")
+Trackers.ensure_login!(t::Tracker{NativeSession}) = if t.session == nothing
+    t.session = NativeSession("$(t.scheme)://$(t.host)")
 else
     t.session
 end
 
-get_raw(host::Session, path::String; api::Bool=true) =
+get_raw(host::NativeSession, path::String; api::Bool=true) =
     HTTP.get(api ? joinpath(host.url, host.api, path) : joinpath(host.url, path),
              status_exception=true, sslconfig=host.ssl)
 
-get_json(host::Session, path::String; api::Bool=true) =
+get_json(host::NativeSession, path::String; api::Bool=true) =
     get_raw(host, path; api=api).body |> String |> JSON.parse
 
-function get_machines(host::Session)
+"""Makes requests to OpenQA using the official OpenQA client script
+
+I really hate this, but we cache the data locally anyway due to the slowness
+of fetching from OpenQA, so the overhead of calling a Perl script can be
+ignored. Also see OpenQA::NativeSession's docs."""
+struct Session <: AbstractSession
+    host::String
+    cmd::String
+end
+
+Session(host::String) = Session(host, "openqa-client --json-output --host")
+
+Trackers.ensure_login!(t::Tracker{Session}) = if t.session == nothing
+    t.session = Session(t.host)
+else
+    t.session
+end
+
+get_raw(ses::Session, path::String; api::Bool=true) =
+    read(`$(ses.cmd) $(ses.host) $path`, String)
+
+get_json(host::Session, path::String; api::Bool=true) =
+    get_raw(host, path; api=api) |> JSON.parse
+
+o3 = Session("openqa.opensuse.org")
+no3 = NativeSession("https://openqa.opensuse.org")
+osd = Session("openqa.suse.de")
+nosd = NativeSession("https://openqa.suse.de")
+
+function get_machines(host::AbstractSession)
     get_json(host, "machines")["Machines"]
 end
 
-function get_group_jobs(host::Session, group_id::Int64)::Array{Int64}
+function get_group_jobs(host::AbstractSession, group_id::Int64)::Array{Int64}
     get_json(host, "job_groups/$group_id/jobs")["ids"]
 end
 
-function get_job_results(host::Session, job_id::Int64)
+function get_job_results(host::AbstractSession, job_id::Int64)
     get_json(host, "jobs/$job_id/details")["job"]
 end
 
-function get_jobs_overview(host::Session; kwargs...)
+function get_jobs_overview(host::AbstractSession; kwargs...)
     uri = "jobs/overview"
 
     if length(kwargs) > 0
@@ -206,7 +242,7 @@ function flatten(dict::Dict{String, Any})
     dc
 end
 
-function save_job_results_json(host::Session, dir_path::String; kwargs...)
+function save_job_results_json(host::AbstractSession, dir_path::String; kwargs...)
     dir_path = realpath(dir_path)
     if !isdir(dir_path)
         throw("Not a directory $dir_path")
@@ -223,7 +259,7 @@ function save_job_results_json(host::Session, dir_path::String; kwargs...)
     end
 end
 
-function save_job_comments_json(host::Session, dir_path::String; kwargs...)
+function save_job_comments_json(host::AbstractSession, dir_path::String; kwargs...)
     dir_path = realpath(dir_path)
     if !isdir(dir_path)
         throw("Not a directory $dir_path")
@@ -254,15 +290,15 @@ function get_fstest_results!(res::Vector{TestResult},
                              tags::Tags)
     var = jr.vars
 
-    for dt in m.details
+    for step in m.steps
         push!(res, TestResult(
-            dt.name,
+            step.name,
             ["fstests", var["XFSTESTS"]],
             get(var, "PRODUCT", "Unknown"),
             var["BUILD"],
-            map_result_str(dt.result),
+            map_result_str(step.result),
             var["ARCH"],
-            get_refs(tags, dt.name)
+            get_refs(tags, step.name)
         ))
     end
 end
