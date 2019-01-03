@@ -51,6 +51,7 @@ Base.getindex(f::Function, a...) = (b...) -> f(a..., b...)
 bc(f) = (a...) -> (b...) -> f(b..., a...)
 
 cmap = c(map)
+cimap = c(Base.Generator)
 cforeach = c(foreach)
 cifilter = c(Iterators.filter)
 cfilter = c(filter)
