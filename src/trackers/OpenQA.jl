@@ -7,6 +7,7 @@ import MbedTLS
 import DataFrames: DataFrame
 import JLD2: JLDFile, jldopen
 
+import JDP.Functional: cifilter, cmap, cimap, cforeach
 using JDP.Templates
 using JDP.Repository
 using JDP.Trackers
@@ -42,7 +43,8 @@ get_raw(host::NativeSession, path::String; api::Bool=true) =
              status_exception=true, sslconfig=host.ssl)
 
 get_json(host::NativeSession, path::String; api::Bool=true) =
-    get_raw(host, path; api=api).body |> String |> JSON.parse
+    get_raw(host, path; api=api).body |> String |>
+    JSON.parse(;dicttype=JsonDict)
 
 """Makes requests to OpenQA using the official OpenQA client script
 
@@ -51,10 +53,10 @@ of fetching from OpenQA, so the overhead of calling a Perl script can be
 ignored. Also see OpenQA::NativeSession's docs."""
 struct Session <: AbstractSession
     host::String
-    cmd::String
+    cmd::Cmd
 end
 
-Session(host::String) = Session(host, "openqa-client --json-output --host")
+Session(host::String) = Session(host, `openqa-client --json-output --host`)
 
 Trackers.ensure_login!(t::Tracker{Session}) = if t.session == nothing
     t.session = Session(t.host)
@@ -62,20 +64,32 @@ else
     t.session
 end
 
-get_raw(ses::Session, path::String; api::Bool=true) =
+get_raw(ses::Session, path::String; api::Bool=true) = if api
     read(`$(ses.cmd) $(ses.host) $path`, String)
+else
+    read(`$(ses.cmd) $(ses.host) --apibase / $path`, String)
+end
 
 get_json(host::Session, path::String; api::Bool=true) =
-    get_raw(host, path; api=api) |> JSON.parse
+    JSON.parse(get_raw(host, path; api=api); dicttype=JsonDict)
 
 o3 = Session("openqa.opensuse.org")
 no3 = NativeSession("https://openqa.opensuse.org")
 osd = Session("openqa.suse.de")
 nosd = NativeSession("https://openqa.suse.de")
 
-function get_machines(host::AbstractSession)
-    get_json(host, "machines")["Machines"]
+get_job_vars(host::AbstractSession, job_id::Int64)::Union{VarsDict, Nothing} = try
+    path = "tests/$job_id/file/vars.json"
+    JSON.parse(get_raw(host, path; api=false); dicttype=VarsDict)
+catch e
+    @debug "GET $path: $(e.msg)"
+    nothing
 end
+
+get_job_comments(host::AbstractSession, job_id::Int64)::Vector{JsonDict} =
+    get_json(host, "jobs/$job_id/comments")
+
+get_machines(host::AbstractSession) = get_json(host, "machines")["Machines"]
 
 function get_group_jobs(host::AbstractSession, group_id::Int64)::Array{Int64}
     get_json(host, "job_groups/$group_id/jobs")["ids"]
@@ -191,32 +205,38 @@ json_to_modules(results::Vector)::Vector{TestModule} = map(results) do r
                                    json_to_steps(r["details"])))
 end
 
-function json_to_comments(comments::String)::Vector{Comment}
-    j = JSON.parse(comments; dicttype=JsonDict)
+json_to_comments(comments::String)::Vector{Comment} =
+    JSON.parse(comments; dicttype=JsonDict) |> json_to_comments
 
-    map(j) do c
-        @error_with_json(c, Comment(c["userName"],
-                                    c["created"],
-                                    c["updated"],
-                                    c["text"]))
-    end
+json_to_comments(comments::Vector{JsonDict})::Vector{Comment} = map(comments) do c
+    @error_with_json(c, Comment(c["userName"],
+                                c["created"],
+                                c["updated"],
+                                c["text"]))
 end
 
 function json_to_job(job::String; vars::String="", comments::String="")::JobResult
-    j = JSON.parse(job; dicttype=JsonDict)["job"]
+    json_to_job(JSON.parse(job; dicttype=JsonDict)["job"];
+                vars=vars == "" ? nothing : JSON.parse(vars; dicttype=VarsDict),
+                comments=comments == "" ? nothing : json_to_comments(comments))
+end
 
-    @error_with_json(j,
+function json_to_job(job::JsonDict;
+                     vars::Union{VarsDict, Nothing}=nothing,
+                     comments::Union{Vector{Comment}, Nothing}=nothing)::JobResult
+    j = job
+    @error_with_json(job,
         JobResult(
             j["name"],
             j["id"],
             j["state"],
             vcat(j["logs"], j["ulogs"]),
-            isempty(vars) ? j["settings"] : JSON.parse(vars; dicttype=VarsDict),
+            vars == nothing ? j["settings"] : vars,
             j["result"],
             j["t_started"],
             j["t_finished"],
             json_to_modules(j["testresults"]),
-            isempty(comments) ? Comment[] : json_to_comments(comments)))
+            comments == nothing ? Comment[] : comments))
 end
 
 function load_job_results(jldf::JLDFile)::Vector{JobResult}
@@ -341,19 +361,39 @@ function parse_comments(comments::Vector{Comment}, trackers::TrackerRepo)::Tags
     tags
 end
 
+finished_jobs(jobs::Vector{JobResult})::BitSet = 
+    BitSet(j.id for j in jobs if occursin(r"^(skipped|cancelled|done)$",
+                                          j.state))
+
 function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
                           refresh=false, kwargs...)::Vector{TestResult}
     datadir = Conf.data(:datadir)
     trackers = load_trackers()
+    tracker = get_tracker(trackers, from)
     results = Vector{TestResult}()
 
     jldf = jldopen(joinpath(datadir, "$from.jld2"), true, false, false)
-    jrs = load_job_results(jldf)
+    jrs::Vector{JobResult} = load_job_results(jldf)
 
     if refresh
-        # Get job list A from OpenQA instance
-        # Get job list B from cache with finished states
-        # Fetch jobs that are in A and not B
+        ses = Trackers.ensure_login!(tracker)
+        jids = @async get_group_jobs(ses, kwargs[:groupid])
+        fjindx = finished_jobs(jrs)
+        jids = fetch(jids)
+        jobn = length(jids) - length(fjindx)
+
+        @info "Refreshing $jobn jobs"
+        jids |> cifilter(in(fjindx)) |> enumerate |> cimap() do (indx, jid)
+            @info "GET job $jid ($indx of $jobn)"
+            res = @async get_job_results(ses, jid)
+            coms = @async get_job_comments(ses, jid) |> json_to_comments
+            vars = @async get_job_vars(ses, jid)
+            json_to_job(fetch(res); vars=fetch(vars), comments=fetch(coms))
+        end |> cforeach() do job
+            write(jldf, "job-$(job.id)", job)
+        end
+
+        jrs = load_job_results(jldf)
     end
 
     for jr in jrs
