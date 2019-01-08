@@ -4,6 +4,7 @@ authors = ["Richard Palethorpe <rpalethorpe@suse.com>"]
 version = "0.1.0"
 
 [deps]
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
@@ -14,6 +15,7 @@ JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Markdown = "d6f4376e-aef5-505a-96c1-9c027394607a"
 Match = "7eb4fadd-790c-5f42-8a69-bfa0b872bfbf"
 MbedTLS = "739be429-bea8-5141-9913-cc70e7f3736d"
+Redis = "0cf705f9-a9e2-50d1-a699-2b372a39b750"
 TOML = "191fdcea-f9f2-43e0-b922-d33f71e2abc3"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 XMLDict = "228000da-037f-5747-90a9-8195ccbf91a5"
