@@ -352,10 +352,6 @@ function parse_comments(comments::Vector{Comment}, trackers::TrackerRepo)::Tags
     tags
 end
 
-finished_jobs(jobs::Vector{JobResult})::BitSet = 
-    BitSet(j.id for j in jobs if occursin(r"^(skipped|cancelled|done)$",
-                                          j.state))
-
 function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
                           refresh=false, kwargs...)::Vector{TestResult}
     datadir = Conf.data(:datadir)
@@ -364,11 +360,13 @@ function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
     results = Vector{TestResult}()
 
     jrs = if refresh
+        @info "Loading existing jobs"
         jrs = Dict(k => Repository.load(k, JobResult) for k
                    in Repository.keys("$from-job-*"))
         ses = Trackers.ensure_login!(tracker)
         jids = @async get_group_jobs(ses, kwargs[:groupid])
-        fjindx = finished_jobs(jrs)
+        fjindx = BitSet(j.id for j in values(jrs)
+                        if occursin(r"^(skipped|cancelled|done)$", j.state))
         jids = fetch(jids)
         jobn = length(jids) - length(fjindx)
 

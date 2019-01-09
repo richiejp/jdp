@@ -22,7 +22,9 @@ function getconn()::RedisConnection
     rconn
 end
 
-keys(pattern::String)::Set{AbstractString} = Redis.keys(getconn(), pattern)
+keys(pattern::String)::Vector{String} =
+    convert(Vector{String},
+            Redis.execute_command(getconn(), ["keys", pattern]))
 
 function store(key::String, value::I)::Bool where {I <: AbstractItem}
     buf = IOBuffer()
