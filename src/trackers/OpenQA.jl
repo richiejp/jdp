@@ -5,7 +5,6 @@ using JSON
 using HTTP
 import MbedTLS
 import DataFrames: DataFrame
-import JLD2: JLDFile, jldopen
 
 import JDP.Functional: cifilter, cmap, cimap, cforeach
 using JDP.Templates
@@ -239,14 +238,6 @@ function json_to_job(job::JsonDict;
             comments == nothing ? Comment[] : comments))
 end
 
-function load_job_results(jldf::JLDFile)::Vector{JobResult}
-    map(Iterators.filter(keys(jldf)) do k
-        startswith(k, "job")
-    end) do k
-        read(jldf, k)
-    end
-end
-
 function flatten(arr::Array)
     map(flatten, arr)
 end
@@ -372,10 +363,9 @@ function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
     tracker = get_tracker(trackers, from)
     results = Vector{TestResult}()
 
-    jldf = jldopen(joinpath(datadir, "$from.jld2"), true, false, false)
-    jrs::Vector{JobResult} = load_job_results(jldf)
-
-    if refresh
+    jrs = if refresh
+        jrs = Dict(k => Repository.load(k, JobResult) for k
+                   in Repository.keys("$from-job-*"))
         ses = Trackers.ensure_login!(tracker)
         jids = @async get_group_jobs(ses, kwargs[:groupid])
         fjindx = finished_jobs(jrs)
@@ -390,10 +380,14 @@ function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
             vars = @async get_job_vars(ses, jid)
             json_to_job(fetch(res); vars=fetch(vars), comments=fetch(coms))
         end |> cforeach() do job
-            write(jldf, "job-$(job.id)", job)
+            k = "$from-job-$(job.id)"
+            Repository.store(k, job)
+            jrs[k] = job
         end
 
-        jrs = load_job_results(jldf)
+        values(jrs)
+    else
+        (Repository.load(k, JobResult) for k in Repository.keys("$from-job-*"))
     end
 
     for jr in jrs

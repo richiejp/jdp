@@ -8,26 +8,30 @@ abstract type AbstractItem end
 
 rconn = nothing
 
-function store(key::String, value::I)::Bool where {I <: AbstractItem}
+function resetconn()
+    global rconn = nothing
+end
+
+function getconn()::RedisConnection
     global rconn
 
     if rconn == nothing
         rconn = RedisConnection()
     end
 
+    rconn
+end
+
+keys(pattern::String)::Set{AbstractString} = Redis.keys(getconn(), pattern)
+
+function store(key::String, value::I)::Bool where {I <: AbstractItem}
     buf = IOBuffer()
     bson(buf, Dict(I.name.name => value))
-    set(rconn, key, String(take!(buf)))
+    set(getconn(), key, String(take!(buf)))
 end
 
 function load(key::String, ::Type{I})::I where {I <: AbstractItem}
-    global rconn
-
-    if rconn == nothing
-        rconn = RedisConnection()
-    end
-
-    res = get(rconn, key)
+    res = get(getconn(), key)
     BSON.load(IOBuffer(res))[I.name.name]
 end
 
