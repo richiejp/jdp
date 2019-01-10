@@ -83,8 +83,9 @@ const Tags = Dict{String, Array{Ref}}
 function get_refs(tags::Tags, name::String)::Vector{Ref}
     refs = Vector{Ref}()
 
-    haskey(tags, WILDCARD) && append!(refs, tags[WILDCARD])
-    haskey(tags, name) && append!(refs, tags[name])
+    if haskey(tags, name)
+        append!(refs, tags[name])
+    end
 
     refs
 end
