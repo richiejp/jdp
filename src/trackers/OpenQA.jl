@@ -334,7 +334,13 @@ function get_test_results!(res::Vector{TestResult},
         else
             ["OpenQA"]
         end,
-        get(var, "PRODUCT", "Unknown"),
+        if haskey(var, "DISTRI")
+            join([var["DISTRI"],
+                  get(var, "VERSION", "unknown"),
+                  get(var, "FLAVOR", "unknown")], "-")
+        else
+            "unknown"
+        end,
         var["BUILD"],
         m.result,
         var["ARCH"],
@@ -361,17 +367,17 @@ function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
 
     jrs = if refresh
         @info "Loading existing jobs"
-        jrs = Dict(k => Repository.load(k, JobResult) for k
-                   in Repository.keys("$from-job-*"))
+        jrs = Dict("$from-job-$(job.id)" => job for
+                   job in Repository.mload("$from-job-*", JobResult))
         ses = Trackers.ensure_login!(tracker)
         jids = @async get_group_jobs(ses, kwargs[:groupid])
         fjindx = BitSet(j.id for j in values(jrs)
                         if occursin(r"^(skipped|cancelled|done)$", j.state))
-        jids = fetch(jids)
-        jobn = length(jids) - length(fjindx)
+        jids = filter(jid -> !(jid in fjindx), fetch(jids))
+        jobn = length(jids)
 
         @info "Refreshing $jobn jobs"
-        jids |> cifilter(in(fjindx)) |> enumerate |> cimap() do (indx, jid)
+        jids |> enumerate |> cimap() do (indx, jid)
             @info "GET job $jid ($indx of $jobn)"
             res = @async get_job_results(ses, jid)
             coms = @async get_job_comments(ses, jid) |> json_to_comments
@@ -385,7 +391,7 @@ function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
 
         values(jrs)
     else
-        (Repository.load(k, JobResult) for k in Repository.keys("$from-job-*"))
+        Repository.mload("$from-job-*", JobResult)
     end
 
     for jr in jrs

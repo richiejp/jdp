@@ -37,6 +37,18 @@ function load(key::String, ::Type{I})::I where {I <: AbstractItem}
     BSON.load(IOBuffer(res))[I.name.name]
 end
 
+function mload(pattern::String, ::Type{I})::Vector{I} where {I <: AbstractItem}
+    ks = keys(pattern)
+
+    if isempty(ks)
+        I[]
+    else
+        res = mget(getconn(), ks...)
+        [BSON.load(IOBuffer(item))[I.name.name] for
+         item in res if item != nothing]
+    end
+end
+
 function fetch(item::I,
                in_container::C,
                from::Union{String, Vector{String}};
