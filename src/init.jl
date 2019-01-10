@@ -12,3 +12,7 @@ catch e
     @info "Will try installing JDP project deps..."
     Pkg.instantiate()
 end
+
+import JDP
+
+JDP.Repository.init()

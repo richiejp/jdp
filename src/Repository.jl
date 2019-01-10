@@ -3,6 +3,8 @@ module Repository
 using BSON
 using Redis
 
+using JDP.Conf
+
 "Some kind of item tracked by a tracker"
 abstract type AbstractItem end
 
@@ -20,6 +22,30 @@ function getconn()::RedisConnection
     end
 
     rconn
+end
+
+init() = try
+    getconn()
+catch e
+    if !(e isa ConnectionException)
+        rethrow()
+    end
+    @warn "Could not connect to local Redis instance, will try starting one."
+    ddir = Conf.data(:datadir)
+    rlog = joinpath(ddir, "redis.log")
+    rproc = run(pipeline(Cmd(`/usr/sbin/redis-server`; dir=ddir);
+                         stdout=rlog,
+                         stderr=rlog); wait=false)
+
+    for _ in 1:10
+        try
+            getconn()
+            return
+        catch
+            sleep(0.1)
+        end
+    end
+    @error "Could not start Redis: $rproc: \n" readall(rlog)
 end
 
 keys(pattern::String)::Vector{String} =
