@@ -163,7 +163,7 @@ function parse_name!(text::String, ctx::ParseContext;
         (c, i) = ctx.itr
 
         @match c begin
-            'A':'z' || '0':'9' || '-' || '_' || '*' => nothing
+            'A':'z' || '0':'9' || '-' || '_' || '*' || '/' => nothing
             ',' || ':' || ' ' => begin
                 @pusherr(ctx, :InvalidNameChar, i - start < 2)
                 return Test(text, start:(i - 2))
