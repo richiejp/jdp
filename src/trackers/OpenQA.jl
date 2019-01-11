@@ -112,19 +112,6 @@ function get_jobs_overview(host::AbstractSession; kwargs...)
     map(j -> j["id"], get_json(host, uri))
 end
 
-abstract type Item <: Repository.AbstractItem end
-struct TestResult <: Item
-    name::String
-    suit::Vector{String}
-    product::String
-    build::String
-    result::String
-    arch::String
-    refs::Vector{BugRefs.Ref}
-end
-
-TestResult()::TestResult = TestResult("", [], "", "", "", "", [])
-
 struct TestStep
     name::String
     result::String
@@ -145,6 +132,8 @@ end
 
 const VarsDict = Dict{String, Union{Int, String, Nothing}}
 
+abstract type Item <: Repository.AbstractItem end
+
 struct JobResult <: Item
     name::String
     id::Int
@@ -156,6 +145,17 @@ struct JobResult <: Item
     finish::Union{String, Nothing}
     modules::Vector{TestModule}
     comments::Vector{Comment}
+end
+
+struct TestResult <: Item
+    name::String
+    suit::Vector{String}
+    product::String
+    build::String
+    result::String
+    arch::String
+    refs::Vector{BugRefs.Ref}
+    job::JobResult
 end
 
 const JsonDict = Dict{String,
@@ -310,7 +310,8 @@ function get_fstest_results!(res::Vector{TestResult},
             var["BUILD"],
             map_result_str(step.result),
             var["ARCH"],
-            get_refs(tags, step.name)
+            get_refs(tags, step.name),
+            jr
         ))
     end
 end
@@ -345,7 +346,8 @@ function get_test_results!(res::Vector{TestResult},
         var["BUILD"],
         m.result,
         var["ARCH"],
-        get_refs(tags, m.name)
+        get_refs(tags, m.name),
+        jr
     ))
 end
 
