@@ -11,7 +11,6 @@ end
 using Test
 using DataFrames
 import TOML
-import JLD2
 
 import JDP
 import JDP.Functional

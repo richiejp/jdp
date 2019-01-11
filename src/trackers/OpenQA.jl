@@ -205,7 +205,8 @@ json_to_modules(results::Vector)::Vector{TestModule} = map(results) do r
 end
 
 json_to_comments(comments::String)::Vector{Comment} =
-    JSON.parse(comments; dicttype=JsonDict) |> json_to_comments
+    convert(Vector{JsonDict},
+            JSON.parse(comments; dicttype=JsonDict)) |> json_to_comments
 
 json_to_comments(comments::Vector{JsonDict})::Vector{Comment} = map(comments) do c
     @error_with_json(c, Comment(c["userName"],

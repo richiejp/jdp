@@ -1,5 +1,3 @@
-jldf = nothing
-
 @testset "OpenQA" begin
     datadir = joinpath(@__DIR__, "../data")
     jobtext = read(joinpath(datadir, "2069419-job-details.json"), String)
@@ -13,8 +11,6 @@ jldf = nothing
     @test job.comments[1].author == "pvorel"
     @test startswith(job.comments[1].text, "if4-addr-change")
 
-    jldf = JLD2.jldopen(joinpath(datadir, "osd.jld2"), true, true, true)
-    
     readdir(datadir) |> cifilter() do name
         endswith(name, "job-details.json")
     end |> cmap() do name
@@ -31,10 +27,5 @@ jldf = nothing
             cdoif(readstr, isfile) |> cdefault("")
     
         job = @test_nowarn OpenQA.json_to_job(jobtext; vars=vartext, comments=comtext)
-        @test_nowarn write(jldf, "job-$id", job)
     end
-end
-
-if jldf != nothing
-    close(jldf)
 end
