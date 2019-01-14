@@ -35,6 +35,8 @@ Ref(sref::String, trackers::TrackerRepo)::Ref =
 
 Base.:(==)(r::Ref, ro::Ref) = r.tracker == ro.tracker && r.id == ro.id
 
+Base.hash(r::Ref, h::UInt) = hash(r.tracker, hash(r.id, h))
+
 Base.show(io::IO, ::MIME"text/plain", ref::Ref) =
     write(io, ref.tracker.tla, "#", ref.id)
 

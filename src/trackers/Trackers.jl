@@ -40,6 +40,8 @@ end
 
 Base.:(==)(a::Api, ao::Api) = a.name == ao.name
 
+Base.hash(a::Api, h::UInt) = hash(a.name, h)
+
 "Information about a Tracker's instance"
 mutable struct Tracker{S <: AbstractSession}
     api::Union{Nothing, Api{S}}
@@ -66,7 +68,9 @@ ensure_login!(t::Tracker{StaticSession})::StaticSession =
 
 Base.:(==)(t::Tracker, to::Tracker) =
     t.api == to.api && t.tla == to.tla &&
-    t.host == to.host && t.scheme == t.scheme
+    t.host == to.host
+
+Base.hash(t::Tracker, h::UInt) = hash(t.api, hash(t.tla, hash(t.host, h)))
 
 function write_get_item_html_url(io::IO, tracker::Tracker, id::AbstractString)
     write(io, tracker.scheme, "://", tracker.host)
