@@ -53,11 +53,26 @@ ignored. Also see OpenQA::NativeSession's docs."""
 struct Session <: AbstractSession
     host::String
     cmd::Cmd
+    apikey::String
+    apisecret::String
 end
 
-Session(host::String) = Session(host, `openqa-client --json-output --host`)
+Session(host::String, key::String, secret::String) =
+    Session(host, `openqa-client --json-output --host`, key, secret)
+
+Session(host::String) = Session(host, "1234567890ABCDEF", "1234567890ABCDEF")
 
 Trackers.ensure_login!(t::Tracker{Session}) = if t.session == nothing
+    conf = Conf.get_conf(:trackers)["instances"]
+    if !haskey(conf, t.tla)
+        @warn "No host definition in trackers.toml for $(t.host)"
+        return t.session = Session(t.host)
+    end
+
+    host = conf[t.tla]
+    if haskey(host, "apikey") && haskey(host, "apisecret")
+        return t.session = Session(t.host, host["apikey"], host["apisecret"])
+    end
     t.session = Session(t.host)
 else
     t.session
@@ -71,6 +86,13 @@ end
 
 get_json(host::Session, path::String; api::Bool=true) =
     JSON.parse(get_raw(host, path; api=api); dicttype=JsonDict)
+
+post_raw(ses::Session, path::String, post::String) = read(
+    `$(ses.cmd) $(ses.host) --apikey $(ses.apikey) --apisecret $(ses.apisecret) $path post $post`,
+    String)
+
+post_json(ses::Session, path::String, post::String) =
+    JSON.parse(post_raw(ses, path, post); dicttype=JsonDict)
 
 o3 = Session("openqa.opensuse.org")
 no3 = NativeSession("https://openqa.opensuse.org")
@@ -285,6 +307,9 @@ function save_job_comments_json(host::AbstractSession, dir_path::String; kwargs.
         i += 1
     end
 end
+
+post_job_comment(host::AbstractSession, job::Int, text::String) =
+    post_json(host, "jobs/$job/comments", "text=$text")
 
 function map_result_str(res::String)::String
     if res === "ok"

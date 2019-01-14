@@ -1,7 +1,14 @@
 # Tracker definitions
 #
 # This file is merged with the contents of ~/.config/jdp/trackers.toml. The
-# values defined there will win if there is a conflict.
+# values defined there will win if there is a conflict. For example your
+# trackers.toml file may look like:
+#
+# [instances]
+# [instances.osd]
+# apikey = "1234567890ABCDEF"
+# apisecret = "1234567890ABCDEF"
+
 
 # Tracker API definitions
 [apis]
@@ -28,6 +35,8 @@ host = "apibugzilla.suse.com"
 [instances.boo]
 api = "Bugzilla"
 host = "apibugzilla.opensuse.org"
+#apikey = ""
+#apisecret = ""
 
 [instances.poo]
 api = "Redmine"
