@@ -156,7 +156,7 @@ const VarsDict = Dict{String, Union{Int, String, Nothing}}
 
 abstract type Item <: Repository.AbstractItem end
 
-struct JobResult <: Item
+mutable struct JobResult <: Item
     name::String
     id::Int
     state::String
@@ -384,6 +384,24 @@ function parse_comments(comments::Vector{Comment}, trackers::TrackerRepo)::Tags
     end
 
     tags
+end
+
+function refresh_comments(pred::Function, from::String)
+    datadir = Conf.data(:datadir)
+    trackers = load_trackers()
+    tracker = get_tracker(trackers, from)
+
+    @info "Loading existing jobs"
+    all = Repository.mload("$from-job-*", JobResult)
+    jrs = filter(pred, all)
+
+    @info "Refreshing comments on $(length(jrs)) jobs"
+    for (i, job) in enumerate(jrs)
+        @info "GET job $i/$(length(jrs))"
+        ses = Trackers.ensure_login!(tracker)
+        job.comments = get_job_comments(ses, job.id) |> json_to_comments
+        Repository.store("$from-job-$(job.id)", job)
+    end
 end
 
 function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
