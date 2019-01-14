@@ -23,7 +23,7 @@ mutable struct Session <: Trackers.AbstractSession
 end
 
 function login(host_tla::String)::Union{Session, Nothing}
-    conf = Conf.trackers(host_tla)
+    conf = Conf.get_conf(:trackers)["instances"][host_tla]
 
     if conf["api"] != "Bugzilla"
         throw("$host_tla is not a Bugzilla instance, but instead $(conf["api"])")
