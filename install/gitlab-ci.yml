@@ -7,21 +7,25 @@ stages:
   - deploy
 
 build:
+  tags: docker
   stage: build
   script:
     - echo "Building..."
 
 docs:
+  tags: docker
   stage: build
   script:
     - echo "Building docs..."
 
 test:
+  tags: docker
   stage: test
   script:
     - echo "Testing..."
 
 deploy:
+  tags: docker
   stage: deploy
   script:
     - echo "Deploying..."
