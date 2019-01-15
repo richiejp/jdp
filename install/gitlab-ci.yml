@@ -11,6 +11,11 @@ build:
   script:
     - echo "Building..."
 
+docs:
+  stage: build
+  script:
+    - echo "Building docs..."
+
 test:
   stage: test
   script:
