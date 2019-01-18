@@ -6,6 +6,7 @@ Unfortunately this is not automated.
 
 1. Install SUSE Leap/Kubic/SLE
 2. Install Docker or whatever
+3. Install git-core
 
 I will assume there is a user called 'opensuse' becaue this is the default
 user in our cloud images on https://engcloud.prv.suse.net/ at the time of
