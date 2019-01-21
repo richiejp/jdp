@@ -27,7 +27,7 @@ USER jdp
 ENV PATH=/home/jdp/bin:${PATH}
 
 # Precompile and test JDP, plus ensure IJulia is registered with Jupyter
-RUN ["julia", "src/src/install.jl"]
+RUN ["julia", "src/install/install.jl"]
 
 # Make the data and source folders accessible outside the container
 RUN mkdir data
