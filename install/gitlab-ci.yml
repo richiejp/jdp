@@ -1,5 +1,5 @@
 before_script:
-  - pwd && ll
+  - pwd && ls -l
   - docker ps --all
   - docker images --all
 
