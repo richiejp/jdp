@@ -8,8 +8,7 @@ ARG tarurl=https://julialang-s3.julialang.org/bin/linux/x64/1.0/julia-${juliav}-
 
 RUN zypper in -y curl tar gzip bzip2 \
 python3-jupyter python3-jupyter_nbconvert python3-jupyter_client \
-python3-jupyter_notebook && \
-julia && \
+python3-jupyter_notebook julia && \
 zypper clean --all
 
 # There is no default non-root user in the Tumbleweed image, so we create one
