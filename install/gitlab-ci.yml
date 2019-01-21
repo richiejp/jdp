@@ -1,9 +1,5 @@
 # See gitlab-ci.md and Dockerfile
 
-variables:
-  JULIA_VER: '1.0.3'
-  JULIA_URI: 'install/julia-$JULIA_VER-linux-x86_64.tar.gz'
-
 before_script:
   - pwd && ls -l
   - docker ps --all
@@ -17,7 +13,7 @@ stages:
 build:
   stage: build
   script:
-    - docker build -t jdp -f install/Dockerfile --build-arg juliav=$JULIA_VER --build-arg tarurl=$JULIA_URI ./
+    - docker build -t jdp -f install/Dockerfile ./
 
 test:
   stage: test

@@ -32,12 +32,4 @@ But:
 Where appropriate follow the instructions here for the shell runner:
 https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#use-shell-executor
 
-Also download a version of Julia:
-```
-cd ~
-curl -OL https://julialang-s3.julialang.org/bin/linux/x64/1.0/julia-1.0.3-linux-x86_64.tar.gz
-```
-This won't be necessary once we have gotten the Julia package working (see
-`install/Dockerfile`)
-
 
