@@ -2,7 +2,7 @@
 deps = ["Profile", "Test"]
 git-tree-sha1 = "a129b7717ee8aa8b41b973ce5e9dae97050d7825"
 repo-rev = "read-perf"
-repo-url = "git@github.com:richiejp/BSON.jl.git"
+repo-url = "https://github.com/richiejp/BSON.jl"
 uuid = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 version = "0.2.1+"
 
@@ -198,7 +198,7 @@ uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 deps = ["DataStructures", "Dates", "Random", "Sockets", "Test"]
 git-tree-sha1 = "3bca89362e56c85ef4ee648f8c6d9a1ae72b8db4"
 repo-rev = "bin-data"
-repo-url = "git@github.com:richiejp/Redis.jl.git"
+repo-url = "https://github.com/richiejp/Redis.jl"
 uuid = "0cf705f9-a9e2-50d1-a699-2b372a39b750"
 version = "0.1.1+"
 
