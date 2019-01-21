@@ -1,3 +1,8 @@
+before_script:
+  - pwd && ll
+  - docker ps --all
+  - docker images --all
+
 stages:
   - build
   - test
@@ -6,17 +11,17 @@ stages:
 build:
   stage: build
   script:
-    - echo "Building..."
-
-docs:
-  stage: build
-  script:
-    - echo "Building docs..."
+    - docker build -t jdp -f install/Dockerfile
 
 test:
   stage: test
   script:
-    - echo "Testing..."
+    - docker run -it jdp julia install/test.jl
+
+docs:
+  stage: deploy
+  script:
+    - docker run -it jdp julia docs/build.jl
 
 deploy:
   stage: deploy
