@@ -12,7 +12,4 @@ Pkg.add("IJulia")
 import IJulia
 
 # Activate the JDP project
-include("init.jl")
-
-# Sanity check the installation by running JDP's tests
-Pkg.test(coverage=false)
+include(joinpath(@__DIR__, "../src/init.jl"))
