@@ -17,7 +17,7 @@ stages:
 build:
   stage: build
   script:
-    - docker build -t jdp -f install/Dockerfile --build-arg juliav=$JULIA_VER tarurl=$JULIA_URI ./
+    - docker build -t jdp -f install/Dockerfile --build-arg juliav=$JULIA_VER --build-arg tarurl=$JULIA_URI ./
 
 test:
   stage: test
