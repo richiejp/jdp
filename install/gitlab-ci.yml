@@ -11,7 +11,7 @@ stages:
 build:
   stage: build
   script:
-    - docker build -t jdp -f install/Dockerfile
+    - docker build -t jdp -f install/Dockerfile ./
 
 test:
   stage: test
