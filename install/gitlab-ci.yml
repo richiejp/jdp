@@ -2,7 +2,7 @@
 
 variables:
   JULIA_VER: '1.0.3'
-  JULIA_URI: '~/julia-$JULIA_VER-linux-x86_64.tar.gz'
+  JULIA_URI: 'install/julia-$JULIA_VER-linux-x86_64.tar.gz'
 
 before_script:
   - pwd && ls -l
