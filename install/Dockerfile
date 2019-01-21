@@ -32,7 +32,7 @@ ENV PATH=/home/jdp/bin:${PATH}
 
 # Install julia from the official tarball. Obviously this is very naughty and should be
 # replaced with the Julia package at some point
-RUN mkdir julia && cd julia && tar -xzf ../src/install/$JULIA_TAR
+RUN mkdir julia && cd julia && tar -xzf ../src/$JULIA_TAR
 RUN ln -s ~/julia/julia-$JULIA_VER/bin/julia ~/bin/julia
 
 # Precompile and test JDP, plus ensure IJulia is registered with Jupyter
