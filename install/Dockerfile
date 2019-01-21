@@ -6,13 +6,10 @@ LABEL name=jdp maintainer=rpalethorpe@suse.com description="JDP project with Jup
 ARG juliav=1.0.1
 ARG tarurl=https://julialang-s3.julialang.org/bin/linux/x64/1.0/julia-${juliav}-linux-x86_64.tar.gz
 
-# TODO: We should really install the official SUSE Julia package now, but some 3rd
-# numerical libraries have compilation issues with other libraries and... well
-# we just install from tar ball for now.
-# RUN zypper in julia
 RUN zypper in -y curl tar gzip bzip2 \
 python3-jupyter python3-jupyter_nbconvert python3-jupyter_client \
 python3-jupyter_notebook && \
+julia && \
 zypper clean --all
 
 # There is no default non-root user in the Tumbleweed image, so we create one
@@ -29,15 +26,6 @@ COPY --chown=jdp:users ./ ./src
 USER jdp
 # Put the user's bin dir in the path so that we do not have to touch any system files
 ENV PATH=/home/jdp/bin:${PATH}
-
-# Install julia from the official tarball. Obviously this is very naughty and should be
-# replaced with the Julia package at some point
-RUN mkdir julia
-ADD --chown=jdp:users $tarurl julia/julia.tar.gz
-RUN cd julia &&\
-    tar -xzf julia.tar.gz &&\
-    ln -s ../julia/julia-$juliav/bin/julia ~/bin/julia &&\
-    rm julia.tar.gz
 
 # Precompile and test JDP, plus ensure IJulia is registered with Jupyter
 RUN ["julia", "src/src/install.jl"]
