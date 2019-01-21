@@ -1,3 +1,8 @@
+using Pkg
+
+Pkg.activate()
+Pkg.add("Documenter")
+
 include("../src/init.jl")
 
 # This is intentionally not included as a project dependency
