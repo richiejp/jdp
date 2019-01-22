@@ -21,12 +21,12 @@ build:
 test:
   stage: test
   script:
-    - docker run $META --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp julia install/test.jl
+    - docker run $META --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp julia ../install/test.jl
 
 docs:
   stage: deploy
   script:
-    - docker run $META --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp julia docs/build.jl
+    - docker run $META --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp julia ../docs/build.jl
 
 deploy:
   stage: deploy
