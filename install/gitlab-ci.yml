@@ -7,8 +7,6 @@ before_script:
 
 variables:
   DOM: "de.suse.gitlab"
-  LABELS: "--label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA"
-  FILTER: "-f label=$DOM.job_id=$CI_JOB_ID -f label=$DOM.commit=$CI_COMMIT_SHA"
 
 stages:
   - build
@@ -18,17 +16,17 @@ stages:
 build:
   stage: build
   script:
-    - docker build $META --label $DOM.job_stage=$CI_JOB_STAGE -t jdp -f install/Dockerfile ./
+    - docker build $META --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp -f install/Dockerfile ./
 
 test:
   stage: test
   script:
-    - docker run $META --label $DOM.job_stage=$CI_JOB_STAGE -it jdp julia install/test.jl
+    - docker run $META --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp julia install/test.jl
 
 docs:
   stage: deploy
   script:
-    - docker run $META --label $DOM.job_stage=$CI_JOB_STAGE -it jdp julia docs/build.jl
+    - docker run $META --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp julia docs/build.jl
 
 deploy:
   stage: deploy
@@ -37,5 +35,5 @@ deploy:
 
 after_script:
   - ls -l
-  - docker ps --all $FILTER
-  - docker images --all $FILTER
+  - docker ps --all -f label=$DOM.job_id=$CI_JOB_ID -f label=$DOM.commit=$CI_COMMIT_SHA
+  - docker images --all -f label=$DOM.job_id=$CI_JOB_ID -f label=$DOM.commit=$CI_COMMIT_SHA
