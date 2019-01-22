@@ -42,14 +42,22 @@ deploy:
 deploy-redis:
   stage: deploy
   environment:
-    name: production
+    name: redis-master
+    on_stop: stop-redis
   when: manual
-  only:
-    - web
   script:
     - docker stop -t 30 redis || true
     - docker rm redis || true
     - docker run --name redis -d -p 6379:6379 -v ~/data:/home/jdp/data jdp:latest /usr/sbin/redis-server ../conf/redis-master.conf --requirepass $REDIS_MASTER_PASS
+
+stop-redis:
+  stage: deploy
+  environment:
+    name: redis-master
+    action: stop
+  when: manual
+  script:
+    - docker stop -t 30 redis
 
 after_script:
   - ls -l
