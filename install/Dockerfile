@@ -39,10 +39,6 @@ RUN ln -s ~/julia/julia-$JULIA_VER/bin/julia ~/bin/julia
 # Precompile and test JDP, plus ensure IJulia is registered with Jupyter
 RUN ["julia", "src/install/install.jl"]
 
-# Stop automatic local Redis instance started during install for nodes which
-# should use a seperate one
-RUN pkill redis-server
-
 # Make the data and source folders accessible outside the container
 VOLUME [ "/home/jdp/data", "/home/jdp/src" ]
 
