@@ -32,6 +32,7 @@ ENV PATH=/home/jdp/bin:${PATH}
 
 # Install julia from the official tarball. Obviously this is very naughty and should be
 # replaced with the Julia package at some point
+RUN mkdir data
 RUN mkdir julia && cd julia && tar -xzf ../src/$JULIA_TAR
 RUN ln -s ~/julia/julia-$JULIA_VER/bin/julia ~/bin/julia
 
@@ -39,7 +40,6 @@ RUN ln -s ~/julia/julia-$JULIA_VER/bin/julia ~/bin/julia
 RUN ["julia", "src/install/install.jl"]
 
 # Make the data and source folders accessible outside the container
-RUN mkdir data
 VOLUME [ "/home/jdp/data", "/home/jdp/src" ]
 
 # Jupyter listens on port 8888 by default, but we will listen on port 8889
