@@ -4,7 +4,7 @@ before_script:
   - pwd && ls -l
   - docker ps --all
   - docker images --all
-  - echo "Container labels: $DOM.job_id=$CI_JOB_ID, $DOM.commit=$CI_COMMIT_SHA"
+  - 'echo Container labels: $DOM.job_id=$CI_JOB_ID, $DOM.commit=$CI_COMMIT_SHA'
 
 variables:
   DOM: "de.suse.gitlab"
@@ -43,6 +43,7 @@ deploy-redis:
   stage: deploy
   environment:
     name: production
+  when: manual
   only:
     - web
   script:
