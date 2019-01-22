@@ -17,22 +17,38 @@ stages:
 build:
   stage: build
   script:
-    - docker build $META --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp -f install/Dockerfile ./
+    - docker build --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp:$CI_COMMIT_SHA -f install/Dockerfile ./
 
 test:
   stage: test
   script:
-    - docker run $META --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp julia ../install/test.jl
+    - docker run --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp:$CI_COMMIT_SHA julia ../install/test.jl
 
 docs:
   stage: deploy
   script:
-    - docker run $META --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp julia ../docs/build.jl
+    - docker run --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp:$CI_COMMIT_SHA julia ../docs/build.jl
 
 deploy:
   stage: deploy
+  environment:
+    name: production
+  when: manual
+  only:
+    - master
   script:
-    - echo "Deploying..."
+    - docker tag jdp:$CI_COMMIT_SHA jdp:latest
+
+deploy-redis:
+  stage: deploy
+  environment:
+    name: production
+  only:
+    - web
+  script:
+    - docker stop -t 30 redis || true
+    - docker rm redis || true
+    - docker run --name redis -d -p 6379:6379 -v ~/data:/home/jdp/data jdp:latest /usr/sbin/redis-server ../conf/redis-master.conf --requirepass $REDIS_MASTER_PASS
 
 after_script:
   - ls -l

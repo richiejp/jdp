@@ -46,6 +46,9 @@ VOLUME [ "/home/jdp/data", "/home/jdp/src" ]
 # so as not to conflict with an existing Jupyter installation
 EXPOSE 8889
 
+# Redis listens on this port by default. This is only used on master nodes.
+EXPOSE 6379
+
 # Default command starts Jupyter in the directory where the notebooks are
 WORKDIR /home/jdp/src/notebooks
 CMD [ "jupyter", "notebook", "--ip=0.0.0.0", "--port=8889" ]
