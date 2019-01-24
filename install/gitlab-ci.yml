@@ -4,6 +4,7 @@ before_script:
   - pwd && ls -l
   - docker ps --all
   - docker images --all
+  - docker network create production || true
   - 'echo Container labels: $DOM.job_id=$CI_JOB_ID, $DOM.commit=$CI_COMMIT_SHA'
 
 variables:
@@ -38,6 +39,11 @@ deploy:
     - master
   script:
     - docker tag jdp:$CI_COMMIT_SHA jdp:latest
+    - >
+      docker build
+      --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID
+      -t jdp:production -f install/Dockerfile-production
+      --build-arg REDIS_AUTH=$REDIS_MASTER_PASS ./
 
 deploy-redis:
   stage: deploy
@@ -48,7 +54,10 @@ deploy-redis:
   script:
     - docker stop -t 30 redis || true
     - docker rm redis || true
-    - docker run --name redis -d -p 6379:6379 -v ~/data:/home/jdp/data jdp:latest /usr/sbin/redis-server ../conf/redis-master.conf --requirepass $REDIS_MASTER_PASS
+    - >
+      docker run --name redis --network production -d -p 6379:6379
+      -v ~/data:/home/jdp/data jdp:production
+      /usr/sbin/redis-server conf/redis-master.conf
 
 stop-redis:
   stage: deploy
@@ -58,6 +67,12 @@ stop-redis:
   when: manual
   script:
     - docker stop -t 30 redis
+
+report:on-schedule:
+  only:
+    - schedules
+  script:
+    - docker run --name report --network production -t jdp:latest
 
 after_script:
   - ls -l

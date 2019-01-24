@@ -1,2 +1,6 @@
 # This can be overriden by the file ~/.config/jdp/data.toml
 datadir = "~/data"
+
+# DB host name and auth token
+host = "127.0.0.1"
+auth = ""

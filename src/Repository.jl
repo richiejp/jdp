@@ -18,7 +18,9 @@ function getconn()::RedisConnection
     global rconn
 
     if rconn == nothing
-        rconn = RedisConnection()
+        dconf = Conf.get_conf(:data)
+        rconn = RedisConnection(;host=get(dconf, "host", "127.0.0.1"),
+                                auth=get(dconf, "auth", ""))
     end
 
     rconn

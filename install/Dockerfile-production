@@ -1,0 +1,15 @@
+#!BuildTag: JDP
+FROM jdp:latest
+
+LABEL name=jdp-production maintainer=rpalethorpe@suse.com description="JDP with production config"
+
+ARG REDIS_HOST="redis"
+ARG REDIS_AUTH="notsecret"
+
+RUN mkdir -p /home/.config/jdp
+RUN echo 'host = "$REDIS_HOST"' > /home/.config/jdp/data.toml
+RUN echo 'auth = "$REDIS_AUTH"' >> /home/.config/jdp/data.toml
+
+WORKDIR /home/jdp/src
+
+RUN echo "requirepass $REDIS_AUTH" >> conf/redis-master.conf
