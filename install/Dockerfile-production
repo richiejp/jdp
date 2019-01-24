@@ -7,8 +7,8 @@ ARG REDIS_HOST="redis"
 ARG REDIS_AUTH="notsecret"
 
 RUN mkdir -p ~/.config/jdp
-RUN echo 'host = "$REDIS_HOST"' > ~/.config/jdp/data.toml
-RUN echo 'auth = "$REDIS_AUTH"' >> ~/.config/jdp/data.toml
+RUN echo "host = \"$REDIS_HOST\"" > ~/.config/jdp/data.toml
+RUN echo "auth = \"$REDIS_AUTH\"" >> ~/.config/jdp/data.toml
 
 WORKDIR /home/jdp/src
 
