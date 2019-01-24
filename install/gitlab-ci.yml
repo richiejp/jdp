@@ -98,7 +98,7 @@ report:
     - schedules
   script:
     - >
-      docker run --name report --network production -a stdin -t jdp:production
+      docker run --name report --network production -t jdp:production
       julia run/all.jl
 
 after_script:
