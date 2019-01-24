@@ -77,7 +77,7 @@ start-redis:
     - >
       docker run --name redis --network production -d -p 6379:6379
       -v ~/data:/home/jdp/data jdp:production
-      /usr/sbin/redis-server ~/.config/redis/master.conf
+      /usr/sbin/redis-server /home/jdp/.config/redis/master.conf
 
 stop-redis:
   stage: execute
