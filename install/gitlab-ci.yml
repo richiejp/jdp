@@ -97,6 +97,8 @@ report:
   only:
     - schedules
   script:
+    - docker stop report || true
+    - docker rm -f report || true
     - >
       docker run --name report --network production -t jdp:production
       julia run/all.jl
