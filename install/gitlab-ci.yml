@@ -14,24 +14,42 @@ stages:
   - build
   - test
   - deploy
+  - execute
 
 build:
   stage: build
+  except:
+    - schedules
   script:
-    - docker build --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp:$CI_COMMIT_SHA -f install/Dockerfile ./
+    - >
+      docker build --label $DOM.job_stage=$CI_JOB_STAGE
+      --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA
+      -t jdp:$CI_COMMIT_SHA -f install/Dockerfile ./
 
 test:
   stage: test
+  except:
+    - schedules
   script:
-    - docker run --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp:$CI_COMMIT_SHA julia ../install/test.jl
+    - >
+      docker run --label $DOM.job_stage=$CI_JOB_STAGE
+      --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA
+      -t jdp:$CI_COMMIT_SHA julia ../install/test.jl
 
 docs:
   stage: deploy
+  except:
+    - schedules
   script:
-    - docker run --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA -t jdp:$CI_COMMIT_SHA julia ../docs/build.jl
+    - >
+      docker run --label $DOM.job_stage=$CI_JOB_STAGE
+      --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA
+      -t jdp:$CI_COMMIT_SHA julia ../docs/build.jl
 
 deploy:
   stage: deploy
+  except:
+    - schedules
   environment:
     name: production
   when: manual
@@ -45,8 +63,10 @@ deploy:
       -t jdp:production -f install/Dockerfile-production
       --build-arg REDIS_AUTH=$REDIS_MASTER_PASS ./
 
-deploy-redis:
-  stage: deploy
+start-redis:
+  stage: execute
+  except:
+    - schedules
   environment:
     name: redis-master
     on_stop: stop-redis
@@ -60,7 +80,9 @@ deploy-redis:
       /usr/sbin/redis-server conf/redis-master.conf
 
 stop-redis:
-  stage: deploy
+  stage: execute
+  except:
+    - schedules
   environment:
     name: redis-master
     action: stop
@@ -69,10 +91,13 @@ stop-redis:
     - docker stop -t 30 redis
 
 report:on-schedule:
+  stage: execute
+  environment:
+    name: production
   only:
     - schedules
   script:
-    - docker run --name report --network production -t jdp:latest
+    - docker run --name report --network production -t jdp:production
 
 after_script:
   - ls -l
