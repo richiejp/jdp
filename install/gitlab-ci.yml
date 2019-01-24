@@ -90,14 +90,16 @@ stop-redis:
   script:
     - docker stop -t 30 redis
 
-report:on-schedule:
+report:
   stage: execute
   environment:
     name: production
   only:
     - schedules
   script:
-    - docker run --name report --network production -t jdp:production
+    - >
+      docker run --name report --network production -a stdin -t jdp:production
+      julia run/all.jl
 
 after_script:
   - ls -l
