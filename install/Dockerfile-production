@@ -6,10 +6,10 @@ LABEL name=jdp-production maintainer=rpalethorpe@suse.com description="JDP with 
 ARG REDIS_HOST="redis"
 ARG REDIS_AUTH="notsecret"
 
-RUN mkdir -p ~/.config/jdp
-RUN echo "host = \"$REDIS_HOST\"" > ~/.config/jdp/data.toml
-RUN echo "auth = \"$REDIS_AUTH\"" >> ~/.config/jdp/data.toml
-
 WORKDIR /home/jdp/src
 
-RUN echo "requirepass $REDIS_AUTH" >> conf/redis-master.conf
+RUN mkdir -p ~/.config/jdp ~/.config/redis
+RUN echo "host = \"$REDIS_HOST\"" > ~/.config/jdp/data.toml
+RUN echo "auth = \"$REDIS_AUTH\"" >> ~/.config/jdp/data.toml
+RUN cp conf/redis-master.conf ~/.config/redis/master.conf \
+&& echo "requirepass $REDIS_AUTH" >> ~/.config/redis/master.conf
