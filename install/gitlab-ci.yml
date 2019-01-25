@@ -69,9 +69,6 @@ deploy:
   stage: execute
   except:
     - schedules
-  environment:
-    name: redis-master
-    on_stop: stop-redis
   when: manual
   script:
     - docker stop -t 30 redis || true
@@ -83,11 +80,17 @@ deploy:
 
 start-redis-us:
   extends: .start-redis
+  environment:
+    name: redis-master-us
+    on_stop: stop-redis-us
   tags:
     - America
 
 start-redis-eu:
   extends: .start-redis
+  environment:
+    name: redis-master-eu
+    on_stop: stop-redis-eu
   tags:
     - Europe
 
@@ -95,20 +98,23 @@ start-redis-eu:
   stage: execute
   except:
     - schedules
-  environment:
-    name: redis-master
-    action: stop
   when: manual
   script:
     - docker stop -t 30 redis
 
 stop-redis-us:
   extends: .stop-redis
+  environment:
+    name: redis-master-us
+    action: stop
   tags:
     - America
 
 stop-redis-eu:
   extends: .stop-redis
+  environment:
+    name: redis-master-eu
+    action: stop
   tags:
     - Europe
 
