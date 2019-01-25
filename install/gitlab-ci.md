@@ -25,7 +25,7 @@ https://docs.gitlab.com/runner/install/linux-manually.html
 But:
 1. Use opensuse user with install command
 2. Allow root to find it with
-   `sudo ln -s /usr/sbin/gitlab-runner /usr/local/bin/gitlab-runner`
+   `sudo ln -s /usr/local/bin/gitlab-runner /usr/sbin/`
 
 ## Configure runner
 
