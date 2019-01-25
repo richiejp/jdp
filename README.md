@@ -22,15 +22,28 @@ You can install using Docker by doing the following from the directory where
 you cloned this repo.
 
 ```sh
-docker build -t jdp -f install/Dockerfile .
-docker run -it -p 8889:8889 jdp
+docker build -t jdp:latest -f install/Dockerfile .
 ```
 
 Or you can substitute the build command for the following which will get a
 pre-built image from hub.docker.com (it may not be up to date).
 
 ```sh
-docker pull suserichiejp/jdp
+docker pull suserichiejp/jdp:latest
+```
+
+Then you can inject the access details for the data cache server if you have
+them. Using the data cache can save a lot of time.
+
+```sh
+docker build -t jdp:latest -f install/Dockerfile-slave \
+             --build-arg REDIS_MASTER_HOST=ip-or-name \
+             --build-arg REDIS_MASTER_AUTH=password .
+```
+
+Then run it
+```sh
+docker run -it -p 8889:8889 jdp:latest
 ```
 
 With a bit of luck you will see a message from Jupyter describing what to do
