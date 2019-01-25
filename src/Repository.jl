@@ -35,7 +35,15 @@ catch e
     @warn "Could not connect to local Redis instance, will try starting one."
     ddir = Conf.data(:datadir)
     rlog = joinpath(ddir, "redis.log")
-    rproc = run(pipeline(Cmd(`/usr/sbin/redis-server`; dir=ddir);
+    dconf = Conf.get_conf(:data)
+    mhost = get(dconf, "master-host", "")
+    mauth = get(dconf, "master-auth", "")
+    cmd = if isempty(mhost)
+        `/usr/sbin/redis-server`
+    else
+        `/usr/sbin/redis-server --slaveof $mhost 6379 --masterauth $mauth`
+    end
+    rproc = run(pipeline(Cmd(cmd; dir=ddir);
                          stdout=rlog,
                          stderr=rlog); wait=false)
 
@@ -47,7 +55,7 @@ catch e
             sleep(0.1)
         end
     end
-    @error "Could not start Redis: $rproc: \n" readall(rlog)
+    @error "Could not start Redis: $rproc: \n" read(rlog, String)
 end
 
 keys(pattern::String)::Vector{String} =
