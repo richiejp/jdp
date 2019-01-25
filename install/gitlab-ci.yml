@@ -16,10 +16,15 @@ stages:
   - deploy
   - execute
 
-build:
-  stage: build
+.make:
+  tags:
+    - primary
   except:
     - schedules
+
+build:
+  stage: build
+  extends: .make
   script:
     - >
       docker build --label $DOM.job_stage=$CI_JOB_STAGE
@@ -28,8 +33,7 @@ build:
 
 test:
   stage: test
-  except:
-    - schedules
+  extends: .make
   script:
     - >
       docker run --label $DOM.job_stage=$CI_JOB_STAGE
@@ -38,8 +42,7 @@ test:
 
 docs:
   stage: deploy
-  except:
-    - schedules
+  extends: .make
   script:
     - >
       docker run --label $DOM.job_stage=$CI_JOB_STAGE
@@ -48,8 +51,7 @@ docs:
 
 deploy:
   stage: deploy
-  except:
-    - schedules
+  extends: .make
   environment:
     name: production
   when: manual
@@ -63,7 +65,7 @@ deploy:
       -t jdp:production -f install/Dockerfile-production
       --build-arg REDIS_AUTH=$REDIS_MASTER_PASS ./
 
-start-redis:
+.start-redis:
   stage: execute
   except:
     - schedules
@@ -79,7 +81,17 @@ start-redis:
       -v ~/data:/home/jdp/data jdp:production
       /usr/sbin/redis-server /home/jdp/.config/redis/master.conf
 
-stop-redis:
+start-redis-us:
+  extends: .start-redis
+  tags:
+    - America
+
+start-redis-eu:
+  extends: .start-redis
+  tags:
+    - Europe
+
+.stop-redis:
   stage: execute
   except:
     - schedules
@@ -90,8 +102,20 @@ stop-redis:
   script:
     - docker stop -t 30 redis
 
+stop-redis-us:
+  extends: .stop-redis
+  tags:
+    - America
+
+stop-redis-eu:
+  extends: .stop-redis
+  tags:
+    - Europe
+
 report:
   stage: execute
+  tags:
+    - primary
   environment:
     name: production
   only:
