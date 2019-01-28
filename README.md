@@ -5,13 +5,6 @@ environment. Initially targeted at SUSE's QA Kernel & Networking team's
 requirements, but this is intended to have general applicability at least
 within SUSE QA.
 
-See [report.ipynb](https://github.com/richiejp/jdp/blob/master/notebooks/report.ipynb)
-to get a better idea of what this is about.
-
-This is work in progress. We desperately need to create a central data cache
-because fetching it from OpenQA and Bugzilla is too slow. However fetching a
-few builds worth of data is OK, so you can try this out now.
-
 # Install
 
 The goal is to do this in a single command, but for now it takes a few more.
@@ -19,7 +12,8 @@ The goal is to do this in a single command, but for now it takes a few more.
 ## Docker
 
 You can install using Docker by doing the following from the directory where
-you cloned this repo.
+you cloned this repo. This is probably the easiest way if you just want to
+quickly try it out.
 
 ```sh
 docker build -t jdp:latest -f install/Dockerfile .
@@ -50,17 +44,28 @@ With a bit of luck you will see a message from Jupyter describing what to do
 next. The Docker image also contains two volumes which you may mount. See the
 Dockerfile for more info.
 
+You can use the Docker image for developing JDP itself by mounting the `src`
+volume. However this is probably not a good long term solution.
+
 ## Other
 
-You can use install/Dockerfile as a guide. Also check `conf/data.toml`.
+You can use install/Dockerfile as a guide. Also check `conf/*.toml`.
+
+You can run JDP directly from the git checkout. Just install the deps listed
+in the Dockerfile and modify the conf files (which should include there own
+documentation).
 
 # Usage
 
 ## With Jupyter
 
-Open either the `report.ipynb` or `bugrefs.ipynb` Jupyter notebooks which are
-(hopefully) self documenting. I have only tested them with Jupyter itself, but
-there are fancier alternatives such as JupyterLab and, of course, Emacs.
+If you are using the Docker image then just browse to
+[localhost:8889](http://localhost:8889). If not then start Jupyter yourself.
+
+Open either the `notebooks/report.ipynb` or `notebooks/Propogate Bug
+Tags.ipynb` Jupyter notebooks which are (hopefully) self documenting. I have
+only tested them with Jupyter itself, but there are fancier alternatives such
+as JupyterLab and, of course, Emacs.
 
 ## Other
 
@@ -68,8 +73,18 @@ You can also use the library from a Julia REPL or another project. For example
 in a julia REPL you could run
 
 ```julia
-include("src/startup.jl")
+include("src/init.jl")
 ```
+
+Also the `run` directory contains scripts which are intended to automate
+various tasks. These can be executed with Julia in a similar way to `julia
+run/all.jl`.
+
+## Automation
+
+JDP is automated using SUSE's internal Gitlab CI instance. Which automates
+building and testing the containers as well as deployment and the execution of
+various scripts/services. See `install/gitlab-ci.*`.
 
 # Documentation
 
