@@ -380,7 +380,9 @@ function parse_comments(comments::Vector{Comment}, trackers::TrackerRepo)::Tags
     tags = Tags()
 
     for c in comments
-        extract_tags!(tags, c.text, trackers)
+        if !occursin(r"\(Automatic takeover from t#\d+\)", c.text)
+            extract_tags!(tags, c.text, trackers)
+        end
     end
 
     tags
