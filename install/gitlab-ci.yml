@@ -65,6 +65,16 @@ deploy:
       -t jdp:production -f install/Dockerfile-production
       --build-arg REDIS_AUTH=$REDIS_MASTER_PASS ./
 
+publish:
+  stage: execute
+  extends: .make
+  when: manual
+  only:
+    - master
+  script:
+    - docker tag jdp:latest suserichiejp/jdp:latest
+    - docker push suserichiejp/jdp:latest
+
 .start-redis:
   stage: execute
   except:
