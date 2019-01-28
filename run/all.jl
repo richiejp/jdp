@@ -18,4 +18,6 @@ latest = reduce((parse(Float64, test.build), test.build) for test in allres) do 
     b[1] > o[1] ? b : o
 end
 
+@info "Refreshing all comments for latest build: $(latest[2])"
+
 OpenQA.refresh_comments(job -> job.vars["BUILD"] == latest[2], "osd")
