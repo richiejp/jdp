@@ -14,7 +14,8 @@ allres = Repository.fetch(OpenQA.TestResult, Vector, "osd"; refresh=true, groupi
 
 @info "We now have $(length(allres)) test results!"
 
-latest = reduce((parse(Float64, test.build), test.build) for test in allres) do b, o
+latest = reduce((parse(Float64, test.build), test.build) for test
+                in allres if test.product == "sle-15-SP1-Installer-DVD") do b, o
     b[1] > o[1] ? b : o
 end
 
