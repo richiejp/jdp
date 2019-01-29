@@ -136,11 +136,16 @@ report:
     name: production
   only:
     - schedules
+  artifacts:
+    paths:
+      - data/reports/Report-DataFrames.html
   script:
     - docker stop report || true
     - docker rm -f report || true
+    - mkdir -p data/reports
     - >
-      docker run --name report --network production -t jdp:production
+      docker run --name report --network production -t
+      --mount type=bind,src=data,target=/home/jdp/data jdp:production
       julia run/all.jl
 
 after_script:
