@@ -62,10 +62,10 @@ documentation).
 If you are using the Docker image then just browse to
 [localhost:8889](http://localhost:8889). If not then start Jupyter yourself.
 
-Open either the `notebooks/report.ipynb` or `notebooks/Propogate Bug
-Tags.ipynb` Jupyter notebooks which are (hopefully) self documenting. I have
-only tested them with Jupyter itself, but there are fancier alternatives such
-as JupyterLab and, of course, Emacs.
+Open either the `notebooks/Report-DataFrames.ipynb` or `notebooks/Propagate
+Bug Tags.ipynb` Jupyter notebooks which are (hopefully) self documenting. I
+have only tested them with Jupyter itself, but there are fancier alternatives
+such as JupyterLab and, of course, Emacs.
 
 ## Other
 
