@@ -9,12 +9,12 @@ import DataFrames: DataFrame
 import JDP.Functional: cifilter, cmap, cimap, cforeach
 using JDP.Templates
 using JDP.Repository
-using JDP.Trackers
+using JDP.Tracker
 using JDP.BugRefs
 using JDP.Conf
 using JDP.IOHelpers
 
-abstract type AbstractSession <: Trackers.AbstractSession end
+abstract type AbstractSession <: Tracker.AbstractSession end
 
 """Use native Julia HTTP library to access OpenQA
 
@@ -31,7 +31,7 @@ struct NativeSession <: AbstractSession
 end
 NativeSession(url::String) = NativeSession(url, "api/v1", IOHelpers.sslconfig())
 
-Trackers.ensure_login!(t::Tracker{NativeSession}) = if t.session == nothing
+Tracker.ensure_login!(t::Tracker.Instance{NativeSession}) = if t.session == nothing
     t.session = NativeSession("$(t.scheme)://$(t.host)")
 else
     t.session
@@ -62,7 +62,7 @@ Session(host::String, key::String, secret::String) =
 
 Session(host::String) = Session(host, "1234567890ABCDEF", "1234567890ABCDEF")
 
-Trackers.ensure_login!(t::Tracker{Session}) = if t.session == nothing
+Tracker.ensure_login!(t::Tracker.Instance{Session}) = if t.session == nothing
     conf = Conf.get_conf(:trackers)["instances"]
     if !haskey(conf, t.tla)
         @warn "No host definition in trackers.toml for $(t.host)"
@@ -179,6 +179,12 @@ struct TestResult <: Item
     refs::Vector{BugRefs.Ref}
     job::JobResult
 end
+
+get_fqn(tr::TestResult)::String = join(vcat(test.suit, test.name), "-")
+
+Base.show(io::IO, ::MIME"text/markdown", tr::TestResult) =
+    write(io, "[", get_fqn(tr), "](https://openqa.suse.de/tests/", tr.job.id,
+          "#step/", tr.name, "/1)")
 
 const JsonDict = Dict{String,
                       Union{String, Int, Float64, Nothing, Dict, Vector}}
@@ -321,6 +327,16 @@ function map_result_str(res::String)::String
     end
 end
 
+function get_product(vars::VarsDict)::String
+    if haskey(vars, "DISTRI")
+        join([vars["DISTRI"],
+              get(vars, "VERSION", "unknown"),
+              get(vars, "FLAVOR", "unknown")], "-")
+    else
+        "unknown"
+    end
+end
+
 function get_fstest_results!(res::Vector{TestResult},
                              jr::JobResult,
                              m::TestModule,
@@ -331,7 +347,7 @@ function get_fstest_results!(res::Vector{TestResult},
         push!(res, TestResult(
             step.name,
             ["fstests", var["XFSTESTS"]],
-            get(var, "PRODUCT", "Unknown"),
+            get_product(var),
             var["BUILD"],
             map_result_str(step.result),
             var["ARCH"],
@@ -361,13 +377,7 @@ function get_test_results!(res::Vector{TestResult},
         else
             ["OpenQA"]
         end,
-        if haskey(var, "DISTRI")
-            join([var["DISTRI"],
-                  get(var, "VERSION", "unknown"),
-                  get(var, "FLAVOR", "unknown")], "-")
-        else
-            "unknown"
-        end,
+        get_product(var),
         var["BUILD"],
         m.result,
         var["ARCH"],
@@ -389,7 +399,6 @@ function parse_comments(comments::Vector{Comment}, trackers::TrackerRepo)::Tags
 end
 
 function refresh_comments(pred::Function, from::String)
-    datadir = Conf.data(:datadir)
     trackers = load_trackers()
     tracker = get_tracker(trackers, from)
 
@@ -400,7 +409,7 @@ function refresh_comments(pred::Function, from::String)
     @info "Refreshing comments on $(length(jrs)) jobs"
     for (i, job) in enumerate(jrs)
         @info "GET job $i/$(length(jrs))"
-        ses = Trackers.ensure_login!(tracker)
+        ses = Tracker.ensure_login!(tracker)
         job.comments = get_job_comments(ses, job.id) |> json_to_comments
         Repository.store("$from-job-$(job.id)", job)
     end
@@ -408,7 +417,6 @@ end
 
 function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
                           refresh=false, kwargs...)::Vector{TestResult}
-    datadir = Conf.data(:datadir)
     trackers = load_trackers()
     tracker = get_tracker(trackers, from)
     results = Vector{TestResult}()
@@ -417,7 +425,7 @@ function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
         @info "Loading existing jobs"
         jrs = Dict("$from-job-$(job.id)" => job for
                    job in Repository.mload("$from-job-*", JobResult))
-        ses = Trackers.ensure_login!(tracker)
+        ses = Tracker.ensure_login!(tracker)
         jids = @async get_group_jobs(ses, kwargs[:groupid])
         fjindx = BitSet(j.id for j in values(jrs)
                         if occursin(r"^(skipped|cancelled|done)$", j.state))

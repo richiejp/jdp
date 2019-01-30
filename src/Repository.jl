@@ -4,6 +4,8 @@ using BSON
 using Redis
 
 using JDP.Conf
+using JDP.BugRefs
+using JDP.Tracker
 
 "Some kind of item tracked by a tracker"
 abstract type AbstractItem end
@@ -62,10 +64,21 @@ keys(pattern::String)::Vector{String} =
     convert(Vector{String},
             Redis.execute_command(getconn(), ["keys", pattern]))
 
+function store(key::String, value::Dict)::Bool
+    buf = IOBuffer()
+    bson(buf, value)
+    set(getconn(), key, String(take!(buf)))
+end
+
 function store(key::String, value::I)::Bool where {I <: AbstractItem}
     buf = IOBuffer()
     bson(buf, Dict(I.name.name => value))
     set(getconn(), key, String(take!(buf)))
+end
+
+function load(key::String, ::Type{Dict})::Dict
+    res = get(getconn(), key)
+    BSON.load(IOBuffer(res))
 end
 
 function load(key::String, ::Type{I})::I where {I <: AbstractItem}
@@ -82,6 +95,16 @@ function mload(pattern::String, ::Type{I})::Vector{I} where {I <: AbstractItem}
         res = mget(getconn(), ks...)
         [BSON.load(IOBuffer(item))[I.name.name] for
          item in res if item != nothing]
+    end
+end
+
+refresh(t::Tracker.Instance{S}, bref::BugRefs.Ref) where {S} =
+    @warn "Refresh not defined for tracker " t.tla " and $S"
+
+function refresh(bugrefs::Vector{BugRefs.Ref})
+    for (indx, bref) in enumerate(bugrefs)
+        @info "GET bug $bref ($indx/$(length(bugrefs)))"
+        refresh(bref.tracker, bref)
     end
 end
 

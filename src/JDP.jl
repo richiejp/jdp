@@ -7,15 +7,15 @@ include("IOHelpers.jl")
 include("Conf.jl")
 
 include("Templates.jl")
-include("Repository.jl")
-include("trackers/Trackers.jl")
+include("trackers/Tracker.jl")
 include("BugRefsParser.jl")
 include("BugRefs.jl")
-#include("TableDB.jl")
+include("Repository.jl")
 
-Base.include(Trackers, "trackers/Bugzilla.jl")
+module Trackers
+include("trackers/Bugzilla.jl")
 #Base.include("trackers/Redmine.jl")
-Base.include(Trackers, "trackers/OpenQA.jl")
-
+include("trackers/OpenQA.jl")
+end
 
 end

@@ -13,12 +13,13 @@ different authentication methods and different data formats. So we begin with
 tracker specific code (e.g. trackers/Bugzilla.jl) and then try to generialise
 them if feasible.
 """
-module Trackers
+module Tracker
 
-export Api, Tracker, TrackerRepo, get_tracker, load_trackers
+export Api, TrackerRepo, get_tracker, load_trackers
 
 # Tracker specific modules are appended to this module in JDP.jl
 
+import JDP
 using JDP.Conf
 using JDP.Templates
 
@@ -43,7 +44,7 @@ Base.:(==)(a::Api, ao::Api) = a.name == ao.name
 Base.hash(a::Api, h::UInt) = hash(a.name, h)
 
 "Information about a Tracker's instance"
-mutable struct Tracker{S <: AbstractSession}
+mutable struct Instance{S <: AbstractSession}
     api::Union{Nothing, Api{S}}
     session::Union{Nothing, S}
     tla::String
@@ -52,27 +53,27 @@ mutable struct Tracker{S <: AbstractSession}
 end
 
 "Create a minimal tracker instance for an unknown tracker"
-Tracker(tla::String) =
-    Tracker{StaticSession}(nothing, nothing, tla, nothing, nothing)
-Tracker(tla::SubString)::Tracker = Tracker(String(tla))
+Instance(tla::String) =
+    Instance{StaticSession}(nothing, nothing, tla, nothing, nothing)
+Instance(tla::SubString)::Instance = Instance(String(tla))
 
 """Returns an active session
 
 If the tracker already has an active session then return it, otherwise create
 one. The tracker specific modules should override this"""
-ensure_login!(::Tracker{S}) where {S <: AbstractSession} =
-    error("ensure_login! needs to be defined for Tracker{$S}")
+ensure_login!(::Instance{S}) where {S <: AbstractSession} =
+    error("ensure_login! needs to be defined for Instance{$S}")
 
-ensure_login!(t::Tracker{StaticSession})::StaticSession =
+ensure_login!(t::Instance{StaticSession})::StaticSession =
     t.session = StaticSession()
 
-Base.:(==)(t::Tracker, to::Tracker) =
+Base.:(==)(t::Instance, to::Instance) =
     t.api == to.api && t.tla == to.tla &&
     t.host == to.host
 
-Base.hash(t::Tracker, h::UInt) = hash(t.api, hash(t.tla, hash(t.host, h)))
+Base.hash(t::Instance, h::UInt) = hash(t.api, hash(t.tla, hash(t.host, h)))
 
-function write_get_item_html_url(io::IO, tracker::Tracker, id::AbstractString)
+function write_get_item_html_url(io::IO, tracker::Instance, id::AbstractString)
     write(io, tracker.scheme, "://", tracker.host)
     render(io, tracker.api.get_item_html, :id => id)
 end
@@ -80,19 +81,19 @@ end
 "Tracker Repository"
 struct TrackerRepo
     apis::Dict{String, Api}
-    instances::Dict{String, Tracker}
+    instances::Dict{String, Instance}
 end
 
-get_tracker(repo::TrackerRepo, tla::AbstractString)::Tracker = get(repo.instances, tla) do
+get_tracker(repo::TrackerRepo, tla::AbstractString)::Instance = get(repo.instances, tla) do
     @warn "Unknown tracker identifier (TLA) `$tla`"
-    Tracker(tla)
+    Instance(tla)
 end
 
 mapdic(fn, m) = map(fn, zip(keys(m), values(m))) |> Dict
 
 get_session_type(::Nothing) = StaticSession
 get_session_type(tracker::String) = try
-    tmod = getproperty(Trackers, Symbol(tracker))
+    tmod = getproperty(JDP.Trackers, Symbol(tracker))
     getproperty(tmod, :Session)
 catch e
     @debug "No tracker session type for `$tracker`; inner exception: \n$e"
@@ -110,7 +111,7 @@ load_trackers(conf::Dict)::TrackerRepo = begin
     insts = mapdic(conf["instances"]) do (name, inst)
         api = get(inst, "api", nothing)
 
-        name => Tracker{get_session_type(api)}(
+        name => Instance{get_session_type(api)}(
             get(apis, api, nothing),
             nothing,
             get(inst, "tla", name),

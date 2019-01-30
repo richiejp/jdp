@@ -11,7 +11,7 @@ text.
 """
 module BugRefs
 
-using JDP.Trackers
+using JDP.Tracker
 
 import ..BugRefsParser
 import ..BugRefsParser: tokval
@@ -23,7 +23,7 @@ export BugRef, Tags, extract_refs, extract_tags!, get_refs
 const ID = String
 
 struct Ref
-    tracker::Tracker
+    tracker::(Tracker.Instance)
     id::ID
 end
 
@@ -51,7 +51,7 @@ function Base.show(io::IO, ::MIME"text/html", ref::Ref)
     if ref.tracker.api == nothing
         write(io, host)
     else
-        Trackers.write_get_item_html_url(io, ref.tracker, ref.id)
+        Tracker.Instance.write_get_item_html_url(io, ref.tracker, ref.id)
     end
     write(io, "\">"); show(io, ref); write(io, "</a>")
 end
@@ -65,7 +65,7 @@ function Base.show(io::IO, ::MIME"text/markdown", ref::Ref)
     if ref.tracker.api == nothing
         write(io, host)
     else
-        Trackers.write_get_item_html_url(io, ref.tracker, ref.id)
+        Tracker.Instance.write_get_item_html_url(io, ref.tracker, ref.id)
     end
     write(io, ")")
 end

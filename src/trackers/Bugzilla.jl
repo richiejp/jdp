@@ -9,9 +9,12 @@ import IJulia
 
 import JDP.IOHelpers: prompt
 import JDP.Conf
-using JDP.Trackers
+using JDP.Tracker
+import JDP.Functional: cmap
+using JDP.Repository
+using JDP.BugRefs
 
-mutable struct Session <: Trackers.AbstractSession
+mutable struct Session <: Tracker.AbstractSession
     host::String
     scheme::String
     userinfo::String
@@ -53,10 +56,10 @@ function login!(ses::Session)
              cookies=true, cookiejar=ses.jar)
 end
 
-Trackers.ensure_login!(t::Tracker{Session}) = if t.session == nothing
+Tracker.ensure_login!(t::Tracker.Instance{Session}) = if t.session == nothing
     t.session = login(t.tla)
 else
-    login!(t.session)
+    login!(t.session).status < 300 ? t.session : nothing
 end
 
 function get_xml(ses::Session, path::String; query::String="")::Dict
@@ -70,6 +73,26 @@ function get_bug(ses::Session, id::Int64)::Dict
     get_xml(ses, "/show_bug.cgi", query="id=$id")["bug"]
 end
 
+abstract type Item <: Repository.AbstractItem end
+
+mutable struct Bug <: Item
+    id::Int64
+    severity::String
+    priority::String
+    status::String
+    short_desc::String
+end
+
+Bug(xml::Dict) = Bug(parse(Int, xml.id),
+                     xml["bug_severity"],
+                     xml["priority"],
+                     xml["bug_status"],
+                     xml["short_desc"])
+
+Base.show(io::IO, ::MIME"text/markdown", bug::Bug) =
+    write(io, "**", bug.prio, "**(*", bug.severity, "*) ", bug.status, ": ",
+          bug.short_desc)
+
 function to_md(bug::Dict)::MD
     stat = bug["bug_status"]
     sevr = bug["bug_severity"]
@@ -77,6 +100,25 @@ function to_md(bug::Dict)::MD
     desc = bug["short_desc"]
 
     MD(Paragraph([Bold(prio), "(", Italic(sevr), ") ", stat, ": ", desc]))
+end
+
+function Repository.refresh(t::Tracker.Instance{Session}, bref::BugRefs.Ref)
+    ses = Tracker.ensure_login!(t)
+    bug = get_bug(ses, parse(Int64, bref.id))
+
+    Repository.store("$(t.tla)-bug-$(bref.id)", bug)
+    @info "GOT $bref " to_md(bug)
+end
+
+function Repository.fetch(::Type{Bug}, bref::BugRefs.Ref)::Bug
+    Bug(Repository.load("$(bref.tracker.tla)-bug-$(bref.id)", Dict))
+end
+
+function Repository.fetch(::Type{Bug}, ::Type{Vector}, from::String)::Vector{Bug}
+    trackers = load_trackers()
+    tracker = get_tracker(trackers, from)
+
+    Repository.mload("$from-bug-*", Dict) |> cmap(Bug)
 end
 
 end # module
