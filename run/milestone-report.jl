@@ -1,6 +1,11 @@
+#!julia
+
+include(joinpath(@__DIR__, "../src/init.jl"))
+
 using Markdown
 import Base.Iterators: flatten
 
+using JDP.IOHelpers
 using JDP.BugRefs
 using JDP.Trackers
 using JDP.Trackers.OpenQA
@@ -8,13 +13,24 @@ using JDP.Trackers.Bugzilla
 using JDP.Repository
 import JDP.Functional: cimap, cforeach
 
-allres = get!(args, "results") do
-    Repository.fetch(OpenQA.TestResult, Vector, "osd"; refresh=false, groupid=116)
+argdefs = IOHelpers.ShellArgDefs(Set(["refresh"]), Set([
+    "product_short", "product", "release", "build"
+]))
+
+args = try
+    args
+catch
+    IOHelpers.parse_args(argdefs, ARGS).named
 end
-product_short = get(args, "product_short", "SLE15 SP1")
-product = get(args, "product", "sle-15-SP1-Installer-DVD")
-release = get(args, "release", "Beta3")
-build = get(args, "build", "152.1")
+
+refresh = get!(args, "refresh", false)
+allres = get!(args, "results") do
+    Repository.fetch(OpenQA.TestResult, Vector, "osd"; refresh=refresh, groupid=116)
+end
+product_short = get!(args, "product_short", "SLE15 SP1")
+product = get!(args, "product", "sle-15-SP1-Installer-DVD")
+release = get!(args, "release", "Beta3")
+build = get!(args, "build", "152.1")
 
 refdict = Dict{BugRefs.Ref, Vector{OpenQA.TestResult}}()
 
@@ -28,7 +44,9 @@ end
 
 bugdict = get!(args, "bugs") do
     brefs = collect(keys(refdict))
-    Repository.refresh(brefs)
+    if refresh
+        Repository.refresh(brefs)
+    end
 
     Dict(rf => Repository.fetch(Bugzilla.Bug, rf) for
          rf in brefs if rf.tracker.tla == "bsc" || rf.tracker.tla == "boo")

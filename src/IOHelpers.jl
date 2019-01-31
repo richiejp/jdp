@@ -28,4 +28,53 @@ sslconfig()::MbedTLS.SSLConfig = begin
     conf
 end
 
+struct ShellArgs
+    positional::Vector{AbstractString}
+    named::Dict{AbstractString, Any}
+end
+
+struct ShellArgDefs
+    flags::Set{AbstractString}
+    named::Set{AbstractString}
+end
+
+function parse_args(defs::ShellArgDefs, argsv::Vector{S})::ShellArgs where {S <: AbstractString}
+    positional = S[]
+    named = Dict{S, Any}()
+    itr = iterate(argsv)
+
+    for flag in defs.flags
+        named[flag] = false
+    end
+
+    while itr != nothing
+        (arg, state) = itr
+
+        if sizeof(arg) > 2 && startswith(arg, "--")
+            name = arg[3:end]
+
+            if name in defs.flags
+                named[name] = true
+            elseif name in defs.named
+                itr = iterate(argsv, state)
+
+                if itr == nothing
+                    error("Expected a value after '$arg'")
+                else
+                    (arg, state) = itr
+                    named[name] = arg
+                end
+            else
+                error("Unrecognised argument '$arg'")
+            end
+        else
+            push!(positional, arg)
+        end
+
+        itr = iterate(argsv, state)
+    end
+
+    ShellArgs(positional, named)
+end
+
 end #module
