@@ -3,6 +3,7 @@ module Repository
 using BSON
 using Redis
 
+import JDP.Functional: cmap
 using JDP.Conf
 using JDP.BugRefs
 using JDP.Tracker
@@ -81,9 +82,11 @@ function load(key::String, ::Type{Dict})::Dict
     BSON.load(IOBuffer(res))
 end
 
-function load(key::String, ::Type{I})::I where {I <: AbstractItem}
+function load(key::String, ::Type{I})::Union{I, Nothing} where {I <: AbstractItem}
     res = get(getconn(), key)
-    BSON.load(IOBuffer(res))[I.name.name]
+    if res != nothing
+        BSON.load(IOBuffer(res))[I.name.name]
+    end
 end
 
 function mload(pattern::String, ::Type{I})::Vector{I} where {I <: AbstractItem}
@@ -101,8 +104,8 @@ end
 refresh(t::Tracker.Instance{S}, bref::BugRefs.Ref) where {S} =
     @warn "Refresh not defined for tracker " t.tla " and $S"
 
-function refresh(bugrefs::Vector{BugRefs.Ref})
-    for (indx, bref) in enumerate(bugrefs)
+function refresh(bugrefs::Vector{BugRefs.Ref})::Vector
+    enumerate(bugrefs) |> cmap() do (indx, bref)
         @info "GET bug $bref ($indx/$(length(bugrefs)))"
         refresh(bref.tracker, bref)
     end

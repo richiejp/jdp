@@ -124,17 +124,17 @@ end
 end
 
 @testset "Bug reference structures" begin
-    using JDP.Trackers
+    using JDP.Tracker
     using JDP.Templates
-    import JDP.Trackers: StaticSession
+    import JDP.Tracker: StaticSession, Instance
 
     apis = Dict("foo" => Api{StaticSession}("Foo", template"/bar/{id}"))
     trackers = TrackerRepo(apis, Dict(
-        "foo" => Tracker{StaticSession}(apis["foo"], nothing,
+        "foo" => Instance{StaticSession}(apis["foo"], nothing,
                                         "foo", "https", "foo"),
-        "bsc" => Tracker("bsc"),
-        "poo" => Tracker("poo"),
-        "t" => Tracker("t")))
+        "bsc" => Instance("bsc"),
+        "poo" => Instance("poo"),
+        "t" => Instance("t")))
     bref(s) = BugRefs.Ref(s, trackers)
     
     refs = extract_refs(naked_bugrefs2, trackers)

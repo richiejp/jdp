@@ -17,7 +17,7 @@ import JDP.Functional
 import JDP.Functional: cmap, cforeach, cfilter, cifilter, cdoif, cdefault
 using JDP.Conf
 using JDP.Templates
-using JDP.Trackers
+using JDP.Tracker
 using JDP.Trackers.OpenQA
 using JDP.BugRefs
 using JDP.BugRefsParser

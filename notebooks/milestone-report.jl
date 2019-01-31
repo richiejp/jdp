@@ -51,9 +51,15 @@ iscrit(bug) = startswith(bug.priority, "P1") ||
     (startswith(bug.priority, "P5") && bug.severity == "Critical")
 
 function print_bug_item(rf, bug)
-    show(stdout, MIME("text/markdown"), "- $rf $bug")
+    print("- ")
+    show(stdout, MIME("text/markdown"), rf)
+    print(" ")
+    show(stdout, MIME("text/markdown"), bug)
+    println()
     for t in refdict[rf]
-        show(stdout, MIME("text/markdown"), "   * $t")
+        print("   * ")
+        show(stdout, MIME("text/markdown"), t)
+        println()
     end
 end
        
@@ -68,9 +74,9 @@ println("""
 
 """)
 
-get_prio(kv) = kv[2].priority[1:2]
+get_prio(bpair) = bpair[2].priority[1:2]
 
-sbugs = sort(pairs(bugdict); by=get_prio)
+sbugs = sort(collect(bugdict); by=get_prio)
 
 for (rf, bug) in sbugs
     if !iscrit(bug)
@@ -80,9 +86,13 @@ end
 
 for (rf, tsts) in refdict
     if !haskey(bugdict, rf)
-        show(stdout, MIME("text/markdown"), "- $rf *(No summary data)*")
+        print("- ")
+        show(stdout, MIME("text/markdown"), rf)
+        println(" *(No summary data)*")
         for t in refdict[rf]
-            show(stdout, MIME("text/markdown"), "   * $t")
+            print("   * ")
+            show(stdout, MIME("text/markdown"), t)
+            println()
         end
     end
 end

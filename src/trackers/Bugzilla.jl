@@ -107,16 +107,29 @@ function to_md(bug::Dict)::MD
     MD(Paragraph([Bold(prio), "(", Italic(sevr), ") ", stat, ": ", desc]))
 end
 
-function Repository.refresh(t::Tracker.Instance{Session}, bref::BugRefs.Ref)
+function Repository.refresh(t::Tracker.Instance{Session}, bref::BugRefs.Ref)::Bug
     ses = Tracker.ensure_login!(t)
     bug = get_raw_bug(ses, parse(Int64, bref.id)) |> Bug
 
     Repository.store("$(t.tla)-bug-$(bref.id)", bug)
-    @info "GOT $bref $bug"
+    @info "GOT $bref " bug
+
+    bug
 end
 
-function Repository.fetch(::Type{Bug}, bref::BugRefs.Ref)::Bug
-    Repository.load("$(bref.tracker.tla)-bug-$(bref.id)", Bug)
+function Repository.fetch(::Type{Bug}, bref::BugRefs.Ref)::Union{Bug, Nothing}
+    if !(bref.tracker isa Tracker.Instance{Session})
+        @error "$bref does not appear to be a Bugzilla Bug"
+        return nothing
+    end
+
+    bug = Repository.load("$(bref.tracker.tla)-bug-$(bref.id)", Bug)
+
+    if bug != nothing
+        bug
+    else
+        Repository.refresh(bref.tracker, bref)
+    end
 end
 
 function Repository.fetch(::Type{Bug}, ::Type{Vector}, from::String)::Vector{Bug}
