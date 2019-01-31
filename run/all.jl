@@ -5,7 +5,6 @@ include("../src/init.jl")
 using Weave
 
 using JDP.BugRefs
-using JDP.Trackers
 using JDP.Trackers.OpenQA
 using JDP.Trackers.Bugzilla
 using JDP.Repository
