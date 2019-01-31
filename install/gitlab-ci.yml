@@ -146,7 +146,7 @@ report:
     - >
       docker run --name report --network production -t
       --mount type=bind,src=$(pwd)/data,target=/home/jdp/data jdp:production
-      julia run/all.jl
+      julia --color=yes run/all.jl
 
 after_script:
   - ls -l

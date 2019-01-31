@@ -37,7 +37,7 @@ RUN mkdir julia && cd julia && tar -xzf ../src/$JULIA_TAR
 RUN ln -s ~/julia/julia-$JULIA_VER/bin/julia ~/bin/julia
 
 # Precompile and test JDP, plus ensure IJulia is registered with Jupyter
-RUN ["julia", "src/install/install.jl"]
+RUN ["julia", "--color=yes", "src/install/install.jl"]
 
 # Make the data and source folders accessible outside the container
 VOLUME [ "/home/jdp/data", "/home/jdp/src" ]
