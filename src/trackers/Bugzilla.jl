@@ -69,8 +69,13 @@ function get_xml(ses::Session, path::String; query::String="")::Dict
         String |> parse_xml
 end
 
-function get_bug(ses::Session, id::Int64)::Dict
+function get_raw_bug(ses::Session, id::Int64)::Dict
     get_xml(ses, "/show_bug.cgi", query="id=$id")["bug"]
+end
+
+function get_raw_bug(from::String, id::Int64)::Dict
+    t = get_tracker(load_trackers(), from)
+    get_raw_bug(Tracker.ensure_login!(t), id)
 end
 
 abstract type Item <: Repository.AbstractItem end
@@ -83,14 +88,14 @@ mutable struct Bug <: Item
     short_desc::String
 end
 
-Bug(xml::Dict) = Bug(parse(Int, xml.id),
+Bug(xml::Dict) = Bug(parse(Int, xml["bug_id"]),
                      xml["bug_severity"],
                      xml["priority"],
                      xml["bug_status"],
                      xml["short_desc"])
 
 Base.show(io::IO, ::MIME"text/markdown", bug::Bug) =
-    write(io, "**", bug.prio, "**(*", bug.severity, "*) ", bug.status, ": ",
+    write(io, "**", bug.priority, "**(*", bug.severity, "*) ", bug.status, ": ",
           bug.short_desc)
 
 function to_md(bug::Dict)::MD
@@ -104,21 +109,21 @@ end
 
 function Repository.refresh(t::Tracker.Instance{Session}, bref::BugRefs.Ref)
     ses = Tracker.ensure_login!(t)
-    bug = get_bug(ses, parse(Int64, bref.id))
+    bug = get_raw_bug(ses, parse(Int64, bref.id)) |> Bug
 
     Repository.store("$(t.tla)-bug-$(bref.id)", bug)
-    @info "GOT $bref " to_md(bug)
+    @info "GOT $bref $bug"
 end
 
 function Repository.fetch(::Type{Bug}, bref::BugRefs.Ref)::Bug
-    Bug(Repository.load("$(bref.tracker.tla)-bug-$(bref.id)", Dict))
+    Repository.load("$(bref.tracker.tla)-bug-$(bref.id)", Bug)
 end
 
 function Repository.fetch(::Type{Bug}, ::Type{Vector}, from::String)::Vector{Bug}
     trackers = load_trackers()
     tracker = get_tracker(trackers, from)
 
-    Repository.mload("$from-bug-*", Dict) |> cmap(Bug)
+    Repository.mload("$from-bug-*", Bug)
 end
 
 end # module

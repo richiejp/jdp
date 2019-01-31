@@ -180,11 +180,11 @@ struct TestResult <: Item
     job::JobResult
 end
 
-get_fqn(tr::TestResult)::String = join(vcat(test.suit, test.name), "-")
+get_fqn(tr::TestResult)::String = join(vcat(tr.suit, tr.name), "-")
 
 Base.show(io::IO, ::MIME"text/markdown", tr::TestResult) =
-    write(io, "[", get_fqn(tr), "](https://openqa.suse.de/tests/", tr.job.id,
-          "#step/", tr.name, "/1)")
+    print(io, "[", get_fqn(tr), "](https://openqa.suse.de/tests/", tr.job.id,
+          "#step/", tr.name, "/1) @ ", tr.job.name)
 
 const JsonDict = Dict{String,
                       Union{String, Int, Float64, Nothing, Dict, Vector}}
