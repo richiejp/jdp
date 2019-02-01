@@ -176,8 +176,10 @@ struct TestResult <: Item
     build::String
     result::String
     arch::String
+    machine::String
     refs::Vector{BugRefs.Ref}
     job::JobResult
+    flags::Vector{String}
 end
 
 get_fqn(tr::TestResult)::String = join(vcat(tr.suit, tr.name), "-")
@@ -351,8 +353,10 @@ function get_fstest_results!(res::Vector{TestResult},
             var["BUILD"],
             map_result_str(step.result),
             var["ARCH"],
+            var["MACHINE"],
             get_refs(tags, step.name),
-            jr
+            jr,
+            []
         ))
     end
 end
@@ -381,8 +385,10 @@ function get_test_results!(res::Vector{TestResult},
         var["BUILD"],
         m.result,
         var["ARCH"],
+        var["MACHINE"],
         get_refs(tags, m.name),
-        jr
+        jr,
+        endswith(var["TEST"], "m32") ? ["m32"] : []
     ))
 end
 
@@ -467,8 +473,9 @@ function Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String;
 
     cols::Array{Any} = [String[]]
     push!(cols, Vector{String}[])
-    append!(cols, [String[] for _ in 1:4])
+    append!(cols, [String[] for _ in 1:5])
     push!(cols, Vector{BugRefs.Ref}[])
+    push!(cols, Vector{String}[])
 
     for r in results
         push!(cols[1], r.name)
@@ -477,10 +484,12 @@ function Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String;
         push!(cols[4], r.build)
         push!(cols[5], r.result)
         push!(cols[6], r.arch)
-        push!(cols[7], r.refs)
+        push!(cols[7], r.machine)
+        push!(cols[8], r.refs)
+        push!(cols[9], r.flags)
     end
 
-    DataFrame(cols, [:name, :suit, :product, :build, :result, :arch, :refs])
+    DataFrame(cols, [:name, :suit, :product, :build, :result, :arch, :machine, :refs, :flags])
 end
 
 end # json
