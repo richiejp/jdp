@@ -38,7 +38,7 @@ test:
     - >
       docker run --label $DOM.job_stage=$CI_JOB_STAGE
       --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA
-      -t jdp:$CI_COMMIT_SHA julia ../install/test.jl
+      -t jdp:$CI_COMMIT_SHA julia --color=yes ../install/test.jl
 
 docs:
   stage: deploy
@@ -47,7 +47,7 @@ docs:
     - >
       docker run --label $DOM.job_stage=$CI_JOB_STAGE
       --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA
-      -t jdp:$CI_COMMIT_SHA julia ../docs/build.jl
+      -t jdp:$CI_COMMIT_SHA julia --color=yes ../docs/build.jl
 
 deploy:
   stage: deploy
