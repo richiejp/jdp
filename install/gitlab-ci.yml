@@ -43,10 +43,15 @@ test:
 docs:
   stage: deploy
   extends: .make
+  artifacts:
+    paths:
+      - public
   script:
+    - mkdir public
     - >
       docker run --label $DOM.job_stage=$CI_JOB_STAGE
       --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA
+      --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build
       -t jdp:$CI_COMMIT_SHA julia --color=yes ../docs/build.jl
 
 deploy:
@@ -142,7 +147,7 @@ pages:
   script:
     - docker stop report || true
     - docker rm -f report || true
-    - mkdir -p public/reports
+    - mkdir public/reports
     - >
       docker run --name report --network production -t
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/data jdp:production

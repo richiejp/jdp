@@ -40,7 +40,7 @@ RUN ln -s ~/julia/julia-$JULIA_VER/bin/julia ~/bin/julia
 RUN ["julia", "--color=yes", "src/install/install.jl"]
 
 # Make the data and source folders accessible outside the container
-VOLUME [ "/home/jdp/data", "/home/jdp/src" ]
+VOLUME [ "/home/jdp/data", "/home/jdp/src", "/home/jdp/src/docs/build" ]
 
 # Jupyter listens on port 8888 by default, but we will listen on port 8889
 # so as not to conflict with an existing Jupyter installation
