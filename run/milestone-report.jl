@@ -13,9 +13,12 @@ using JDP.Trackers.Bugzilla
 using JDP.Repository
 import JDP.Functional: cimap, cforeach
 
-argdefs = IOHelpers.ShellArgDefs(Set(["refresh"]), Set([
-    "product_short", "product", "release", "build"
-]))
+argdefs = IOHelpers.ShellArgDefs(Set(["refresh"]), Dict(
+    "product_short" => String,
+    "products" => Vector{String},
+    "release" => String,
+    "builds" => Vector{String}
+))
 
 args = try
     args
@@ -28,14 +31,14 @@ allres = get!(args, "results") do
     Repository.fetch(OpenQA.TestResult, Vector, "osd"; refresh=refresh, groupid=116)
 end
 product_short = get!(args, "product_short", "SLE15 SP1")
-product = get!(args, "product", "sle-15-SP1-Installer-DVD")
+products = get!(args, "products", ["sle-15-SP1-Installer-DVD"])
 release = get!(args, "release", "Beta3")
-build = get!(args, "build", "152.1")
+builds = get!(args, "builds", ["152.1"])
 
 refdict = Dict{BugRefs.Ref, Vector{OpenQA.TestResult}}()
 
 Iterators.filter(allres) do t
-    t.build == build && !isempty(t.refs) && t.product == product
+    (t.build in builds) && !isempty(t.refs) && (t.product in products)
 end |> cimap() do t
     (rf => t for rf in t.refs)
 end |> flatten |> cforeach() do (rf, t)
@@ -53,7 +56,7 @@ bugdict = get!(args, "bugs") do
 end
 
 println("""
-# $product_short $release $build Kernel Acceptance Test Report
+# $product_short $release $builds Kernel Acceptance Test Report
 
 The formatted version of this report is here:
 

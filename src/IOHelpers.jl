@@ -35,7 +35,7 @@ end
 
 struct ShellArgDefs
     flags::Set{AbstractString}
-    named::Set{AbstractString}
+    named::Dict{AbstractString, Type}
 end
 
 function parse_args(defs::ShellArgDefs, argsv::Vector{S})::ShellArgs where {S <: AbstractString}
@@ -55,14 +55,14 @@ function parse_args(defs::ShellArgDefs, argsv::Vector{S})::ShellArgs where {S <:
 
             if name in defs.flags
                 named[name] = true
-            elseif name in defs.named
+            elseif haskey(defs.named, name)
                 itr = iterate(argsv, state)
 
                 if itr == nothing
                     error("Expected a value after '$arg'")
                 else
                     (arg, state) = itr
-                    named[name] = arg
+                    named[name] = defs.named[name] <: Vector ? split(arg, ",") : arg
                 end
             else
                 error("Unrecognised argument '$arg'")
