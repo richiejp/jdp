@@ -128,7 +128,7 @@ stop-redis-eu:
   tags:
     - Europe
 
-report:
+pages:
   stage: execute
   tags:
     - primary
@@ -138,14 +138,14 @@ report:
     - schedules
   artifacts:
     paths:
-      - data/reports/Report-DataFrames.html
+      - public
   script:
     - docker stop report || true
     - docker rm -f report || true
-    - mkdir -p data/reports
+    - mkdir -p public/reports
     - >
       docker run --name report --network production -t
-      --mount type=bind,src=$(pwd)/data,target=/home/jdp/data jdp:production
+      --mount type=bind,src=$(pwd)/public,target=/home/jdp/data jdp:production
       julia --color=yes run/all.jl
 
 after_script:
