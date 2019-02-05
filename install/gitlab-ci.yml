@@ -159,4 +159,4 @@ after_script:
   - ls -l
   - docker ps --all -f label=$DOM.job_id=$CI_JOB_ID -f label=$DOM.commit=$CI_COMMIT_SHA
   - docker images --all -f label=$DOM.job_id=$CI_JOB_ID -f label=$DOM.commit=$CI_COMMIT_SHA
-  - julia --color=yes install/container-housecleaning.jl --dry-run
+  - julia --color=yes install/container-housecleaning.jl
