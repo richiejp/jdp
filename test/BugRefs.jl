@@ -12,6 +12,7 @@ many_to_many2 = "$testname1, $testname2, $testname3: $bugref1, $testname2: $bugr
 naked_bugrefs = "$bugref1, $bugref2"
 naked_bugrefs2 = "$bugref1, $bugref3"
 naked_bugrefs3 = "$bugref1 $bugref3"
+anti_bugref = "$testname1:! $bugref1"
 
 pvorel1 = """
 if4-addr-change_ifconfig: poo#40400, if4-mtu-change_ip, f4-mtu-change_ifconfig: poo#40403
@@ -115,6 +116,13 @@ end
     @test length(taggings) == 2
     @test BugRefsParser.tokval(taggings[1].tests[1]) == "Numa-testcases"
     @test BugRefsParser.tokval(taggings[1].refs[1]) == "bsc#1099878"
+    @test taggings[1].negated == false
+
+    (taggings, ctx) = parse_comment(anti_bugref)
+    print_errors(ctx)
+    @test BugRefsParser.tokval(taggings[1].tests[1]) == testname1
+    @test BugRefsParser.tokval(taggings[1].refs[1]) == bugref1
+    @test taggings[1].negated == true
 
     println("Benchmarking:")
     btexts = [text_messy, many_to_many, many_spaces, many_to_many2, naked_bugrefs]
@@ -143,6 +151,9 @@ end
     tags = extract_tags!(BugRefs.Tags(), pvorel1, trackers)
     @test length(tags) == 4
     @test tags[BugRefs.WILDCARD] == [bref("t#2007414")]
+
+    tags = extract_tags!(BugRefs.Tags(), anti_bugref, trackers)
+    @test tags[testname1] == [BugRefs.Ref(bugref1, trackers, true)]
 
     ref = bref("foo#bar")
     @test ref.tracker.tla == "foo"

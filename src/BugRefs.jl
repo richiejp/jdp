@@ -25,13 +25,14 @@ const ID = String
 struct Ref
     tracker::(Tracker.Instance)
     id::ID
+    negated::Bool
 end
 
-Ref(pref::BugRefsParser.Ref, trackers::TrackerRepo)::Ref =
-    Ref(get_tracker(trackers, tokval(pref.tracker)), ID(tokval(pref.id)))
+Ref(pref::BugRefsParser.Ref, trackers::TrackerRepo, negated::Bool)::Ref =
+    Ref(get_tracker(trackers, tokval(pref.tracker)), ID(tokval(pref.id)), negated)
 
-Ref(sref::String, trackers::TrackerRepo)::Ref =
-    Ref(BugRefsParser.parse_bugref(sref), trackers)
+Ref(sref::String, trackers::TrackerRepo, negated=false)::Ref =
+    Ref(BugRefsParser.parse_bugref(sref), trackers, negated)
 
 Base.:(==)(r::Ref, ro::Ref) = r.tracker == ro.tracker && r.id == ro.id
 
@@ -97,7 +98,7 @@ function extract_refs(text::String, trackers::TrackerRepo)::Array{Ref}
     refs = Ref[]
 
     for tag = tags, ref = tag.refs
-        push!(refs, Ref(ref, trackers))
+        push!(refs, Ref(ref, trackers, tag.negated))
     end
 
     refs
@@ -108,7 +109,7 @@ function extract_tags!(index::Tags, text::String, trackers::TrackerRepo)::Tags
 
     for tag = tags, test = tag.tests
         refs = get!(() -> [], index, replace(tokval(test), "/" => "-"))
-        append!(refs, map(pref -> Ref(pref, trackers), tag.refs))
+        append!(refs, map(pref -> Ref(pref, trackers, tag.negated), tag.refs))
     end
 
     index

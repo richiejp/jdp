@@ -67,8 +67,10 @@ end
 struct Tagging
     tests::Array{Test}
     refs::Array{Ref}
+    negated::Bool
 end
 
+Tagging(tests::Vector{Test}, refs::Vector{Ref}) = Tagging(tests, refs, false)
 Tagging(test::Test, ref::Ref) = Tagging([test], [ref])
 
 abstract type ParseError end
@@ -317,11 +319,12 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
     ref::Union{Nothing, Ref} = nothing
     refs = Ref[]
     taggings = Tagging[]
+    negated = false
 
     push_tagging!() = begin
         push!(names, name)
         push!(refs, ref)
-        push!(taggings, Tagging(copy(names), copy(refs)))
+        push!(taggings, Tagging(copy(names), copy(refs), negated))
         empty!(names)
         empty!(refs)
     end
@@ -395,6 +398,13 @@ function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}
         if ctx.itr === nothing
             pusherr!(ctx, EndOfString())
             break
+        end
+
+        if ctx.itr[1] == '!'
+            negated = true
+            iterate!(text, ctx)
+        else
+            negated = false
         end
 
         chomp!(text, ctx)
