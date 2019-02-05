@@ -43,6 +43,8 @@ test:
 docs:
   stage: deploy
   extends: .make
+  environment:
+    name: production
   artifacts:
     paths:
       - public
@@ -144,6 +146,8 @@ pages:
   artifacts:
     paths:
       - public
+  dependencies:
+    - docs
   script:
     - docker stop report || true
     - docker rm -f report || true
