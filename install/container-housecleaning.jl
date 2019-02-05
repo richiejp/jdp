@@ -52,7 +52,11 @@ for img in get_images()
     elseif age > Day(9)
         @warn "$amsg: Removing" img["Id"] img["RepoTags"]
         if !dryrun
-            run(`docker rmi $(img["Id"])`)
+            try
+                run(`docker rmi $(img["Id"])`)
+            catch error
+                @error "Could not delete image (this may be OK if it is still being used)" error
+            end
         end
     else
         @info "$amsg: Keeping (age < 10 days)" img["Id"] img["RepoTags"]
