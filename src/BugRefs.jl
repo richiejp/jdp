@@ -34,12 +34,16 @@ Ref(pref::BugRefsParser.Ref, trackers::TrackerRepo, negated::Bool)::Ref =
 Ref(sref::String, trackers::TrackerRepo, negated=false)::Ref =
     Ref(BugRefsParser.parse_bugref(sref), trackers, negated)
 
-Base.:(==)(r::Ref, ro::Ref) = r.tracker == ro.tracker && r.id == ro.id
+Base.:(==)(r::Ref, ro::Ref) =
+    r.tracker == ro.tracker && r.id == ro.id && r.negated == ro.negated
 
-Base.hash(r::Ref, h::UInt) = hash(r.tracker, hash(r.id, h))
+Base.hash(r::Ref, h::UInt) = hash(r.tracker, hash(r.id, hash(r.negated, h)))
 
-Base.show(io::IO, ::MIME"text/plain", ref::Ref) =
+Base.show(io::IO, ::MIME"text/plain", ref::Ref) = if ref.negated
+    write(io, "!", ref.tracker.tla, "#", ref.id)
+else
     write(io, ref.tracker.tla, "#", ref.id)
+end
 
 Base.show(io::IO, ref::Ref) = show(io, MIME("text/plain"), ref)
 
@@ -48,13 +52,16 @@ function Base.show(io::IO, ::MIME"text/html", ref::Ref)
         return show(io, ref)
     end
 
+    if ref.negated
+        write(io, "<b>!</b>")
+    end
     write(io, "<a href=\"")
     if ref.tracker.api == nothing
         write(io, host)
     else
         Tracker.write_get_item_html_url(io, ref.tracker, ref.id)
     end
-    write(io, "\">"); show(io, ref); write(io, "</a>")
+    write(io, "\">"); write(io, ref.tracker.tla, "#", ref.id); write(io, "</a>")
 end
 
 function Base.show(io::IO, ::MIME"text/markdown", ref::Ref)
@@ -62,7 +69,10 @@ function Base.show(io::IO, ::MIME"text/markdown", ref::Ref)
         return show(io, ref)
     end
 
-    write(io, "["); show(io, ref); write(io, "](")
+    if ref.negated
+        write(io, "**!**")
+    end
+    write(io, "["); write(io, ref.tracker.tla, "#", ref.id); write(io, "](")
     if ref.tracker.api == nothing
         write(io, host)
     else
