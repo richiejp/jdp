@@ -14,6 +14,9 @@ import JDP.Functional: cmap
 using JDP.Repository
 using JDP.BugRefs
 
+# Work around https://github.com/JuliaWeb/HTTP.jl/pull/383
+const MONSTER = Dict("workaround" => "cookie")
+
 mutable struct Session <: Tracker.AbstractSession
     host::String
     scheme::String
@@ -53,7 +56,7 @@ function login!(ses::Session)
     uri = URI(scheme=ses.scheme, host=ses.host, path="/", userinfo=ses.userinfo)
 
     HTTP.get(uri; status_exception=true, basic_authorization=true,
-             cookies=true, cookiejar=ses.jar)
+             cookies=MONSTER, cookiejar=ses.jar)
 end
 
 Tracker.ensure_login!(t::Tracker.Instance{Session}) = if t.session == nothing
@@ -65,7 +68,7 @@ end
 function get_xml(ses::Session, path::String; query::String="")::Dict
     uri = URI(scheme=ses.scheme, host=ses.host, path=path, query="ctype=xml&$query")
     @debug "GET $uri"
-    HTTP.get(uri, status_exception=true, cookies=true, cookiejar=ses.jar).body |>
+    HTTP.get(uri, status_exception=true, cookies=MONSTER, cookiejar=ses.jar).body |>
         String |> parse_xml
 end
 
