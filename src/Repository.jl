@@ -44,7 +44,7 @@ catch e
     cmd = if isempty(mhost)
         `/usr/sbin/redis-server`
     else
-        `/usr/sbin/redis-server --slaveof $mhost 6379 --masterauth $mauth`
+        `/usr/sbin/redis-server --slaveof $mhost 6379 --masterauth $mauth --slave-read-only no`
     end
     rproc = run(pipeline(Cmd(cmd; dir=ddir);
                          stdout=rlog,
