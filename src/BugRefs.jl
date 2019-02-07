@@ -3,7 +3,9 @@ instance (e.g. bugzilla.suse.com -> bsc) followed by a `#` and then an id
 number, so for example `bsc#12345`.
 
 Test failures can be 'tagged' with a bug reference. This usually looks
-something like `test01:bsc#12345`.
+something like `test01:bsc#12345`. There are also anti-tags which signal that
+a failure should no longer be associated with a given bug. These look like
+`test01:!bsc#12345`.
 
 This module provides methods for processing bug references and tags which are
 typically included in a comment on a test failure, but can be taken from any
@@ -22,6 +24,7 @@ export BugRef, Tags, extract_refs, extract_tags!, get_refs
 
 const ID = String
 
+"A reference to a bug on a particular tracker"
 struct Ref
     tracker::(Tracker.Instance)
     id::ID
@@ -114,6 +117,7 @@ function extract_refs(text::String, trackers::TrackerRepo)::Array{Ref}
     refs
 end
 
+"Parse some text for Bug tags and add them to the given tags index"
 function extract_tags!(index::Tags, text::String, trackers::TrackerRepo)::Tags
     (tags, _) = BugRefsParser.parse_comment(text)
 

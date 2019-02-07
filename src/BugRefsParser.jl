@@ -292,14 +292,15 @@ end
 Try to extract the test-name:bug-ref pairs from a comment
 
 Below is the approximate syntax in EBNF. Assume letter ∈ [a-Z] and digit ∈
-[0-9] and whitespace is allowed between testnames, bugrefs, ':' and ',':
+[0-9] and whitespace is allowed between testnames, bugrefs, ':' and
+','. However there should be no gap between ':' and '!'.
 
 ```
 testname = letter | digit { letter | digit | '_' | '-' }
 tracker = letter { letter }
 id = letter | digit { letter | digit }
 bugref = tracker '#' id
-tagging = testname {',' testname} ':' bugref {',' bugref}
+tagging = testname {',' testname} ':' ['!'] bugref {',' bugref}
 taggings = tagging { tagging }
 ```
 

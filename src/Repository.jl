@@ -104,6 +104,7 @@ end
 refresh(t::Tracker.Instance{S}, bref::BugRefs.Ref) where {S} =
     @warn "Refresh not defined for tracker " t.tla " and $S"
 
+"Refresh the local cached data for the given bug references"
 function refresh(bugrefs::Vector{BugRefs.Ref})::Vector
     enumerate(bugrefs) |> cmap() do (indx, bref)
         @info "GET bug $bref ($indx/$(length(bugrefs)))"
@@ -111,6 +112,12 @@ function refresh(bugrefs::Vector{BugRefs.Ref})::Vector
     end
 end
 
+"""Get one or more items of the given in the specified container
+
+The exact behaviour depends on what is requested. If the data can not be
+retrieved from the local data cache then it may request it from a remote
+source.
+"""
 function fetch(item::I,
                in_container::C,
                from::Union{String, Vector{String}};
