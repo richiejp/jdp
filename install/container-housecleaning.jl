@@ -38,7 +38,7 @@ for cont in get_containers()
             run(`docker rm $(cont["Id"])`)
         end
     else
-        @info "$amsg: Keeping (age < 10 days)" cont["Name"] cont["Path"]
+        @debug "$amsg: Keeping (age < 10 days)" cont["Name"] cont["Path"]
     end
 end
 
@@ -53,13 +53,13 @@ for img in get_images()
         @warn "$amsg: Removing" img["Id"] img["RepoTags"]
         if !dryrun
             try
-                run(`docker rmi $(img["Id"])`)
+                run(`docker rmi -f $(img["Id"])`)
             catch error
                 @error "Could not delete image (this may be OK if it is still being used)" error
             end
         end
     else
-        @info "$amsg: Keeping (age < 10 days)" img["Id"] img["RepoTags"]
+        @debug "$amsg: Keeping (age < 10 days)" img["Id"] img["RepoTags"]
     end
 end
 
