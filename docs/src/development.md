@@ -1,6 +1,152 @@
 Here we discuss the development of JDP itself for anyone who wishes to
 contribute or understand what kind of madness this was born from.
 
+!!! note
+
+    You should at the very least read the coding standards and principals
+    before contributing to the core library.
+
+# Coding standards and principals
+
+The standards and principals change depending on the stage of the
+product/component life cycle and what the component is. For now there are
+three stages to the life cycle. These are listed below along with the
+principals you should follow.
+
+Components don't necessarily need to start as experimental and progress in a
+linear fashion. They can be added at any stage. Use the stage specific
+principals to decide what stage to use.
+
+Components are also differentiated by type: library, script and report. The
+life cycle stages only apply to the library and to the scripts which automate
+core functionality (e.g. caching data in the master node).
+
+The reason for having such a complex system of principles is to take advantage
+of the bar-bell strategy. So that we do not have to compromise between moving
+quickly to test new ideas and moving slowly to be robust.
+
+!!! warning
+
+    Principals and maxims are never perfect. They just provide a common point
+    of reference so that our productivity vectors sum to a value greater than
+    anyone's individual magnitude.
+
+## Universal Principals
+
+These apply all the time
+
++ The Silver Rule
+  - Do *not* do to others what you would *not* like to be done to you.
++ Be polite, but critical and seek criticism
+  - We want the correct solution not to feel like we have the correct solution.
++ Do the easiest thing to change later
+  - When in doubt, take the path which is easiest to leave later.
++ Show me the code
+  - Compare your options, make a hypothesis, prove it. (preference for
+    action).
++ Small batch sizes
+  - Make your feeback loop as tight as possible. Risk making your PRs too small,
+    never too big.
++ Rule of three
+  - Sane DRY
+  - If you need to do something once; write it inline, twice; copy and paste,
+    three times; create an abstraction.
++ The solution should be simpler than the problem
+  - Avoid unnecessary complexity.
+
+## Life cycle
+
+### Experimental
+
+The proof of concept (POC) stage which allows you to just make it work in the
+shortest time possible. You are free to take on technical debt at this stage
+and take shortcuts.
+
+Experimental components can be merged, but will be deleted if they are
+abandoned. They must align with the below principals otherwise they are just
+poorly written features and won't be merged.
+
++ Create a falsifiable hypothesis
+  - Clearly state what you are trying to prove, what failure would look like and
+    what success would be. A component or PR can only be categorised as
+    experimental if it is clearly an experiment.
++ Do not over-engineer
+  - Just do the simplest, easiest thing to prove the feature's viability. Use
+    workarounds to solve problems further down the stack. Do not generalise if a
+    specific solution will meet your current requirements regardless of the
+    consequences.
++ Track your technical debt
+  - You need to keep a list of your technical debt (i.e. a TODO list) which can be
+    used to estimate the cost of turning an experimental component into a stable
+    one.
+
+### Stable
+
+Components and code which we won't delete without obsoleting them first.
+
++ Think in the long term
+  - Assume your code will be run for 10 years and that any mistake will cost many
+    times your own labor and that any improvement will have a huge payoff.
++ Document once instead of answering many
+  - It is better to spend a few hours documenting than many hours answering.
++ Upstream first
+  - Propagate your fixes back to the community and...
++ Fix whatever needs to be fixed
+  - Fixing problems further down the stack can create a long chain-reaction
+    (fractal) of events which eventually benefit us much more than whatever your
+    original task was. Fix root causes, don't write workarounds.
+
+### Legacy
+
+Components or APIs which can only be accessed through a versioned interface
+and only use versioned interfaces. That is, the function names and/or namespaces
+have the version number in the name. The behaviour of versioned interfaces
+does not change allowing scripts or reports to use them indefinitely without
+any maintenance due to changes in the library. Legacy components are deleted
+if they are not used enough.
+
+Otherwise the principals are the same as the Stable stage.
+
+## Library coding standards
+
+This applies to code providing core functionality of the project. This
+includes some scripts and reports, but we will just refer to them as the
+library coding standards.
+
+### Documentation and commenting
+
+Use documentation strings wherever possible, these are vastly more useful than
+inline comments. Only use inline comments for annotating very unusual code.
+
+### Prefer explicit over implicit
+
+Type annotate all interfaces. Learn Julia's type system use it to lock down
+your code. Type parameters, abstract types and multiple dispatch allow for so
+much freedom it is rarely desirable to use implicit types (in function
+arguments or structs).
+
+Implicit types are often OK for local variables, but adding type annotations
+can help make code clearer.
+
+# Project status
+
+See the documentation for each module. At the time of writing, most of the
+project needs cleaning up.
+
+# Architecture
+
+The following diagrams are only to help you visualise the project. They are
+not a design specification or very accurate. For more details see the
+individual component documentation.
+
+## Outer
+
+![](outer_arch.svg)
+
+## Inner
+
+![](inner_arch.svg)
+
 # Motivation
 
 ## Concrete
@@ -34,7 +180,9 @@ We have a number of issues with this:
 7. What is considered a pass or failure by a given test runner (e.g. OpenQA, Slenkins,
    LTP upstream test runner) may be incorrect.
 8. Similar to 7. a skipped test may be an error
-9. Etc.
+9. There are many data consumers, each accepting different formats or views of
+   the data.
+10. Etc.
 
 ## Less Concrete
 
@@ -52,8 +200,8 @@ output. There are a number of problems with these approaches.
 
 !!! note
 
-	This is not an exhaustive list. These are just the solutions which tend to
-	be automatically chosen.
+    This is not an exhaustive list. These are just the solutions which tend to
+    be automatically chosen.
 
 ### OpenQA
 
@@ -173,10 +321,11 @@ reasons are as follows.
 7. It interfaces well with C and Python[^1]
 8. It makes me happy.
 
-[^1]:
-Untested by us, but it is probably mostly true. If it interfaces with C well
-it probably also works well with any other language which exports sane
-symbols.
+[^1]: 
+
+    Untested by us, but it is probably mostly true. If it interfaces with C
+    well it probably also works well with any other language which exports
+    sane symbols.
 
 ### Negatives
 
@@ -221,148 +370,3 @@ people who can't/won't install JDP locally.
 Jupyter notebooks can be replaced or supplemented with something else if it
 better suites a given use case. Also scripts and reports do not need to be
 written as Jupyter notebooks; it is down to the author's discretion.
-
-# Coding standards and principals
-
-The standards and principals change depending on the stage of the
-product/component life cycle and what the component is. For now there are
-three stages to the life cycle. These are listed below along with the
-principals you should follow.
-
-Components don't necessarily need to start as experimental and progress in a
-linear fashion. They can be added at any stage. Use the stage specific
-principals to decide what stage to use.
-
-Components are also differentiated by type: library, script and report. The
-life cycle stages only apply to the library and scripts which automate some
-core functionality (e.g. caching data in the master node).
-
-!!! warning
-
-	Principals and maxims are never perfect. They just provide a common point
-	of reference. Without them it is a free-for-all, so please try to apply
-	them.
-
-## Universal Principals
-
-These apply all the time
-
-### The Silver Rule
-
-Do *not* do to others what you would *not* like to be done to you.
-
-### Be polite, but critical and seek criticism
-
-We want the correct solution not to feel like we have the correct solution.
-
-### Do the easiest thing to change later
-
-When in doubt, take the path which is easiest to leave later.
-
-### Show me the code
-
-Compare your options, make a hypothesis, prove it. (preference for action).
-
-### Small batch sizes
-
-Make your feeback loop as tight as possible. Risk making your PRs too small,
-never too big.
-
-### Rule of three (sane DRY)
-
-If you need to do something once; write it inline, twice; copy and paste,
-three times; create an abstraction (namely a function).
-
-### The solution should be simpler than the problem
-
-This is not about solutions which create new opportunities and therefor more
-complexity.
-
-## Life cycle
-
-### Experimental
-
-The proof of concept (POC) stage which allows you to just make it work in the
-shortest time possible. You are free to take on technical debt at this stage
-and take shortcuts.
-
-Experimental components can be merged, but will be deleted if they are
-abandoned. They must align with the below principals otherwise they are just
-poorly written features and won't be merged.
-
-#### Create a falsifiable hypothesis
-
-Clearly state what you are trying to prove, what failure would look like and
-what success would be. A component or PR can only be categorised as
-experimental if it is clearly an experiment.
-
-#### Do not over-engineer
-
-Just do the simplest, easiest thing to prove the feature's viability. Use
-workarounds to solve problems further down the stack. Do not generalise if a
-specific solution will meet your current requirements regardless of the
-consequences.
-
-#### Track your technical debt
-
-You need to keep a list of your technical debt (i.e. a TODO list) which can be
-used to estimate the cost of turning an experimental component into a stable
-one.
-
-### Stable
-
-Components and code which we won't delete without obsoleting them first.
-
-#### Think in the long term
-
-Assume your code will be run for 10 years and that any mistake will cost many
-times your own labor and that any improvement will have a huge payoff.
-
-#### Document once instead of answering many
-
-It is better to spend a few hours documenting than many hours answering.
-
-#### Upstream first
-
-Propagate your fixes back to the community and...
-
-#### Fix whatever needs to be fixed
-
-Fixing problems further down the stack can have fractal benefits that are not
-immediately obvious.
-
-### Legacy
-
-Components or APIs which can only be accessed through a versioned interface
-and only use versioned interfaces. That is, the function names and/or namespaces
-have the version number in the name. The behaviour of versioned interfaces
-does not change allowing scripts or reports to use them indefinitely without
-any maintenance due to changes in the library. Legacy components are deleted
-if they are not used enough.
-
-Otherwise the principals are the same as the Stable stage.
-
-## Library coding standards
-
-This applies to code providing core functionality of the project. This
-includes some scripts and reports, but we will just refer to them as the
-library coding standards.
-
-### Documentation and commenting
-
-Use documentation strings wherever possible, these are vastly more useful than
-inline comments. Only use inline comments for annotating very unusual code.
-
-### Prefer explicit over implicit
-
-Type annotate all interfaces. Learn Julia's type system use it to lock down
-your code. Type parameters, abstract types and multiple dispatch allow for so
-much freedom it is rarely desirable to use implicit types (in function
-arguments or structs).
-
-Implicit types are often OK for local variables, but adding type annotations
-can help make code clearer.
-
-# Project status
-
-Presently the entire project is a POC with no stable modules defined.

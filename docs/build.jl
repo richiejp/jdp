@@ -12,13 +12,17 @@ args = parse_args(ShellArgDefs(Set(["clean"]), Dict()), ARGS).named
 
 makedocs(
     modules = [JDP],
-    format = :html,
+    format = Documenter.HTML(),
     sitename = "JDP",
     clean = args["clean"],
     pages = [
         "Home" => "index.md",
         "Reference" => [
-            "JDP.BugRefs" => "bugrefs.md"
+            "BugRefs" => "bugrefs.md",
+            "Conf" => "conf.md",
+            "Functional" => "functional.md",
+            "Repository" => "repository.md",
+            "Trackers" => "trackers.md"
         ],
         "Development" => "development.md"
     ]
