@@ -2,18 +2,6 @@
 .#*
 *.cov
 */.ipynb_checkpoints
-docs/src/
-docs/build.jl
-docs/build/*.dia
-src/
-test/
-run/
-notebooks/
-install/
-conf/
-build/
-LICENSE
-Manifest.toml
-Project.toml
-README.md
+docs/build
+*.dia
 
