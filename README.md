@@ -16,7 +16,7 @@ more.
 !!! note
 
     SUSE employees and associates should view this at:
-    https://gitlab.suse.de/rpalethorpe/jdp
+    [gitlab.suse.de/rpalethorpe/jdp](https://gitlab.suse.de/rpalethorpe/jdp)
 
 ## Docker
 
@@ -47,7 +47,7 @@ docker build -t jdp:latest -f install/Dockerfile-slave \
 !!! note
 
     If you pulled from dockerhub (or wherever) then you will need to change
-	the tag name to suserichiejp/jdp:latest (or whatever).
+    the tag name to suserichiejp/jdp:latest (or whatever).
 
 Then run it
 ```sh
@@ -102,8 +102,9 @@ various scripts/services. See `install/gitlab-ci.*`.
 
 # Documentation
 
-Further documentation can be found here https://richiejp.github.io/jdp or
-https://rpalethorpe.io.suse.de/jdp
+Further documentation can be found at
+[richiejp.github.io/jdp](https://richiejp.github.io/jdp) or
+[rpalethorpe.io.suse.de/jdp](https://rpalethorpe.io.suse.de/jdp)
 
 You can also find documentation at the Julia REPL by typing `?` followed by an
 identifier or in a notebook you can type `@doc identifier` in a code cell.
