@@ -1,13 +1,22 @@
 # JDP
 
-Extensible, semi-automated, test review and reporting development
-environment. Initially targeted at SUSE's QA Kernel & Networking team's
-requirements, but this is intended to have general applicability at least
-within SUSE QA.
+Extensible, sometimes automated, test/bug review and reporting development
+environment. The broader aim is to make prototyping arbitrary reporting and
+inter-tool workflows cheap so that experimentation in this area has a convex
+payoff.
+
+Initially targeted at SUSE's QA Kernel & Networking team's requirements, but
+this is intended to have general applicability at least within SUSE QA.
 
 # Install
 
-The goal is to do this in a single command, but for now it takes a few more.
+The goal is to do this in a single command, but for now it takes a few
+more.
+
+!!! note
+
+    SUSE employees and associates should view this at:
+    https://gitlab.suse.de/rpalethorpe/jdp
 
 ## Docker
 
@@ -34,6 +43,11 @@ docker build -t jdp:latest -f install/Dockerfile-slave \
              --build-arg REDIS_MASTER_HOST=ip-or-name \
              --build-arg REDIS_MASTER_AUTH=password .
 ```
+
+!!! note
+
+    If you pulled from dockerhub (or wherever) then you will need to change
+	the tag name to suserichiejp/jdp:latest (or whatever).
 
 Then run it
 ```sh
@@ -88,8 +102,12 @@ various scripts/services. See `install/gitlab-ci.*`.
 
 # Documentation
 
-Further documentation can be found here:
-https://richiejp.github.io/jdp/docs/build/index.html
+Further documentation can be found here https://richiejp.github.io/jdp or
+https://rpalethorpe.io.suse.de/jdp
 
 You can also find documentation at the Julia REPL by typing `?` followed by an
 identifier or in a notebook you can type `@doc identifier` in a code cell.
+
+The following image may give you some intuition for what JDP is.
+
+![Outer Architecture](https://richiejp.github.io/jdp/outer_arch.svg)
