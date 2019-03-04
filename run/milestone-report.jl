@@ -56,9 +56,9 @@ bugdict = get!(args, "bugs") do
 end
 
 println("""
-# $product_short $release $builds Kernel Acceptance Test Report
+# $product_short $release $(join(builds, ", ")) Kernel Acceptance Test Report
 
-The formatted version of this report is here:
+This was partially generated with the [JDP milestone report](https://gitlab.suse.de/rpalethorpe/jdp/blob/master/run/milestone-report.jl)
 
 ## Summary
 
