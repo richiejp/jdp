@@ -137,3 +137,32 @@ identifier or in a notebook you can type `@doc identifier` in a code cell.
 The following image may give you some intuition for what JDP is.
 
 ![Outer Architecture](outer_arch.svg)
+
+# Contributors
+
+Created and maintained by Richard Palethorpe (rpalethorpe@suse.com). Sebastian
+Chlad (schlad@suse.com) is mainly responsible for it being a serious (I hope)
+project.
+
+Cyril has been asking for a result difference view and matrix for years.
+
+## Ideas and feedback
+
+Because it is not obvious who has contributed non-code or documentation
+changes I will try to make a list. Please let me know if I have missed you
+out or want to be removed.
+
+* Sebastian Chlad
+* Cyril Chrubis
+* Yong Sun
+* Anton Smorodskyi
+* Sergio Lindo
+* Petr Vorel
+* Oliver Kurz
+* Clemans Famulla-Conrad
+* Jose Lausuch
+* Petr Cervinka
+
+## Code and documentation
+
+See the github/lab stats.
