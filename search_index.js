@@ -13,7 +13,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Home",
     "title": "JDP",
     "category": "section",
-    "text": "Extensible, sometimes automated, test/bug review and reporting development environment. The broader aim is to make prototyping arbitrary reporting and inter-tool workflows cheap so that experimentation in this area has a convex payoff.Initially targeted at SUSE\'s QA Kernel & Networking team\'s requirements, but this is intended to have general applicability at least within SUSE QA."
+    "text": "In simple terms; JDP makes creating test result reports (amongst other things) easy.In less simple terms, JDP is an Extensible, sometimes automated, test/bug review and reporting development environment. The broader aim is to make prototyping arbitrary reporting and inter-tool workflows cheap so that experimentation in this area has a convex payoff.JDP may be used as a library in a larger project or as an application/service[1].\nJDP is not a polished product for non-technical users, but you can use it to make that.\nJDP makes data from multiple sources/trackers easily accessible, but it is not a source of truth.\nJDP can post back to trackers; it can automate workflows other than reporting.Initially JDP is targeted at SUSE\'s QA Kernel & Networking team\'s requirements, but this is intended to have general applicability at least within SUSE QA.tip: Tip\nThis README is best viewed through the docs site (public mirror). Otherwise admonition blocks like this will be misinterpreted as literal blocks.[1]: In the sense that the JDP project comes bundled with some scripts for using it with Jupyter amongst other things."
 },
 
 {
