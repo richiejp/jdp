@@ -1,12 +1,37 @@
 # JDP
 
-Extensible, sometimes automated, test/bug review and reporting development
-environment. The broader aim is to make prototyping arbitrary reporting and
-inter-tool workflows cheap so that experimentation in this area has a convex
-payoff.
+In simple terms; JDP makes creating test result reports (amongst other things)
+easy.
 
-Initially targeted at SUSE's QA Kernel & Networking team's requirements, but
-this is intended to have general applicability at least within SUSE QA.
+In less simple terms, JDP is an Extensible, sometimes automated, test/bug
+review and reporting development environment. The broader aim is to *make
+prototyping arbitrary reporting and inter-tool workflows cheap* so that
+experimentation in this area has a convex payoff.
+
+* JDP may be used as a library in a larger project or as an
+  application/service[^1].
+* JDP is not a polished product for non-technical users, but you can use it to
+  make that.
+* JDP makes data from multiple sources/trackers easily accessible, but it is
+  [not a source of truth](development/index.html#Not-a-source-of-truth-1).
+* JDP can post back to trackers; it can automate workflows other than
+  reporting.
+
+Initially JDP is targeted at SUSE's QA Kernel & Networking team's
+requirements, but this is intended to have general applicability at least
+within SUSE QA.
+
+!!! tip
+
+    This README is best viewed through the [docs site](https://rpalethorpe.io.suse.de/jdp/) ([public
+    mirror](https://richiejp.github.io/jdp/)).
+    Otherwise *admonition blocks* like this will be misinterpreted as literal
+    blocks.
+
+[^1]:
+
+    In the sense that the JDP project comes bundled with some scripts for
+    using it with Jupyter amongst other things.
 
 # Install
 
@@ -111,4 +136,4 @@ identifier or in a notebook you can type `@doc identifier` in a code cell.
 
 The following image may give you some intuition for what JDP is.
 
-![Outer Architecture](https://richiejp.github.io/jdp/outer_arch.svg)
+![Outer Architecture](outer_arch.svg)
