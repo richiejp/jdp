@@ -38,22 +38,6 @@ test:
       --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA
       -t jdp:$CI_COMMIT_SHA julia --color=yes ../install/test.jl
 
-pages:
-  stage: deploy
-  extends: .make
-  environment:
-    name: production
-  artifacts:
-    paths:
-      - public
-  script:
-    - mkdir public
-    - >
-      docker run --label $DOM.job_stage=$CI_JOB_STAGE
-      --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA
-      --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build
-      -t jdp:$CI_COMMIT_SHA julia --color=yes ../docs/build.jl
-
 deploy:
   stage: deploy
   extends: .make
@@ -133,7 +117,7 @@ stop-redis-eu:
   tags:
     - Europe
 
-report:
+pages:
   stage: execute
   tags:
     - primary
@@ -152,6 +136,11 @@ report:
       docker run --name report --network production -t
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/data jdp:production
       julia --color=yes run/all.jl
+    - >
+      docker run --label $DOM.job_stage=$CI_JOB_STAGE
+      --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA
+      --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build
+      -t jdp:production julia --color=yes ../docs/build.jl
 
 after_script:
   - ls -l

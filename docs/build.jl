@@ -1,6 +1,6 @@
 using Pkg
 
-include("../src/init.jl")
+include(joinpath(@__DIR__, "../src/init.jl"))
 
 using Documenter
 
@@ -10,21 +10,27 @@ import JDP.BugRefsParser
 
 args = parse_args(ShellArgDefs(Set(["clean"]), Dict()), ARGS).named
 
+pages = [
+    "Home" => "index.md",
+    "Reference" => [
+        "BugRefs" => "bugrefs.md",
+        "Conf" => "conf.md",
+        "Functional" => "functional.md",
+        "Repository" => "repository.md",
+        "Trackers" => "trackers.md"
+    ],
+    "Development" => "development.md"
+]
+
+if isdir(joinpath(@__DIR__, "build/reports"))
+    push!(pages, "Reports" => "reports.md")
+end
+
 makedocs(
     modules = [JDP],
     format = Documenter.HTML(),
     sitename = "JDP",
     clean = args["clean"],
-    pages = [
-        "Home" => "index.md",
-        "Reference" => [
-            "BugRefs" => "bugrefs.md",
-            "Conf" => "conf.md",
-            "Functional" => "functional.md",
-            "Repository" => "repository.md",
-            "Trackers" => "trackers.md"
-        ],
-        "Development" => "development.md"
-    ]
+    pages = pages
 )
 
