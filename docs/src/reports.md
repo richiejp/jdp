@@ -18,7 +18,7 @@ html_report_paths = filter(readdir("reports")) do entry
 end
 
 join(map(html_report_paths) do path
-	"* [$(path[1:end-5])](reports/$path)"
+	"* [$(path[1:end-5])]($path)"
 end, "\n") |> Markdown.parse
 ```
 

@@ -48,7 +48,7 @@ module MilestoneSandbox
 args = Dict{String, Any}("builds" => [Main.latest[2]], "results" => Main.allres)
 try
     @info "Running run/milestone-report.jl"
-    open(joinpath(reppath, "Milestone-Report.md", "w")) do io
+    open(joinpath(Main.reppath, "Milestone-Report.md", "w")) do io
         redirect_stdout(io) do
             include(joinpath(@__DIR__, "milestone-report.jl"))
         end

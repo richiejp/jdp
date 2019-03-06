@@ -137,8 +137,7 @@ pages:
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/data jdp:production
       julia --color=yes run/all.jl
     - >
-      docker run --label $DOM.job_stage=$CI_JOB_STAGE
-      --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA
+      docker run --network production
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build
       -t jdp:production julia --color=yes docs/build.jl
 
