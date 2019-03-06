@@ -378,6 +378,8 @@ function get_test_results!(res::Vector{TestResult},
             ["LTP", var["LTP_COMMAND_FILE"]]
         elseif haskey(var, "XFSTESTS")
             ["fstests", var["XFSTESTS"]]
+        elseif haskey(var, "HPC")
+            ["OpenQA", "HPC", var["HPC"]]
         else
             ["OpenQA"]
         end,
