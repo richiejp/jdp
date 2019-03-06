@@ -140,7 +140,7 @@ pages:
       docker run --label $DOM.job_stage=$CI_JOB_STAGE
       --label $DOM.job_id=$CI_JOB_ID --label $DOM.commit=$CI_COMMIT_SHA
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build
-      -t jdp:production julia --color=yes ../docs/build.jl
+      -t jdp:production julia --color=yes docs/build.jl
 
 after_script:
   - ls -l
