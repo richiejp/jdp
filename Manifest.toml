@@ -41,9 +41,9 @@ version = "0.5.0"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
-git-tree-sha1 = "49269e311ffe11ac5b334681d212329002a9832a"
+git-tree-sha1 = "195a3ffcb8b0762684b6821de18f83a16455c6ea"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "1.5.1"
+version = "2.0.0"
 
 [[Conda]]
 deps = ["Compat", "JSON", "VersionParsing"]
@@ -114,7 +114,7 @@ uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
 [[HTTP]]
 deps = ["Base64", "Dates", "Distributed", "IniFile", "JSON", "MbedTLS", "Sockets", "Test"]
-git-tree-sha1 = "25db0e3f27bd5715814ca7e4ad22025fdcf5cc6e"
+git-tree-sha1 = "48c4c541f66113dc47cc64ccb41e6da8f8519e5c"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaWeb/HTTP.jl.git"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
@@ -184,10 +184,10 @@ uuid = "7eb4fadd-790c-5f42-8a69-bfa0b872bfbf"
 version = "1.0.2"
 
 [[MbedTLS]]
-deps = ["BinaryProvider", "Dates", "Libdl", "Random", "Sockets", "Test"]
-git-tree-sha1 = "40b4a9149f0967714991328b8155c9ff5f91e755"
+deps = ["BinaryProvider", "Dates", "Distributed", "Libdl", "Random", "Sockets", "Test"]
+git-tree-sha1 = "2d94286a9c2f52c63a16146bb86fd6cdfbf677c6"
 uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "0.6.7"
+version = "0.6.8"
 
 [[Missings]]
 deps = ["Dates", "InteractiveUtils", "SparseArrays", "Test"]
@@ -346,9 +346,9 @@ version = "0.5.7"
 
 [[Weave]]
 deps = ["Base64", "Compat", "Dates", "Highlights", "JSON", "Markdown", "Mustache", "Pkg", "Printf", "REPL", "Requires", "Serialization", "Test", "YAML"]
-git-tree-sha1 = "73e6beabf74c51df88e5d4d736b3701707f9e1a3"
+git-tree-sha1 = "48453e8d50d7dbfecdb99cff0faad9887f3a2f37"
 uuid = "44d3d7a6-8a23-5bf8-98c5-b353f8df5ec9"
-version = "0.7.1"
+version = "0.8.1"
 
 [[XMLDict]]
 deps = ["DataStructures", "EzXML", "IterTools", "Test"]
