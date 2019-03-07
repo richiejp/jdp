@@ -12,6 +12,7 @@ args = parse_args(ShellArgDefs(Set(["clean"]), Dict()), ARGS).named
 
 pages = [
     "Home" => "index.md",
+    "Bug Tagging" => "bug-tagging.md",
     "Reference" => [
         "BugRefs" => "bugrefs.md",
         "Conf" => "conf.md",
