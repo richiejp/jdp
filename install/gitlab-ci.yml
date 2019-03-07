@@ -52,7 +52,10 @@ deploy:
       docker build
       --label $DOM.job_stage=$CI_JOB_STAGE --label $DOM.job_id=$CI_JOB_ID
       -t jdp:production -f install/Dockerfile-production
-      --build-arg REDIS_AUTH=$REDIS_MASTER_PASS ./
+      --build-arg REDIS_AUTH=$REDIS_MASTER_PASS
+      --build-arg BUGZILLA_TLA=$BUGZILLA_TLA
+      --build-arg BUGZILLA_USER=$BUGZILLA_USER
+      --build-arg BUGZILLA_PASS=$BUGZILLA_PASS ./
 
 publish:
   stage: execute
