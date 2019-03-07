@@ -43,6 +43,9 @@ end
 weave(joinpath(@__DIR__, "../notebooks/Report-DataFrames.ipynb");
       doctype="md2html", out_path=reppath)
 
+weave(joinpath(@__DIR__, "../notebooks/Report-HPC.ipynb");
+      doctype="md2html", out_path=reppath)
+
 module MilestoneSandbox
 
 args = Dict{String, Any}("builds" => [Main.latest[2]], "results" => Main.allres)
