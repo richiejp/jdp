@@ -6,7 +6,6 @@ LABEL name=jdp-production maintainer=rpalethorpe@suse.com description="JDP with 
 ARG REDIS_HOST="redis"
 ARG REDIS_AUTH="notsecret"
 
-ARG BUGZILLA_TLA="bsc"
 ARG BUGZILLA_USER=""
 ARG BUGZILLA_PASS=""
 
@@ -19,6 +18,6 @@ RUN cp conf/redis-master.conf ~/.config/redis/master.conf \
 && echo "requirepass $REDIS_AUTH" >> ~/.config/redis/master.conf
 
 RUN echo "[instances]" > ~/.config/jdp/trackers.toml
-RUN echo "[instances.$BUGZILLA_TLA]" >> ~/.config/jdp/trackers.toml
+RUN echo "[instances.bsc]" >> ~/.config/jdp/trackers.toml
 RUN echo "user = \"$BUGZILLA_USER\"" >> ~/.config/jdp/trackers.toml
 RUN echo "pass = \"$BUGZILLA_PASS\"" >> ~/.config/jdp/trackers.toml
