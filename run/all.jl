@@ -12,7 +12,11 @@ using JDP.Repository
 using JDP.Functional
 using JDP.Conf
 
-argdefs = IOHelpers.ShellArgDefs(Set(["norefresh"]), Dict())
+weave_ipynb(name::String) =
+    weave(joinpath(@__DIR__, "../notebooks/$name.ipynb");
+          doctype="md2html", out_path=reppath)
+
+argdefs = IOHelpers.ShellArgDefs(Set(["norefresh", "dryrun"]), Dict())
 args = IOHelpers.parse_args(argdefs, ARGS).named
 
 reppath = joinpath(Conf.data(:datadir), "reports")
@@ -31,24 +35,25 @@ latest = reduce((parse(Float64, test.build), test.build) for test
     b[1] > o[1] ? b : o
 end
 
+args["build"] = latest[2]
+@info "Latest build is $(latest[2]); propagating bug tags"
+weave(joinpath(@__DIR__, "../notebooks/Propagate Bug Tags.ipynb");
+      doctype="md2html", out_path=reppath, args=args)
 
 if !args["norefresh"]
-    @info "Refreshing all comments for latest build: $(latest[2])"
+    @info "Refreshing comments after bug tag propagation"
 
     OpenQA.refresh_comments(job -> job.vars["BUILD"] == latest[2], "osd")
 end
 
 @info "Generating Reports in `$reppath`"
 
-weave(joinpath(@__DIR__, "../notebooks/Report-DataFrames.ipynb");
-      doctype="md2html", out_path=reppath)
-
-weave(joinpath(@__DIR__, "../notebooks/Report-HPC.ipynb");
-      doctype="md2html", out_path=reppath)
+weave_ipynb("Report-DataFrames");
+weave_ipynb("Report-HPC");
 
 module MilestoneSandbox
 
-args = Dict{String, Any}("builds" => [Main.latest[2]], "results" => Main.allres)
+args = Dict{String, Any}("builds" => [Main.latest[2]])
 try
     @info "Running run/milestone-report.jl"
     open(joinpath(Main.reppath, "Milestone-Report.md"), "w") do io
