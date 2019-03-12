@@ -94,6 +94,10 @@ post_raw(ses::Session, path::String, post::String) = read(
 post_json(ses::Session, path::String, post::String) =
     JSON.parse(post_raw(ses, path, post); dicttype=JsonDict)
 
+delete_json(ses::Session, path::String) = JSON.parse(read(
+    `$(ses.cmd) $(ses.host) --apikey $(ses.apikey) --apisecret $(ses.apisecret) $path delete`,
+    String); dicttype=JsonDict)
+
 o3 = Session("openqa.opensuse.org")
 no3 = NativeSession("https://openqa.opensuse.org")
 osd = Session("openqa.suse.de")
@@ -152,6 +156,14 @@ struct Comment
     text::String
 end
 
+struct CommentEx1
+    id::Int
+    author::String
+    created::String
+    updated::String
+    text::String
+end
+
 const VarsDict = Dict{String, Union{Int, String, Nothing}}
 
 abstract type Item <: Repository.AbstractItem end
@@ -166,7 +178,7 @@ mutable struct JobResult <: Item
     start::Union{String, Nothing}
     finish::Union{String, Nothing}
     modules::Vector{TestModule}
-    comments::Vector{Comment}
+    comments::Vector{Union{Comment, CommentEx1}}
 end
 
 struct TestResult <: Item
@@ -234,15 +246,16 @@ json_to_modules(results::Vector)::Vector{TestModule} = map(results) do r
                                    json_to_steps(r["details"])))
 end
 
-json_to_comments(comments::String)::Vector{Comment} =
+json_to_comments(comments::String)::Vector{CommentEx1} =
     convert(Vector{JsonDict},
             JSON.parse(comments; dicttype=JsonDict)) |> json_to_comments
 
-json_to_comments(comments::Vector{JsonDict})::Vector{Comment} = map(comments) do c
-    @error_with_json(c, Comment(c["userName"],
-                                c["created"],
-                                c["updated"],
-                                c["text"]))
+json_to_comments(comments::Vector{JsonDict})::Vector{CommentEx1} = map(comments) do c
+    @error_with_json(c, CommentEx1(c["id"],
+                                   c["userName"],
+                                   c["created"],
+                                   c["updated"],
+                                   c["text"]))
 end
 
 function json_to_job(job::String; vars::String="", comments::String="")::JobResult
@@ -253,7 +266,7 @@ end
 
 function json_to_job(job::JsonDict;
                      vars::Union{VarsDict, Nothing}=nothing,
-                     comments::Union{Vector{Comment}, Nothing}=nothing)::JobResult
+                     comments::Union{Vector{CommentEx1}, Nothing}=nothing)::JobResult
     j = job
     @error_with_json(job,
         JobResult(
@@ -318,6 +331,9 @@ end
 
 post_job_comment(host::AbstractSession, job::Int, text::String) =
     post_json(host, "jobs/$job/comments", "text=$text")
+
+delete_job_comment(host::AbstractSession, job::Int, comment::Int)::Int =
+    delete_json(host, "jobs/$job/comments/$comment")["id"]
 
 function map_result_str(res::String)::String
     if res === "ok"
@@ -394,7 +410,8 @@ function get_test_results!(res::Vector{TestResult},
     ))
 end
 
-function parse_comments(comments::Vector{Comment}, trackers::TrackerRepo)::Tags
+function parse_comments(comments::Vector{Union{Comment, CommentEx1}},
+                        trackers::TrackerRepo)::Tags
     tags = Tags()
 
     for c in comments
