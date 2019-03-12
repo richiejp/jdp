@@ -20,8 +20,8 @@ abstract type AbstractSession <: Tracker.AbstractSession end
 
 Unfortunately this doesn't work so well because:
 
-A) JuliaWeb's current HTTP SSL implementation i.e. the MbedTLS wrapper
-B) OpenQA's wierd authentication which is difficult to replicate outside of
+1. JuliaWeb's current HTTP SSL implementation i.e. the MbedTLS wrapper
+2. OpenQA's wierd authentication which is difficult to replicate outside of
    Perl.
 """
 struct NativeSession <: AbstractSession
