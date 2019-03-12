@@ -423,12 +423,15 @@ function parse_comments(comments::Vector{Union{Comment, CommentEx1}},
     tags
 end
 
+Repository.fetch(::Type{JobResult}, ::Type{Vector}, from::String) =
+    Repository.mload("$from-job-*", JobResult)
+
 function refresh_comments(pred::Function, from::String)
     trackers = load_trackers()
     tracker = get_tracker(trackers, from)
 
     @info "Loading existing jobs"
-    all = Repository.mload("$from-job-*", JobResult)
+    all = Repository.fetch(JobResult, Vector, from)
     jrs = filter(pred, all)
 
     @info "Refreshing comments on $(length(jrs)) jobs"
@@ -449,7 +452,7 @@ function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
     jrs = if refresh
         @info "Loading existing jobs"
         jrs = Dict("$from-job-$(job.id)" => job for
-                   job in Repository.mload("$from-job-*", JobResult))
+                   job in Repository.fetch(JobResult, Vector, from))
         ses = Tracker.ensure_login!(tracker)
         jids = @async get_group_jobs(ses, kwargs[:groupid])
         fjindx = BitSet(j.id for j in values(jrs)
@@ -472,7 +475,7 @@ function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
 
         values(jrs)
     else
-        Repository.mload("$from-job-*", JobResult)
+        Repository.fetch(JobResult, Vector, from)
     end
 
     for jr in jrs
