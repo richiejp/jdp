@@ -438,8 +438,15 @@ function refresh_comments(pred::Function, from::String)
     for (i, job) in enumerate(jrs)
         @info "GET job $i/$(length(jrs))"
         ses = Tracker.ensure_login!(tracker)
-        job.comments = get_job_comments(ses, job.id) |> json_to_comments
-        Repository.store("$from-job-$(job.id)", job)
+        comments = try
+            json_to_comments(get_job_comments(ses, job.id))
+        catch
+            nothing
+        end
+        if comments != nothing
+            job.comments = comments
+            Repository.store("$from-job-$(job.id)", job)
+        end
     end
 end
 
