@@ -89,6 +89,8 @@ get_tracker(repo::TrackerRepo, tla::AbstractString)::Instance = get(repo.instanc
     Instance(tla)
 end
 
+get_tracker(tla::AbstractString)::Instance = get_tracker(load_trackers(), tla)
+
 mapdic(fn, m) = map(fn, zip(keys(m), values(m))) |> Dict
 
 get_session_type(::Nothing) = StaticSession

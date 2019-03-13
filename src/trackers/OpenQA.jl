@@ -87,6 +87,10 @@ end
 get_json(host::Session, path::String; api::Bool=true) =
     JSON.parse(get_raw(host, path; api=api); dicttype=JsonDict)
 
+get_json(path::String, from::String; api::Bool=true) =
+    get_json(Tracker.ensure_login!(get_tracker(load_trackers(), from)),
+             path; api=api)
+
 post_raw(ses::Session, path::String, post::String) = read(
     `$(ses.cmd) $(ses.host) --apikey $(ses.apikey) --apisecret $(ses.apisecret) $path post $post`,
     String)
@@ -165,6 +169,11 @@ struct CommentEx1
 end
 
 const VarsDict = Dict{String, Union{Int, String, Nothing}}
+
+struct JobGroup <: Item
+    id::Int
+    name::String
+end
 
 abstract type Item <: Repository.AbstractItem end
 
@@ -450,40 +459,47 @@ function refresh_comments(pred::Function, from::String)
     end
 end
 
-function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
-                          refresh=false, kwargs...)::Vector{TestResult}
+function refresh!(tracker::Tracker.Instance{AbstractSession}, group::JobGroup,
+                 jrs::Dict{String, JobResult})
+    ses = Tracker.ensure_login!(tracker)
+    jids = @async get_group_jobs(ses, group.id)
+    fjindx = BitSet(j.id for j in values(jrs)
+                    if occursin(r"^(skipped|cancelled|done)$", j.state))
+    jids = filter(jid -> !(jid in fjindx), fetch(jids))
+    jobn = length(jids)
+
+    @info "Refreshing $jobn jobs from the $(group.name) group ($(group.id))"
+    jids |> enumerate |> cimap() do (indx, jid)
+        @info "GET job $jid ($indx of $jobn)"
+        res = @async get_job_results(ses, jid)
+        coms = @async get_job_comments(ses, jid) |> json_to_comments
+        vars = @async get_job_vars(ses, jid)
+        json_to_job(fetch(res); vars=fetch(vars), comments=fetch(coms))
+    end |> cforeach() do job
+        k = "$from-job-$(job.id)"
+        Repository.store(k, job)
+        jrs[k] = job
+    end
+end
+
+function Repository.refresh(tracker::Tracker.Instance{AbstractSession}, groups::Vector{JobGroup})
+    jrs = Dict("$from-job-$(job.id)" => job for
+               job in Repository.fetch(JobResult, Vector, tracker.tla))
+
+    for group in groups
+        refresh!(tracker, group, jrs)
+    end
+end
+
+Repository.refresh(tracker::Tracker.Instance{AbstractSession}, group::JobGroup) =
+    Tracker.refresh(tracker, [group])
+
+function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String)::Vector{TestResult}
     trackers = load_trackers()
     tracker = get_tracker(trackers, from)
     results = Vector{TestResult}()
 
-    jrs = if refresh
-        @info "Loading existing jobs"
-        jrs = Dict("$from-job-$(job.id)" => job for
-                   job in Repository.fetch(JobResult, Vector, from))
-        ses = Tracker.ensure_login!(tracker)
-        jids = @async get_group_jobs(ses, kwargs[:groupid])
-        fjindx = BitSet(j.id for j in values(jrs)
-                        if occursin(r"^(skipped|cancelled|done)$", j.state))
-        jids = filter(jid -> !(jid in fjindx), fetch(jids))
-        jobn = length(jids)
-
-        @info "Refreshing $jobn jobs"
-        jids |> enumerate |> cimap() do (indx, jid)
-            @info "GET job $jid ($indx of $jobn)"
-            res = @async get_job_results(ses, jid)
-            coms = @async get_job_comments(ses, jid) |> json_to_comments
-            vars = @async get_job_vars(ses, jid)
-            json_to_job(fetch(res); vars=fetch(vars), comments=fetch(coms))
-        end |> cforeach() do job
-            k = "$from-job-$(job.id)"
-            Repository.store(k, job)
-            jrs[k] = job
-        end
-
-        values(jrs)
-    else
-        Repository.fetch(JobResult, Vector, from)
-    end
+    jrs = Repository.fetch(JobResult, Vector, from)
 
     for jr in jrs
         tags = parse_comments(jr.comments, trackers)
@@ -496,9 +512,8 @@ function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String;
     results
 end
 
-function Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String;
-                             refresh=false, kwargs...)::DataFrame
-    results = Repository.fetch(TestResult, Vector, from; refresh=refresh, kwargs...)
+function Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String)::DataFrame
+    results = Repository.fetch(TestResult, Vector, from)
 
     cols::Array{Any} = [String[]]
     push!(cols, Vector{String}[])

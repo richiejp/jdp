@@ -102,7 +102,16 @@ function mload(pattern::String, ::Type{I})::Vector{I} where {I <: AbstractItem}
 end
 
 refresh(t::Tracker.Instance{S}, bref::BugRefs.Ref) where {S} =
-    @warn "Refresh not defined for tracker " t.tla " and $S"
+    @warn "Refresh BugRefs not defined for tracker $(t.tla) and $S"
+
+"""Refresh the local cached data for the given item(s)
+
+What data is updated depends on the type of item being refreshed. For items
+which are logically containers of other items, it may be the contained items
+which are updated.
+"""
+refresh(t::Tracker.Instance{S}, item::I) where {S, I <: AbstractItem} =
+    error("Refresh $I not defined for tracker $(t.tla) and $S")
 
 "Refresh the local cached data for the given bug references"
 function refresh(bugrefs::Vector{BugRefs.Ref})::Vector
@@ -110,6 +119,14 @@ function refresh(bugrefs::Vector{BugRefs.Ref})::Vector
         @info "GET bug $bref ($indx/$(length(bugrefs)))"
         refresh(bref.tracker, bref)
     end
+end
+
+refresh(t::Tracker.Instance{S}, items::Vector{I}) where {S, I <: AbstractItem} =
+    map(c(refresh)(t), items)
+
+function refresh(items::Vector{I}, from::String) where {I <: AbstractItem}
+    tracker = Tracker.get_tracker(Tracker.load_trackers(), from)
+    refresh(tracker, from)
 end
 
 """Get one or more items of the given in the specified container

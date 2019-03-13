@@ -6,6 +6,7 @@ using Weave
 
 using JDP.IOHelpers
 using JDP.BugRefs
+using JDP.Tracker
 using JDP.Trackers.OpenQA
 using JDP.Trackers.Bugzilla
 using JDP.Repository
@@ -25,8 +26,18 @@ if !ispath(reppath)
     mkdir(reppath)
 end
 
-allres = Repository.fetch(OpenQA.TestResult, Vector, "osd";
-                          refresh=!args["norefresh"], groupid=116)
+tracker = Tracker.get_tracker("osd")
+jobgroups = [OpenQA.JobGroup(id, name) for (id, name) in [
+    116 => "Kernel",
+    117 => "Network",
+    130 => "HPC",
+    219 => "Public Cloud"
+]]
+
+if !args["norefresh"]
+    Repository.refresh(tracker, jobgroups)
+end
+allres = Repository.fetch(OpenQA.TestResult, Vector, tracker.tla)
 
 @info "We now have $(length(allres)) test results!"
 
@@ -43,7 +54,7 @@ weave(joinpath(@__DIR__, "../notebooks/Propagate Bug Tags.ipynb");
 if !args["norefresh"]
     @info "Refreshing comments after bug tag propagation"
 
-    OpenQA.refresh_comments(job -> job.vars["BUILD"] == latest[2], "osd")
+    OpenQA.refresh_comments(job -> job.vars["BUILD"] == latest[2], tracker.tla)
 end
 
 @info "Generating Reports in `$reppath`"
