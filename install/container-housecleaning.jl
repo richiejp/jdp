@@ -65,4 +65,5 @@ end
 
 if !dryrun
     run(`docker image prune --force`)
+    run(`docker volume prune`)
 end
