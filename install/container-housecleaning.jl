@@ -32,13 +32,13 @@ for cont in get_containers()
         @info "$amsg: Keeping (whitelisted)" cont["Name"] cont["Path"]
     elseif cont["State"]["Status"] != "exited"
         @info "$amsg: Keeping (Status != exited)" cont["Name"] cont["Path"]
-    elseif age > Day(9)
+    elseif age >= Day(3)
         @warn "$amsg: Removing" cont["Name"] cont["Path"]
         if !dryrun
             run(`docker rm $(cont["Id"])`)
         end
     else
-        @debug "$amsg: Keeping (age < 10 days)" cont["Name"] cont["Path"]
+        @debug "$amsg: Keeping (age < 3 days)" cont["Name"] cont["Path"]
     end
 end
 
@@ -49,7 +49,7 @@ for img in get_images()
     amsg = "Image is $age old"
     if any(tag -> tag in images_whitelist, img["RepoTags"])
         @info "$amsg: Keeping (whitelisted)" img["Id"] img["RepoTags"]
-    elseif age > Day(9)
+    elseif age >= Day(3)
         @warn "$amsg: Removing" img["Id"] img["RepoTags"]
         if !dryrun
             try
@@ -59,7 +59,7 @@ for img in get_images()
             end
         end
     else
-        @debug "$amsg: Keeping (age < 10 days)" img["Id"] img["RepoTags"]
+        @debug "$amsg: Keeping (age < 3 days)" img["Id"] img["RepoTags"]
     end
 end
 
