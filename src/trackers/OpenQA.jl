@@ -170,12 +170,12 @@ end
 
 const VarsDict = Dict{String, Union{Int, String, Nothing}}
 
+abstract type Item <: Repository.AbstractItem end
+
 struct JobGroup <: Item
     id::Int
     name::String
 end
-
-abstract type Item <: Repository.AbstractItem end
 
 mutable struct JobResult <: Item
     name::String
