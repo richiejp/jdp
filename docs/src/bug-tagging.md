@@ -23,8 +23,21 @@ or
     * generic/349: bsc#1128319.
     * Some other text which will be ignored.
 
+or
+
+    generic-349:bsc#1128319, generic-350 : bsc#1128321
+
+or even
+
+    * test01, test02: bug#1
+    * test03:bug#2,bug#3
+
 You can included other text in your comments and it will mostly be
-ignored. There is also some flexibility in how you write the test names.
+ignored. Also white-space is not significant around the `:`. There is also
+some flexibility in how you write the test names. For example `/` will be
+substituted with `-`, allowing you to use either.
+
+The full rules are in the [`JDP.BugRefsParser`](@ref).
 	
 The Propagate Bug Tags script will propagate bug tags from one failed job to
 another when the bug tag expression is satisfied. In this case, if the test
@@ -54,6 +67,11 @@ To prevent an old tag from being propagating to new jobs you can add an
 An anti-tag won't be propagated itself. It just stops any more propagations
 of tags which match its pattern. If you delete the comment containing the tag
 (and update the cache) then propagation should continue.
+
+!!! warning
+
+    You should write the `!` immediately after the `:`. Do not insert
+    white-space between them.
 
 [^1]:
 
