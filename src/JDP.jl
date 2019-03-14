@@ -14,7 +14,7 @@ include("Repository.jl")
 
 module Trackers
 include("trackers/Bugzilla.jl")
-#Base.include("trackers/Redmine.jl")
+include("trackers/Redmine.jl")
 include("trackers/OpenQA.jl")
 end
 

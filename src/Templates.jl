@@ -84,7 +84,7 @@ end
 render(io::IO, tmpl::Template, vars::Pair{Symbol}...)::Int =
     render(io, tmpl, Dict(vars))
 render(tmpl::Template, vars::Pair{Symbol}...)::String = let io = IOBuffer()
-    render(io, tmpl, vars)
+    render(io, tmpl, vars...)
     String(take!(io))
 end
 
