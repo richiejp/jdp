@@ -3,6 +3,7 @@ module Redmine
 import HTTP
 import JSON
 
+import JDP.Templates
 import JDP.Templates: Template, render
 import JDP.Conf
 import JDP.Tracker
