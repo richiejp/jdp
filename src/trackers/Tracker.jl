@@ -124,4 +124,13 @@ load_trackers(conf::Dict)::TrackerRepo = begin
     TrackerRepo(apis, insts)
 end
 
+function get_bug_type(tracker::Instance{S})::Union{Nothing, Type} where {S}
+    try
+        tmod = parentmodule(S)
+        getproperty(tmod, :Bug)
+    catch exception
+        @debug "Could not get Tracker's bug type" tracker exception
+    end
+end
+
 end #module

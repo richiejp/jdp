@@ -10,6 +10,7 @@ using JDP.BugRefs
 using JDP.Trackers
 using JDP.Trackers.OpenQA
 using JDP.Trackers.Bugzilla
+using JDP.Trackers.Redmine
 using JDP.Repository
 import JDP.Functional: cimap, cforeach
 
@@ -51,8 +52,7 @@ bugdict = get!(args, "bugs") do
         Repository.refresh(brefs)
     end
 
-    Dict(rf => Repository.fetch(Bugzilla.Bug, rf) for
-         rf in brefs if rf.tracker.tla == "bsc" || rf.tracker.tla == "boo")
+    Dict(rf => Repository.fetch(rf) for rf in brefs)
 end
 
 println("""
@@ -68,8 +68,9 @@ This was partially generated with the [JDP milestone report](https://gitlab.suse
 
 """)
 
-iscrit(bug) = startswith(bug.priority, "P1") ||
+iscrit(bug::Bugzilla.Bug) = startswith(bug.priority, "P1") ||
     (startswith(bug.priority, "P5") && bug.severity == "Critical")
+iscrit(bug::Redmine.Bug) = startswith(bug.priority, "P1")
 
 function print_bug_item(rf, bug)
     print("- ")
@@ -83,7 +84,7 @@ function print_bug_item(rf, bug)
         println()
     end
 end
-       
+
 for (rf, bug) in bugdict
     if iscrit(bug)
         print_bug_item(rf, bug)

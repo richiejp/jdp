@@ -104,6 +104,8 @@ end
 refresh(t::Tracker.Instance{S}, bref::BugRefs.Ref) where {S} =
     @warn "Refresh BugRefs not defined for tracker $(t.tla) and $S"
 
+refresh(bref::BugRefs.Ref) = refresh(bref.tracker, bref)
+
 """Refresh the local cached data for the given item(s)
 
 What data is updated depends on the type of item being refreshed. For items
@@ -140,6 +142,19 @@ function fetch(item::I,
                from::Union{String, Vector{String}};
                kwargs...) where {I <: AbstractItem, C}
     error("Repository.fetch needs to be overriden for $I and $C")
+end
+
+fetch(item::I, bref::BugRefs.Ref) where {I <: AbstractItem} =
+    error("Repository.fetch needs to be overriden for $I and BugRefs.Ref")
+
+function fetch(bref::BugRefs.Ref)::Union{Nothing, AbstractItem}
+    bt = Tracker.get_bug_type(bref.tracker)
+    if bt != nothing
+        fetch(bt, bref)
+    else
+        @error "No bug type defined for tracker in bugref $bref"
+        nothing
+    end
 end
 
 end
