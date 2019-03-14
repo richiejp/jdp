@@ -9,6 +9,9 @@ ARG REDIS_AUTH="notsecret"
 ARG BUGZILLA_USER=""
 ARG BUGZILLA_PASS=""
 
+ARG OSD_KEY=""
+ARG OSD_SECRET=""
+
 WORKDIR /home/jdp/src
 
 RUN mkdir -p ~/.config/jdp ~/.config/redis
@@ -21,3 +24,7 @@ RUN echo "[instances]" > ~/.config/jdp/trackers.toml
 RUN echo "[instances.bsc]" >> ~/.config/jdp/trackers.toml
 RUN echo "user = \"$BUGZILLA_USER\"" >> ~/.config/jdp/trackers.toml
 RUN echo "pass = \"$BUGZILLA_PASS\"" >> ~/.config/jdp/trackers.toml
+
+RUN echo "[instances.osd]" >> ~/.config/jdp/trackers.toml
+RUN echo "apikey = \"$OSD_KEY\"" >> ~/.config/jdp/trackers.toml
+RUN echo "apisecret = \"$OSD_SECRET\"" >> ~/.config/jdp/trackers.toml

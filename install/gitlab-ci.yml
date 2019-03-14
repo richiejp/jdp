@@ -54,7 +54,9 @@ deploy:
       -t jdp:production -f install/Dockerfile-production
       --build-arg REDIS_AUTH=$REDIS_MASTER_PASS
       --build-arg BUGZILLA_USER=$BUGZILLA_USER
-      --build-arg BUGZILLA_PASS=$BUGZILLA_PASS ./
+      --build-arg BUGZILLA_PASS=$BUGZILLA_PASS
+      --build-arg OSD_KEY=$OSD_KEY
+      --build-arg OSD_SECRET=$OSD_SECRET ./
 
 publish:
   stage: execute
