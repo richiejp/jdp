@@ -8,7 +8,6 @@ using JDP.IOHelpers
 using JDP.BugRefs
 using JDP.Tracker
 using JDP.Trackers.OpenQA
-using JDP.Trackers.Bugzilla
 using JDP.Repository
 using JDP.Functional
 using JDP.Conf
