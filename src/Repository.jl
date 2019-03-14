@@ -3,7 +3,7 @@ module Repository
 using BSON
 using Redis
 
-import JDP.Functional: cmap
+import JDP.Functional: cmap, c
 using JDP.Conf
 using JDP.BugRefs
 using JDP.Tracker
