@@ -459,8 +459,8 @@ function refresh_comments(pred::Function, from::String)
     end
 end
 
-function refresh!(tracker::Tracker.Instance{AbstractSession}, group::JobGroup,
-                 jrs::Dict{String, JobResult})
+function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
+                 jrs::Dict{String, JobResult}) where {S <: AbstractSession}
     ses = Tracker.ensure_login!(tracker)
     jids = @async get_group_jobs(ses, group.id)
     fjindx = BitSet(j.id for j in values(jrs)
@@ -476,14 +476,15 @@ function refresh!(tracker::Tracker.Instance{AbstractSession}, group::JobGroup,
         vars = @async get_job_vars(ses, jid)
         json_to_job(fetch(res); vars=fetch(vars), comments=fetch(coms))
     end |> cforeach() do job
-        k = "$from-job-$(job.id)"
+        k = "$(tracker.tla)-job-$(job.id)"
         Repository.store(k, job)
         jrs[k] = job
     end
 end
 
-function Repository.refresh(tracker::Tracker.Instance{AbstractSession}, groups::Vector{JobGroup})
-    jrs = Dict("$from-job-$(job.id)" => job for
+function Repository.refresh(tracker::Tracker.Instance{S},
+                            groups::Vector{JobGroup}) where {S <: AbstractSession}
+    jrs = Dict("$(tracker.tla)-job-$(job.id)" => job for
                job in Repository.fetch(JobResult, Vector, tracker.tla))
 
     for group in groups
@@ -491,8 +492,10 @@ function Repository.refresh(tracker::Tracker.Instance{AbstractSession}, groups::
     end
 end
 
-Repository.refresh(tracker::Tracker.Instance{AbstractSession}, group::JobGroup) =
-    Tracker.refresh(tracker, [group])
+function Repository.refresh(tracker::Tracker.Instance{S},
+                            group::JobGroup) where {S <: AbstractSession}
+    Repository.refresh(tracker, [group])
+end
 
 function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String)::Vector{TestResult}
     trackers = load_trackers()
