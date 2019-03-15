@@ -9,8 +9,11 @@ ARG REDIS_AUTH="notsecret"
 ARG BUGZILLA_USER=""
 ARG BUGZILLA_PASS=""
 
+# OpenQA
 ARG OSD_KEY=""
 ARG OSD_SECRET=""
+
+ARG REDMINE_KEY=""
 
 WORKDIR /home/jdp/src
 
@@ -28,3 +31,6 @@ RUN echo "pass = \"$BUGZILLA_PASS\"" >> ~/.config/jdp/trackers.toml
 RUN echo "[instances.osd]" >> ~/.config/jdp/trackers.toml
 RUN echo "apikey = \"$OSD_KEY\"" >> ~/.config/jdp/trackers.toml
 RUN echo "apisecret = \"$OSD_SECRET\"" >> ~/.config/jdp/trackers.toml
+
+RUN echo "[instances.poo]" >> ~/.config/jdp/trackers.toml
+RUN echo "key = \"$REDMINE_KEY\"" >> ~/.config/jdp/trackers.toml
