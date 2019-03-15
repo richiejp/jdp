@@ -7,7 +7,7 @@ import Base.Iterators: flatten
 
 using JDP.IOHelpers
 using JDP.BugRefs
-using JDP.Trackers
+using JDP.Tracker
 using JDP.Trackers.OpenQA
 using JDP.Trackers.Bugzilla
 using JDP.Trackers.Redmine
@@ -36,7 +36,15 @@ products = get!(args, "products", ["sle-15-SP1-Installer-DVD"])
 release = get!(args, "release", "Beta3")
 builds = get!(args, "builds", ["152.1"])
 
-refdict = Dict{BugRefs.Ref, Vector{OpenQA.TestResult}}()
+trackers = Tracker.load_trackers()
+
+refdict = Dict{BugRefs.Ref, Vector{OpenQA.TestResult}}(
+    BugRefs.Ref(rf, trackers) => [] for rf in [
+        # Extra bugs can be added here manually
+        # "bsc#1126782",
+        # "bsc#1126215"
+    ]
+)
 
 Iterators.filter(allres) do t
     (t.build in builds) && !isempty(t.refs) && (t.product in products)
@@ -68,9 +76,11 @@ This was partially generated with the [JDP milestone report](https://gitlab.suse
 
 """)
 
-iscrit(bug::Bugzilla.Bug) = startswith(bug.priority, "P1") ||
-    (startswith(bug.priority, "P5") && bug.severity == "Critical")
-iscrit(bug::Redmine.Bug) = startswith(bug.priority, "P1")
+iscrit(bug::Bugzilla.Bug) =
+    startswith(bug.priority, "P0") || startswith(bug.priority, "P1") ||
+    bug.severity == "Critical"
+iscrit(bug::Redmine.Bug) =
+    startswith(bug.priority, "P0") || startswith(bug.priority, "P1")
 
 function print_bug_item(rf, bug)
     print("- ")
@@ -85,36 +95,25 @@ function print_bug_item(rf, bug)
     end
 end
 
+totals = Dict()
 for (rf, bug) in bugdict
     if iscrit(bug)
         print_bug_item(rf, bug)
+    else
+        prio = bug.priority[1:2]
+        totals[prio] = 1 + get(totals, prio, 0)
     end
 end
 
 println("""
+
 ## Other Issues
 
+Below are the bug counts by priority. These include all issues and bugs which
+have been associated with a failing test case or other anomaly in this build.
 """)
 
-get_prio(bpair) = bpair[2].priority[1:2]
-
-sbugs = sort(collect(bugdict); by=get_prio)
-
-for (rf, bug) in sbugs
-    if !iscrit(bug)
-        print_bug_item(rf, bug)
-    end
+for prio in sort(collect(keys(totals)))
+    println("* $prio = $(totals[prio])")
 end
 
-for (rf, tsts) in refdict
-    if !haskey(bugdict, rf)
-        print("- ")
-        show(stdout, MIME("text/markdown"), rf)
-        println(" *(No summary data)*")
-        for t in refdict[rf]
-            print("   * ")
-            show(stdout, MIME("text/markdown"), t)
-            println()
-        end
-    end
-end
