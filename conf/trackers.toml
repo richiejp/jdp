@@ -22,6 +22,9 @@ get-item-html = "/issues/{id}"
 [apis.OpenQA]
 get-item-html = "/tests/{id}"
 
+[apis.GitHub]
+get-item-html = "/pull/{id}"
+
 # Instances of trackers
 [instances]
 
@@ -52,3 +55,7 @@ host = "openqa.suse.de"
 [instance.o3]
 api = "OpenQA"
 host = "openqa.opensuse.org"
+
+[instances.gh]
+api = "GitHub"
+host = "github.com/os-autoinst/os-autoinst-distri-opensuse"
