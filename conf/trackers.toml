@@ -38,12 +38,11 @@ host = "apibugzilla.suse.com"
 [instances.boo]
 api = "Bugzilla"
 host = "apibugzilla.opensuse.org"
-#apikey = ""
-#apisecret = ""
 
 [instances.poo]
 api = "Redmine"
 host = "progress.opensuse.org"
+#key = ""
 
 [instances.t]
 api = "OpenQA"
@@ -51,6 +50,8 @@ api = "OpenQA"
 [instances.osd]
 api = "OpenQA"
 host = "openqa.suse.de"
+#apikey = ""
+#apisecret = ""
 
 [instance.o3]
 api = "OpenQA"
