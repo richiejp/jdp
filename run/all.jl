@@ -40,20 +40,29 @@ allres = Repository.fetch(OpenQA.TestResult, Vector, tracker.tla)
 
 @info "We now have $(length(allres)) test results!"
 
-latest = reduce((parse(Float64, test.build), test.build) for test
-                in allres if test.product == "sle-15-SP1-Installer-DVD") do b, o
+build_tuples = (parse(Float64, test.build) => test.build for test
+                in allres if test.product == "sle-15-SP1-Installer-DVD")
+latest = reduce(build_tuples, init=0 => "0") do b, o
     b[1] > o[1] ? b : o
 end
 
-args["build"] = latest[2]
-@info "Latest build is $(latest[2]); propagating bug tags"
+build_tuples = (parse(Float64, test.build) => test.build for test
+                in allres if startswith(test.product, "sle-15-SP1") &&
+                get(test.job.vars, "PUBLIC_CLOUD", nothing) != nothing)
+latest_pc = reduce(build_tuples, init=0 => "0") do b, o
+    b[1] > o[1] ? b : o
+end
+
+builds = [latest[2], latest_pc[2]]
+args["builds"] = builds
+@info "Latest build is $(latest[2]) (Public Cloud $(latest_pc[2])); propagating bug tags"
 weave(joinpath(@__DIR__, "../notebooks/Propagate Bug Tags.ipynb");
       doctype="md2html", out_path=reppath, args=args)
 
 if !args["norefresh"]
     @info "Refreshing comments after bug tag propagation"
 
-    OpenQA.refresh_comments(job -> job.vars["BUILD"] == latest[2], tracker.tla)
+    OpenQA.refresh_comments(job -> job.vars["BUILD"] in builds, tracker.tla)
 end
 
 @info "Generating Reports in `$reppath`"
@@ -63,7 +72,7 @@ weave_ipynb("Report-HPC");
 
 module MilestoneSandbox
 
-args = Dict{String, Any}("builds" => [Main.latest[2]])
+args = Dict{String, Any}("builds" => Main.builds)
 try
     @info "Running run/milestone-report.jl"
     open(joinpath(Main.reppath, "Milestone-Report.md"), "w") do io
