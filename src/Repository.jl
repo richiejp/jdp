@@ -12,6 +12,14 @@ using JDP.Tracker
 "Some kind of item tracked by a tracker"
 abstract type AbstractItem end
 
+"""A wrapped Redis connection with associated lock
+
+This is accessed using [`getconn`](@ref) and [`with_conn`](@ref), which get a
+connection from the (very simple) connection pool.
+
+The lock allows us to make calls to Redis inside [`@async`](@ref) and
+[`@spawn`](@ref) blocks.
+"""
 mutable struct SharedConnection
     lock::Atomic{Int}
     conn::RedisConnection
@@ -21,6 +29,7 @@ const MAX_CONNECTIONS = 8
 
 rconns = SharedConnection[]
 
+"Use [`with_conn`](@ref)"
 function getconn()::SharedConnection
     global rconns
 
@@ -45,6 +54,26 @@ function getconn()::SharedConnection
     conn
 end
 
+"""Do something with a Redis connection
+
+```julia
+with_conn(fun::Function)
+```
+
+Run the function `fun(conn::RedisConnection)::Any` with the connection `conn`
+from the connection pool. Returning the connection to the pool before returning.
+
+## Example
+
+```julia
+ret = with_conn() do conn
+    echo(conn, "foo")
+end
+@assert ret == "foo"
+```
+
+Returns the return value of `fun`.
+"""
 function with_conn(fun::Function)
     conn = getconn()
     ret = fun(conn.conn)
