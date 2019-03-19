@@ -1,8 +1,9 @@
 #!julia
 
-include("../src/init.jl")
+include(joinpath(@__DIR__, "../src/init.jl"))
 
-using Weave
+import Distributed: @spawn, @everywhere, @sync
+@everywhere using Weave
 
 using JDP.IOHelpers
 using JDP.BugRefs
@@ -12,10 +13,6 @@ using JDP.Repository
 using JDP.Functional
 using JDP.Conf
 
-weave_ipynb(name::String) =
-    weave(joinpath(@__DIR__, "../notebooks/$name.ipynb");
-          doctype="md2html", out_path=reppath)
-
 argdefs = IOHelpers.ShellArgDefs(Set(["norefresh", "dryrun"]), Dict())
 args = IOHelpers.parse_args(argdefs, ARGS).named
 
@@ -24,6 +21,11 @@ if !ispath(reppath)
     @warn "Reports directory `$reppath` doesn't exist, I will try creating it"
     mkdir(reppath)
 end
+
+@everywhere weave_ipynb(name::String, args=Dict()) =
+    cd(joinpath(@__DIR__, "../notebooks")) do
+        weave("$name.ipynb"; doctype="md2html", out_path=$reppath, args=args)
+    end
 
 tracker = Tracker.get_tracker("osd")
 jobgroups = [OpenQA.JobGroup(id, name) for (id, name) in [
@@ -56,8 +58,7 @@ end
 builds = [latest[2], latest_pc[2]]
 args["builds"] = builds
 @info "Latest build is $(latest[2]) (Public Cloud $(latest_pc[2])); propagating bug tags"
-weave(joinpath(@__DIR__, "../notebooks/Propagate Bug Tags.ipynb");
-      doctype="md2html", out_path=reppath, args=args)
+weave_ipynb("Propagate Bug Tags", args)
 
 if !args["norefresh"]
     @info "Refreshing comments after bug tag propagation"
@@ -67,21 +68,26 @@ end
 
 @info "Generating Reports in `$reppath`"
 
-weave_ipynb("Report-DataFrames");
-weave_ipynb("Report-HPC");
+@sync begin
+    @spawn weave_ipynb("Report-DataFrames", Dict("builds" => builds));
+    @spawn weave_ipynb("Report-HPC");
 
-module MilestoneSandbox
+    @spawn begin
+        #Evaluate the report script in a dynamically created namespace
+        MilestoneSandbox = Module(:MilestoneSandbox)
 
-args = Dict{String, Any}("builds" => Main.builds)
-try
-    @info "Running run/milestone-report.jl"
-    open(joinpath(Main.reppath, "Milestone-Report.md"), "w") do io
-        redirect_stdout(io) do
-            include(joinpath(@__DIR__, "milestone-report.jl"))
+        # It appears include(x) is not created for us when using Module directly
+        Base.eval(MilestoneSandbox, quote
+            include(x) = Base.include($MilestoneSandbox, x)
+            args = Dict{String, Any}("builds" => $builds)
+        end)
+
+        @info "Running run/milestone-report.jl"
+        open(joinpath(reppath, "Milestone-Report.md"), "w") do io
+            redirect_stdout(io) do
+                Base.include(MilestoneSandbox,
+                             joinpath(@__DIR__, "milestone-report.jl"))
+            end
         end
     end
-catch exception
-    @error "run/milestone-report.jl failed" exception
-end
-
 end

@@ -2,6 +2,7 @@ module Repository
 
 using BSON
 using Redis
+import Base.Threads: Atomic, atomic_cas!, atomic_xchg!
 
 import JDP.Functional: cmap, c
 using JDP.Conf
@@ -11,79 +12,122 @@ using JDP.Tracker
 "Some kind of item tracked by a tracker"
 abstract type AbstractItem end
 
-rconn = nothing
-
-function resetconn()
-    global rconn = nothing
+mutable struct SharedConnection
+    lock::Atomic{Int}
+    conn::RedisConnection
 end
 
-function getconn()::RedisConnection
-    global rconn
+const MAX_CONNECTIONS = 8
 
-    if rconn == nothing
-        dconf = Conf.get_conf(:data)
-        rconn = RedisConnection(;host=get(dconf, "host", "127.0.0.1"),
-                                password=get(dconf, "auth", ""))
-    end
+rconns = SharedConnection[]
 
-    rconn
-end
+function getconn()::SharedConnection
+    global rconns
 
-init() = try
-    getconn()
-catch e
-    if !(e isa ConnectionException)
-        rethrow()
-    end
-    @warn "Could not connect to local Redis instance, will try starting one."
-    ddir = Conf.data(:datadir)
-    rlog = joinpath(ddir, "redis.log")
-    dconf = Conf.get_conf(:data)
-    mhost = get(dconf, "master-host", "")
-    mauth = get(dconf, "master-auth", "")
-    cmd = if isempty(mhost)
-        `/usr/sbin/redis-server`
-    else
-        `/usr/sbin/redis-server --slaveof $mhost 6379 --masterauth $mauth --slave-read-only no`
-    end
-    rproc = run(pipeline(Cmd(cmd; dir=ddir);
-                         stdout=rlog,
-                         stderr=rlog); wait=false)
-
-    for _ in 1:10
-        try
-            getconn()
-            return
-        catch
-            sleep(0.1)
+    for conn in rconns
+        if atomic_cas!(conn.lock, 0, 1) == 0
+            return conn
         end
     end
-    @error "Could not start Redis: $rproc: \n" read(rlog, String)
+
+    if MAX_CONNECTIONS < length(rconns)
+        error("Redis connection limit ($MAX_CONNECTIONS) reached")
+    end
+
+    @debug "Creating Redis connection" length(rconns)
+    dconf = Conf.get_conf(:data)
+    conn = SharedConnection(
+        Atomic{Int}(1),
+        RedisConnection(;host=get(dconf, "host", "127.0.0.1"),
+                        password=get(dconf, "auth", "")))
+    push!(rconns, conn)
+
+    conn
 end
 
-keys(pattern::String)::Vector{String} =
-    convert(Vector{String},
-            Redis.execute_command(getconn(), ["keys", pattern]))
+function with_conn(fun::Function)
+    conn = getconn()
+    ret = fun(conn.conn)
+    atomic_xchg!(conn.lock, 0)
+    ret
+end
+
+function init()
+    con = try
+        getconn()
+    catch e
+        if !(e isa ConnectionException)
+            rethrow()
+        end
+        @warn "Could not connect to local Redis instance, will try starting one."
+        ddir = Conf.data(:datadir)
+        rlog = joinpath(ddir, "redis.log")
+        dconf = Conf.get_conf(:data)
+        mhost = get(dconf, "master-host", "")
+        mauth = get(dconf, "master-auth", "")
+        cmd = if isempty(mhost)
+            `/usr/sbin/redis-server`
+        else
+            `/usr/sbin/redis-server --slaveof $mhost 6379 --masterauth $mauth --slave-read-only no`
+        end
+        rproc = run(pipeline(Cmd(cmd; dir=ddir);
+                             stdout=rlog,
+                             stderr=rlog); wait=false)
+
+        rconn = nothing
+        for _ in 1:10
+            try
+                rconn = getconn()
+            catch
+                sleep(0.1)
+            end
+        end
+        if rconn == nothing
+            @error "Could not start Redis: $rproc: \n" read(rlog, String)
+            return
+        end
+        rconn
+    end
+
+    msg = echo(con.conn, "Echo from $(getpid())")
+    @debug "Echoed back from Redis" msg
+    atomic_xchg!(con.lock, 0);
+end
+
+function keys(pattern::String)::Vector{String}
+    res = with_conn() do conn
+        Redis.execute_command(conn, ["keys", pattern])
+    end
+    convert(Vector{String}, res)
+end
 
 function store(key::String, value::Dict)::Bool
     buf = IOBuffer()
     bson(buf, value)
-    set(getconn(), key, String(take!(buf)))
+    with_conn() do conn
+        set(conn, key, String(take!(buf)))
+    end
 end
 
 function store(key::String, value::I)::Bool where {I <: AbstractItem}
     buf = IOBuffer()
     bson(buf, Dict(I.name.name => value))
-    set(getconn(), key, String(take!(buf)))
+    with_conn() do conn
+        set(conn, key, String(take!(buf)))
+    end
 end
 
 function load(key::String, ::Type{Dict})::Dict
-    res = get(getconn(), key)
+    res = with_conn() do conn
+        get(conn, key)
+    end
     BSON.load(IOBuffer(res))
 end
 
 function load(key::String, ::Type{I})::Union{I, Nothing} where {I <: AbstractItem}
-    res = get(getconn(), key)
+    res = with_conn() do conn
+        get(conn, key)
+    end
     if res != nothing
         BSON.load(IOBuffer(res))[I.name.name]
     end
@@ -95,7 +139,9 @@ function mload(pattern::String, ::Type{I})::Vector{I} where {I <: AbstractItem}
     if isempty(ks)
         I[]
     else
-        res = mget(getconn(), ks...)
+        res = with_conn() do conn
+            mget(conn, ks...)
+        end
         [BSON.load(IOBuffer(item))[I.name.name] for
          item in res if item != nothing]
     end
