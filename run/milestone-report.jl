@@ -32,7 +32,7 @@ allres = get!(args, "results") do
     Repository.fetch(OpenQA.TestResult, Vector, "osd")
 end
 product_short = get!(args, "product_short", "SLE15 SP1")
-products = get!(args, "products", ["sle-15-SP1-Installer-DVD"])
+products = get!(args, "products", ["sle-15-SP1"])
 release = get!(args, "release", "Beta3")
 builds = get!(args, "builds", ["152.1"])
 
@@ -47,7 +47,8 @@ refdict = Dict{BugRefs.Ref, Vector{OpenQA.TestResult}}(
 )
 
 Iterators.filter(allres) do t
-    (t.build in builds) && !isempty(t.refs) && (t.product in products)
+    (t.build in builds) && !isempty(t.refs) &&
+        any(prefix -> startswith(t.product, prefix), products)
 end |> cimap() do t
     (rf => t for rf in t.refs)
 end |> flatten |> cforeach() do (rf, t)

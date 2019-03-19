@@ -50,7 +50,7 @@ end
 
 build_tuples = (parse(Float64, test.build) => test.build for test
                 in allres if startswith(test.product, "sle-15-SP1") &&
-                get(test.job.vars, "PUBLIC_CLOUD", nothing) != nothing)
+                "Public Cloud" in test.flags)
 latest_pc = reduce(build_tuples, init=0 => "0") do b, o
     b[1] > o[1] ? b : o
 end

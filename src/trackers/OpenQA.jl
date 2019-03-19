@@ -397,10 +397,21 @@ function get_test_results!(res::Vector{TestResult},
         return
     end
 
+    flags = String[]
+    push_flag!(flag::String, cond::Bool) = if cond
+        push!(flags, flag)
+    end
+    push_flag!("m32", endswith(var["TEST"], "m32"))
+    push_flag!("Public Cloud", haskey(var, "PUBLIC_CLOUD"))
+
     push!(res, TestResult(
         m.name,
         if haskey(var, "LTP_COMMAND_FILE")
             ["LTP", var["LTP_COMMAND_FILE"]]
+        elseif haskey(var, "PUBLIC_CLOUD_LTP") && haskey(var, "COMMAND_FILE")
+            ["LTP", var["COMMAND_FILE"]]
+        elseif haskey(var, "PUBLIC_CLOUD_IPA_TESTS") || haskey(var, "PUBLIC_CLOUD_CHECK_BOOT_TIME")
+            ["IPA"]
         elseif haskey(var, "XFSTESTS")
             ["fstests", var["XFSTESTS"]]
         elseif haskey(var, "HPC")
@@ -415,7 +426,7 @@ function get_test_results!(res::Vector{TestResult},
         var["MACHINE"],
         get_refs(tags, m.name),
         jr,
-        endswith(var["TEST"], "m32") ? ["m32"] : []
+        flags
     ))
 end
 
