@@ -3,7 +3,7 @@ FROM opensuse/tumbleweed:latest
 
 LABEL name=jdp maintainer=rpalethorpe@suse.com description="JDP project with Jupyter"
 
-ARG JULIA_VER=1.0.3
+ARG JULIA_VER=1.1.0
 ARG JULIA_TAR=install/julia-${JULIA_VER}-linux-x86_64.tar.gz
 
 # TODO: We should really install the official SUSE Julia package now, but some 3rd
