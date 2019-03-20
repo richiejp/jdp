@@ -56,6 +56,8 @@ latest_pc = reduce(build_tuples, init=0 => "0") do b, o
     b[1] > o[1] ? b : o
 end
 
+allres = nothing # Avoid OOM killer
+
 builds = [latest[2], latest_pc[2]]
 args["builds"] = builds
 @info "Latest build is $(latest[2]) (Public Cloud $(latest_pc[2]))"
@@ -67,6 +69,7 @@ if !args["norefresh"]
     OpenQA.refresh_comments(job -> job.vars["BUILD"] in builds, tracker.tla)
 end
 
+GC.gc()
 @info "Generating Reports in $reppath"
 
 @sync begin

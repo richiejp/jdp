@@ -140,7 +140,7 @@ pages:
     - >
       docker run --name report --network production -t
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/data jdp:production
-      julia -p 2 --color=yes run/all.jl
+      julia -p 1 --color=yes run/all.jl
     - >
       docker run --network production
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build
