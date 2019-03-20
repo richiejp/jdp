@@ -2,7 +2,7 @@
 
 include(joinpath(@__DIR__, "../src/init.jl"))
 
-import Distributed: @spawn, @everywhere, @sync
+import Distributed: @spawn, @everywhere, @sync, myid
 @everywhere using Weave
 
 using JDP.IOHelpers
@@ -24,6 +24,7 @@ end
 
 @everywhere weave_ipynb(name::String, args=Dict()) =
     cd(joinpath(@__DIR__, "../notebooks")) do
+        @info "Weaving $(joinpath(pwd(), name)).ipynb on worker $(myid())"
         weave("$name.ipynb"; doctype="md2html", out_path=$reppath, args=args)
     end
 
@@ -57,7 +58,7 @@ end
 
 builds = [latest[2], latest_pc[2]]
 args["builds"] = builds
-@info "Latest build is $(latest[2]) (Public Cloud $(latest_pc[2])); propagating bug tags"
+@info "Latest build is $(latest[2]) (Public Cloud $(latest_pc[2]))"
 weave_ipynb("Propagate Bug Tags", args)
 
 if !args["norefresh"]
@@ -66,13 +67,14 @@ if !args["norefresh"]
     OpenQA.refresh_comments(job -> job.vars["BUILD"] in builds, tracker.tla)
 end
 
-@info "Generating Reports in `$reppath`"
+@info "Generating Reports in $reppath"
 
 @sync begin
     @spawn weave_ipynb("Report-DataFrames", Dict("builds" => builds));
     @spawn weave_ipynb("Report-HPC");
 
     @spawn begin
+        @info "Creating Milestone Sandbox on worker $(myid())"
         #Evaluate the report script in a dynamically created namespace
         MilestoneSandbox = Module(:MilestoneSandbox)
 
@@ -82,7 +84,7 @@ end
             args = Dict{String, Any}("builds" => $builds)
         end)
 
-        @info "Running run/milestone-report.jl"
+        @info "Running run/milestone-report.jl on worker $(myid())"
         open(joinpath(reppath, "Milestone-Report.md"), "w") do io
             redirect_stdout(io) do
                 Base.include(MilestoneSandbox,
