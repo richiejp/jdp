@@ -76,7 +76,7 @@ GC.gc()
     @spawn weave_ipynb("Report-DataFrames", Dict("builds" => builds));
     @spawn weave_ipynb("Report-HPC");
 
-    @spawn begin
+    @async begin
         @info "Creating Milestone Sandbox on worker $(myid())"
         #Evaluate the report script in a dynamically created namespace
         MilestoneSandbox = Module(:MilestoneSandbox)
