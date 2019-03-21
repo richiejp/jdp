@@ -484,9 +484,7 @@ function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
     min_id = get_first_job_after_date(values(jrs), Date(now()) - Month(1)).id
 
     fjindx = BitSet(j.id for j in values(jrs)
-                    if occursin(r"^(skipped|cancelled|done)$", j.state) ||
-                    (j.start != nothing &&
-                     Date(j.start[1:10], "yyyy-mm-dd") > a_month_ago))
+                    if occursin(r"^(skipped|cancelled|done)$", j.state))
     jids = filter(jid -> jid >= min_id && !(jid in fjindx), fetch(jids))
     jobn = length(jids)
 
