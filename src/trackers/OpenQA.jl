@@ -3,6 +3,7 @@ module OpenQA
 using Distributed
 using JSON
 using HTTP
+import Dates: now, Date, Month
 import MbedTLS
 import DataFrames: DataFrame
 
@@ -470,13 +471,23 @@ function refresh_comments(pred::Function, from::String)
     end
 end
 
+get_first_job_after_date(jobs, date) =
+        Iterators.filter(job -> job.start != nothing, jobs) |>
+        map[job -> job => Date(job.start[1:10], "yyyy-mm-dd")] |>
+        filter[jp -> jp[2] > date] |>
+        (jobs -> sort(jobs; by=jp->jp[1].id)) |> first |> first
+
 function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
                  jrs::Dict{String, JobResult}) where {S <: AbstractSession}
     ses = Tracker.ensure_login!(tracker)
     jids = @async get_group_jobs(ses, group.id)
+    min_id = get_first_job_after_date(values(jrs), Date(now()) - Month(1)).id
+
     fjindx = BitSet(j.id for j in values(jrs)
-                    if occursin(r"^(skipped|cancelled|done)$", j.state))
-    jids = filter(jid -> !(jid in fjindx), fetch(jids))
+                    if occursin(r"^(skipped|cancelled|done)$", j.state) ||
+                    (j.start != nothing &&
+                     Date(j.start[1:10], "yyyy-mm-dd") > a_month_ago))
+    jids = filter(jid -> jid >= min_id && !(jid in fjindx), fetch(jids))
     jobn = length(jids)
 
     @info "Refreshing $jobn jobs from the $(group.name) group ($(group.id))"

@@ -25,9 +25,9 @@ version = "0.5.2"
 
 [[CodeTracking]]
 deps = ["InteractiveUtils", "Test", "UUIDs"]
-git-tree-sha1 = "2c46bc2429c88b43d80caf53151f22b85ba5a4b2"
+git-tree-sha1 = "9e697f312e39a94fc9e0368672662d34b0054a43"
 uuid = "da1fd8a2-8d9e-5ec2-8556-3022fb5608a2"
-version = "0.3.4"
+version = "0.4.0"
 
 [[CodecZlib]]
 deps = ["BinaryProvider", "Libdl", "Test", "TranscodingStreams"]
