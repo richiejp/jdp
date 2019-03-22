@@ -3,7 +3,6 @@
 before_script:
   - pwd && ls -l
   - docker network create production || true
-  - 'echo Container labels: $DOM.job_id=$CI_JOB_ID, $DOM.commit=$CI_COMMIT_SHA'
 
 variables:
   DOM: "de.suse.gitlab"
@@ -136,11 +135,12 @@ pages:
   script:
     - docker stop report || true
     - docker rm -f report || true
+    - docker inspect -f "Commit: {{index .Config.Labels \"$DOM.commit\"}}" jdp:production
     - mkdir -p public/reports
     - >
       docker run --name report --network production -t
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/data jdp:production
-      julia -p 1 --color=yes run/all.jl
+      julia --color=yes run/all.jl
     - >
       docker run --network production
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build
