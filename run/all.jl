@@ -22,11 +22,14 @@ if !ispath(reppath)
     mkdir(reppath)
 end
 
-@everywhere weave_ipynb(name::String, args=Dict()) =
+@everywhere weave_ipynb(name::String, args=Dict()) = try
     cd(joinpath(@__DIR__, "../notebooks")) do
         @info "Weaving $(joinpath(pwd(), name)).ipynb on worker $(myid())"
         weave("$name.ipynb"; doctype="md2html", out_path=$reppath, args=args)
     end
+catch exception
+    @error "Exception while weaving $name" exception
+end
 
 tracker = Tracker.get_tracker("osd")
 jobgroups = [OpenQA.JobGroup(id, name) for (id, name) in [
@@ -72,27 +75,32 @@ end
 GC.gc()
 @info "Generating Reports in $reppath"
 
-@sync begin
-    @spawn weave_ipynb("Report-DataFrames", Dict("builds" => builds));
-    @spawn weave_ipynb("Report-HPC");
+milestone_rep = @async begin
+    @info "Creating Milestone Sandbox on worker $(myid())"
+    #Evaluate the report script in a dynamically created namespace
+    MilestoneSandbox = Module(:MilestoneSandbox)
 
-    @async begin
-        @info "Creating Milestone Sandbox on worker $(myid())"
-        #Evaluate the report script in a dynamically created namespace
-        MilestoneSandbox = Module(:MilestoneSandbox)
+    # It appears include(x) is not created for us when using Module directly
+    Base.eval(MilestoneSandbox, quote
+              include(x) = Base.include($MilestoneSandbox, x)
+              args = Dict{String, Any}("builds" => $builds)
+              end)
 
-        # It appears include(x) is not created for us when using Module directly
-        Base.eval(MilestoneSandbox, quote
-            include(x) = Base.include($MilestoneSandbox, x)
-            args = Dict{String, Any}("builds" => $builds)
-        end)
-
-        @info "Running run/milestone-report.jl on worker $(myid())"
-        open(joinpath(reppath, "Milestone-Report.md"), "w") do io
-            redirect_stdout(io) do
-                Base.include(MilestoneSandbox,
-                             joinpath(@__DIR__, "milestone-report.jl"))
-            end
+    @info "Running run/milestone-report.jl on worker $(myid())"
+    output = joinpath(reppath, "Milestone-Report.md")
+    open(output, "w") do io
+        redirect_stdout(io) do
+            Base.include(MilestoneSandbox,
+                         joinpath(@__DIR__, "milestone-report.jl"))
         end
     end
+    @info "Written $output"
+end
+
+weave_ipynb("Report-DataFrames", Dict("builds" => builds));
+weave_ipynb("Report-HPC");
+try
+    wait(milestone_rep)
+catch exception
+    @error "Milestone Report Error" exception
 end
