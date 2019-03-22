@@ -135,7 +135,7 @@ pages:
   script:
     - docker stop report || true
     - docker rm -f report || true
-    - docker inspect -f ''Commit = {{index .Config.Labels \"$DOM.commit\"}}'' jdp:production
+    - docker inspect -f \"{{index .Config.Labels \\"$DOM.commit\\"}}\" jdp:production
     - mkdir -p public/reports
     - >
       docker run --name report --network production -t
