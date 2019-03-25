@@ -42,7 +42,6 @@ deploy:
   extends: .make
   environment:
     name: production
-  when: manual
   only:
     - master
   script:
