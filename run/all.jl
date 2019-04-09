@@ -75,7 +75,7 @@ end
 GC.gc()
 @info "Generating Reports in $reppath"
 
-milestone_rep = @async begin
+try
     @info "Creating Milestone Sandbox on worker $(myid())"
     #Evaluate the report script in a dynamically created namespace
     MilestoneSandbox = Module(:MilestoneSandbox)
@@ -95,12 +95,9 @@ milestone_rep = @async begin
         end
     end
     @info "Written $output"
+catch exception
+    @error "Milestone Report Error" exception
 end
 
 weave_ipynb("Report-DataFrames", Dict("builds" => builds));
 weave_ipynb("Report-HPC");
-try
-    wait(milestone_rep)
-catch exception
-    @error "Milestone Report Error" exception
-end
