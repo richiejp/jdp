@@ -73,6 +73,16 @@ This was partially generated with the [JDP milestone report](https://gitlab.suse
 
 [Insert human generated summary here]
 
+The following test groups are covered:
+
+- Kernel
+- Network
+- HPC
+- Public Cloud
+
+Anomalies not in these groups, but relevant to our team's testing, may also be
+included.
+
 ## Critical Issues
 
 """)
