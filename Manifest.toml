@@ -2,9 +2,9 @@
 
 [[BSON]]
 deps = ["Profile", "Test"]
-git-tree-sha1 = "6453cef4f9cb8ded8e28e4d6d12e11e20eb692ea"
-repo-rev = "master"
-repo-url = "https://github.com/MikeInnes/BSON.jl.git"
+git-tree-sha1 = "a99070efa04cdbdf6db74c8c9ffae3e5fee53790"
+repo-rev = "read-perf"
+repo-url = "https://github.com/richiejp/BSON.jl.git"
 uuid = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 version = "0.2.3+"
 
