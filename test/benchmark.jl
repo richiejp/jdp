@@ -50,12 +50,12 @@ function do_bench()
   "$jr Job Results and $tr Test Results"
 end
 
-function do_profile()
+function do_profile(minc)
   Profile.init(;n=10000000)
 
-  @info "Profile Fetch OpenQA Test Results"
-  @profile Repository.fetch(OpenQA.TestResult, Vector, "osd")
-  Profile.print(;noisefloor=2, mincount=2000)
+  @info "Profile Fetch OpenQA Job Results"
+  @profile Repository.fetch(OpenQA.JobResult, Vector, "osd")
+  Profile.print(;noisefloor=2, mincount=minc, C=true)
 end
 
 end
