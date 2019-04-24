@@ -162,7 +162,7 @@ struct Comment
 end
 
 struct CommentEx1
-    id::UInt64
+    id::Int64
     author::String
     created::String
     updated::String
@@ -174,13 +174,13 @@ const VarsDict = Dict{String, Union{Int64, String, Nothing}}
 abstract type Item <: Repository.AbstractItem end
 
 struct JobGroup <: Item
-    id::UInt64
+    id::Int64
     name::String
 end
 
 mutable struct JobResult <: Item
     name::String
-    id::UInt64
+    id::Int64
     state::String
     logs::Vector{String}
     vars::VarsDict
