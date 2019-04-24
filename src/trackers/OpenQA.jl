@@ -162,25 +162,25 @@ struct Comment
 end
 
 struct CommentEx1
-    id::Int
+    id::UInt64
     author::String
     created::String
     updated::String
     text::String
 end
 
-const VarsDict = Dict{String, Union{Int, String, Nothing}}
+const VarsDict = Dict{String, Union{Int64, String, Nothing}}
 
 abstract type Item <: Repository.AbstractItem end
 
 struct JobGroup <: Item
-    id::Int
+    id::UInt64
     name::String
 end
 
 mutable struct JobResult <: Item
     name::String
-    id::Int
+    id::UInt64
     state::String
     logs::Vector{String}
     vars::VarsDict
