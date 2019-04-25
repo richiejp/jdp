@@ -47,6 +47,8 @@ function do_bench()
   tr = @bench hist "Fetch OpenQA Test Results" Repository.fetch(OpenQA.TestResult, Vector, "osd")
   tr = length(tr)
 
+  bson(history_file, hist)
+
   "$jr Job Results and $tr Test Results"
 end
 
