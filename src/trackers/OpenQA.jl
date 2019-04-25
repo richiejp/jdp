@@ -3,7 +3,7 @@ module OpenQA
 using Distributed
 using JSON
 using HTTP
-import Dates: now, Date, Month
+import Dates: now, Date, Month, Week, Year
 import MbedTLS
 import DataFrames: DataFrame
 
@@ -191,6 +191,16 @@ mutable struct JobResult <: Item
     comments::Vector{Union{Comment, CommentEx1}}
 end
 
+struct JobResultSetDef
+    name::String
+    creator::Function
+end
+
+struct JobResultSet <: Item
+    def::JobResultSetDef
+    ids::Vector{Int64}
+end
+
 struct TestResult <: Item
     name::String
     suit::Vector{String}
@@ -205,7 +215,7 @@ struct TestResult <: Item
 end
 
 start_date(job::JobResult)::Union{Nothing, Date} =
-  job.start ≠ nothing ? Date(job.start[1:10], "yyyy-mm-dd") : nothing
+    job.start ≠ nothing ? Date(job.start[1:10], "yyyy-mm-dd") : nothing
 
 get_fqn(tr::TestResult)::String = join(vcat(tr.suit, tr.name), ":")
 
@@ -447,8 +457,14 @@ function parse_comments(comments::Vector{Union{Comment, CommentEx1}},
     tags
 end
 
-Repository.fetch(::Type{JobResult}, ::Type{Vector}, from::String) =
-    Repository.mload("$from-job-*", JobResult)
+Repository.fetch(T::Type{JobResult}, ::Type{Vector}, from::String) =
+    Repository.mload("$from-job-*", T)
+
+Repository.fetch(T::Type{JobResult}, ::Type{Vector}, from::String, ids) =
+    Repository.mload(("$from-job-$id" for id in ids), T)
+
+Repository.fetch(T::Type{JobResult}, V::Type{Vector}, from::String, def::JobResultSetDef) =
+    Repository.fetch(T, V, from, Repository.fetch(def, from).ids)
 
 function refresh_comments(pred::Function, from::String)
     trackers = load_trackers()
@@ -520,6 +536,21 @@ function Repository.refresh(tracker::Tracker.Instance{S},
     Repository.refresh(tracker, [group])
 end
 
+function Repository.refresh(def::JobResultSetDef, from::String)::JobResultSet
+    jrs = Repository.fetch(JobResult, Vector, from)
+    s = JobResultSet(def, def.creator(jrs)::Vector{Int64})
+
+    Repository.store("$from-jobset-$(def.name)", s) || @error "Did not save" def.name
+    s
+end
+
+function Repository.fetch(def::JobResultSetDef, from::String)::JobResultSet
+    set = Repository.load("$from-jobset-$(def.name)", JobResultSet)
+    set ≠ nothing && return set
+
+    Repository.refresh(def, from)
+end
+
 function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String)::Vector{TestResult}
     trackers = load_trackers()
     tracker = get_tracker(trackers, from)
@@ -561,5 +592,7 @@ function Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String)::
 
     DataFrame(cols, [:name, :suit, :product, :build, :result, :arch, :machine, :refs, :flags])
 end
+
+include("OpenQA-indexes.jl")
 
 end # json

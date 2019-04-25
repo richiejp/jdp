@@ -162,14 +162,16 @@ function load(key::String, ::Type{I})::Union{I, Nothing} where {I <: AbstractIte
     end
 end
 
-function mload(pattern::String, ::Type{I})::Vector{I} where {I <: AbstractItem}
-    ks = keys(pattern)
+function mload(pattern::String, T::Type{I})::Vector{I} where {I <: AbstractItem}
+    mload(keys(pattern), T)
+end
 
-    if isempty(ks)
+function mload(keys, ::Type{I})::Vector{I} where {I <: AbstractItem}
+    if isempty(keys)
         I[]
     else
         res = with_conn() do conn
-            mget(conn, ks...)
+            mget(conn, keys...)
         end
         [BSON.load(IOBuffer(item))[I.name.name] for
          item in res if item != nothing]
