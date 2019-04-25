@@ -204,6 +204,9 @@ struct TestResult <: Item
     flags::Vector{String}
 end
 
+start_date(job::JobResult)::Union{Nothing, Date} =
+  job.start ≠ nothing ? Date(job.start[1:10], "yyyy-mm-dd") : nothing
+
 get_fqn(tr::TestResult)::String = join(vcat(tr.suit, tr.name), ":")
 
 Base.show(io::IO, ::MIME"text/markdown", tr::TestResult) =
@@ -473,7 +476,7 @@ end
 
 get_first_job_after_date(jobs, date) =
         Iterators.filter(job -> job.start != nothing, jobs) |>
-        map[job -> job => Date(job.start[1:10], "yyyy-mm-dd")] |>
+        map[job -> job => start_date(job)] |>
         filter[jp -> jp[2] > date] |>
         (jobs -> sort(jobs; by=jp->jp[1].id)) |> first |> first
 
