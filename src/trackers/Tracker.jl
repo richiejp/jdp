@@ -67,6 +67,10 @@ ensure_login!(::Instance{S}) where {S <: AbstractSession} =
 ensure_login!(t::Instance{StaticSession})::StaticSession =
     t.session = StaticSession()
 
+"Get an active session object for the tracker with the given TLA"
+login(tla::AbstractString)::AbstractSession =
+    ensure_login!(get_tracker(tla))
+
 Base.:(==)(t::Instance, to::Instance) =
     t.api == to.api && t.tla == to.tla &&
     t.host == to.host
