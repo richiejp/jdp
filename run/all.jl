@@ -41,8 +41,10 @@ jobgroups = [OpenQA.JobGroup(id, name) for (id, name) in [
 
 if !args["norefresh"]
     Repository.refresh(tracker, jobgroups)
+    Repository.refresh(tracker, OpenQA.RecentOrInterestingJobsDef)
 end
-allres = Repository.fetch(OpenQA.TestResult, Vector, tracker.tla)
+allres = Repository.fetch(OpenQA.TestResult, Vector, tracker.tla,
+                          OpenQA.RecentOrInterestingJobsDef)
 
 @info "We now have $(length(allres)) test results!"
 

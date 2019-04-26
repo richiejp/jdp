@@ -29,7 +29,8 @@ end
 
 refresh = get!(args, "refresh", false)
 allres = get!(args, "results") do
-    Repository.fetch(OpenQA.TestResult, Vector, "osd")
+    Repository.fetch(OpenQA.TestResult, Vector, "osd",
+                     OpenQA.RecentOrInterestingJobsDef)
 end
 product_short = get!(args, "product_short", "SLE15 SP1")
 products = get!(args, "products", ["sle-15-SP1"])

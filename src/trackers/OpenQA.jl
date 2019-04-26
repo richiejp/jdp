@@ -466,6 +466,21 @@ Repository.fetch(T::Type{JobResult}, ::Type{Vector}, from::String, ids) =
 Repository.fetch(T::Type{JobResult}, V::Type{Vector}, from::String, def::JobResultSetDef) =
     Repository.fetch(T, V, from, Repository.fetch(def, from).ids)
 
+function Repository.refresh(def::JobResultSetDef, from::String)::JobResultSet
+    jrs = Repository.fetch(JobResult, Vector, from)
+    s = JobResultSet(def, def.creator(jrs)::Vector{Int64})
+
+    Repository.store("$from-jobset-$(def.name)", s) || @error "Did not save" def.name
+    s
+end
+
+function Repository.fetch(def::JobResultSetDef, from::String)::JobResultSet
+    set = Repository.load("$from-jobset-$(def.name)", JobResultSet)
+    set ≠ nothing && return set
+
+    Repository.refresh(def, from)
+end
+
 function refresh_comments(pred::Function, from::String)
     trackers = load_trackers()
     tracker = get_tracker(trackers, from)
@@ -536,27 +551,10 @@ function Repository.refresh(tracker::Tracker.Instance{S},
     Repository.refresh(tracker, [group])
 end
 
-function Repository.refresh(def::JobResultSetDef, from::String)::JobResultSet
-    jrs = Repository.fetch(JobResult, Vector, from)
-    s = JobResultSet(def, def.creator(jrs)::Vector{Int64})
-
-    Repository.store("$from-jobset-$(def.name)", s) || @error "Did not save" def.name
-    s
-end
-
-function Repository.fetch(def::JobResultSetDef, from::String)::JobResultSet
-    set = Repository.load("$from-jobset-$(def.name)", JobResultSet)
-    set ≠ nothing && return set
-
-    Repository.refresh(def, from)
-end
-
-function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String)::Vector{TestResult}
+function jobs_to_tests!(jrs::Vector{JobResult}, from::String)::Vector{TestResult}
     trackers = load_trackers()
     tracker = get_tracker(trackers, from)
     results = Vector{TestResult}()
-
-    jrs = Repository.fetch(JobResult, Vector, from)
 
     for jr in jrs
         tags = parse_comments(jr.comments, trackers)
@@ -569,9 +567,13 @@ function Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String)::Vec
     results
 end
 
-function Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String)::DataFrame
-    results = Repository.fetch(TestResult, Vector, from)
+Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String, ids)::Vector{TestResult} =
+    jobs_to_tests!(Repository.fetch(JobResult, Vector, from, ids), from)
 
+Repository.fetch(::Type{TestResult}, ::Type{Vector}, from::String)::Vector{TestResult} =
+    jobs_to_tests!(Repository.fetch(JobResult, Vector, from), from)
+
+function tests_to_dataframe(results::Vector{TestResult})::DataFrame
     cols::Array{Any} = [String[]]
     push!(cols, Vector{String}[])
     append!(cols, [String[] for _ in 1:5])
@@ -592,6 +594,12 @@ function Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String)::
 
     DataFrame(cols, [:name, :suit, :product, :build, :result, :arch, :machine, :refs, :flags])
 end
+
+Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String, ids)::DataFrame =
+    tests_to_dataframe(Repository.fetch(TestResult, Vector, from, ids))
+
+Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String)::DataFrame =
+    tests_to_dataframe(Repository.fetch(TestResult, Vector, from))
 
 include("OpenQA-indexes.jl")
 
