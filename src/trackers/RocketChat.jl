@@ -56,7 +56,7 @@ post_raw(ses::Session, path::String, post::String) =
 post_json(ses::Session, path::String, post) =
     JSON.parse(post_raw(ses, path, JSON.json(post)).body |> String)
 
-function post_message(ses::Session, room::String, msg::String)
+function post_message(ses::Session, room::String, msg::AbstractString)
     j = (channel = room, text = msg, emoji = rand(emojis),
          alias = "JDP Script (rpalethorpe.io.suse.de/jdp/)")
     post_json(ses, "chat.postMessage", j)
