@@ -55,7 +55,9 @@ deploy:
       --build-arg BUGZILLA_PASS=$BUGZILLA_PASS
       --build-arg OSD_KEY=$OSD_KEY
       --build-arg OSD_SECRET=$OSD_SECRET
-      --build-arg REDMINE_KEY=$REDMINE_KEY ./
+      --build-arg REDMINE_KEY=$REDMINE_KEY
+      --build-arg ROCKET_CHAT_USER=$ROCKET_CHAT_USER
+      --build-arg ROCKET_CHAT_TOKEN=$ROCKET_CHAT_TOKEN ./
 
 publish:
   stage: execute
