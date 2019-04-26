@@ -25,6 +25,9 @@ get-item-html = "/tests/{id}"
 [apis.GitHub]
 get-item-html = "/pull/{id}"
 
+[apis.RocketChat]
+get-item-html = "/channel/{id}"
+
 # Instances of trackers
 [instances]
 
@@ -60,3 +63,9 @@ host = "openqa.opensuse.org"
 [instances.gh]
 api = "GitHub"
 host = "github.com/os-autoinst/os-autoinst-distri-opensuse"
+
+[instances.src]
+api = "RocketChat"
+host = "chat.suse.de"
+#user = ""
+#token = ""

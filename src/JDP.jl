@@ -16,6 +16,7 @@ module Trackers
 include("trackers/Bugzilla.jl")
 include("trackers/Redmine.jl")
 include("trackers/OpenQA.jl")
+include("trackers/RocketChat.jl")
 end
 
 end
