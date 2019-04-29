@@ -28,6 +28,8 @@ get-item-html = "/pull/{id}"
 [apis.RocketChat]
 get-item-html = "/channel/{id}"
 
+[apis.Mailx]
+
 # Instances of trackers
 [instances]
 
@@ -69,3 +71,8 @@ api = "RocketChat"
 host = "chat.suse.de"
 #user = ""
 #token = ""
+
+[instances.mailx]
+api = "Mailx"
+from = "kernel-ci@suse.de"
+smtp = "relay.suse.de"
