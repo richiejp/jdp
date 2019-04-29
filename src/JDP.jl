@@ -11,6 +11,7 @@ include("trackers/Tracker.jl")
 include("BugRefsParser.jl")
 include("BugRefs.jl")
 include("Repository.jl")
+include("Spammer.jl")
 
 module Trackers
 include("trackers/Bugzilla.jl")

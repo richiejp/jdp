@@ -7,6 +7,7 @@ using JSON
 using JDP.Tracker
 using JDP.Conf
 using JDP.IOHelpers
+using JDP.Spammer
 
 const emojis = (":robot:", ":japanese_ogre:", ":japanese_goblin:", ":monkey_face:")
 
@@ -60,6 +61,13 @@ function post_message(ses::Session, room::String, msg::AbstractString)
     j = (channel = room, text = msg, emoji = rand(emojis),
          alias = "JDP Script (rpalethorpe.io.suse.de/jdp/)")
     post_json(ses, "chat.postMessage", j)
+end
+
+function Spammer.post_message(t::Tracker.Instance{Session}, msg::Spammer.Message)
+    ses = Tracker.ensure_login!(t)
+    text = *(msg.body, "\n", ("@$name " for name in msg.mentions)...)
+
+    post_message(ses, "jdp", text)
 end
 
 end

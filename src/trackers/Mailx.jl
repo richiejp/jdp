@@ -1,6 +1,7 @@
 module Mailx
 
 using JDP.Tracker
+using JDP.Spammer
 using JDP.Conf
 using JDP.IOHelpers
 
@@ -16,14 +17,15 @@ else
     t.session
 end
 
-function post_message(ses::Session,
-                      to::AbstractString, subject::AbstractString, msg::IO)
+function post_message(ses::Session, to::AbstractString,
+                      subject::AbstractString, msg::AbstractString)
     sout = IOBuffer()
     eout = IOBuffer()
+    env = ("MAILRC" => "/dev/null", "from" => ses.from, "smtp" => ses.smtp)
 
-    withenv("MAILRC" => "/dev/null", "from" => ses.from, "smtp" => ses.smtp) do
+    withenv(env...) do
         run(pipeline(`mailx -n -s "$subject" $to`;
-                     stdin=msg, stdout=sout, stderr=eout))
+                     stdin=IOBuffer(msg), stdout=sout, stderr=eout))
     end
 
     let sout = String(take!(sout)), eout = String(take!(eout))
@@ -32,7 +34,15 @@ function post_message(ses::Session,
     end
 end
 
-post_message(ses::Session, to::S, subject::S, msg::S) where {S <: AbstractString} =
-    post_message(ses, to, subject, IOBuffer(msg))
+function Spammer.post_message(t::Tracker.Instance{Session}, msg::Spammer.Message)
+    ses = Tracker.ensure_login!(t)
+
+    firstnl = findfirst(isequal('\n'), msg.body)
+    if firstnl ≠ nothing && firstnl < length(msg.body)
+        post_message(ses, ses.from, msg.body[1:firstnl], msg.body)
+    else
+        @debug "Ignoring broadcast message" msg ses
+    end
+end
 
 end
