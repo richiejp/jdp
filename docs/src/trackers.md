@@ -3,7 +3,7 @@
 ```@index
 Modules = [
 	JDP.Tracker,
-	JDP.Trackers.OpenQA, JDP.Trackers.Bugzilla, JDP.Trackers.Progress,
+	JDP.Trackers.OpenQA, JDP.Trackers.Bugzilla, JDP.Trackers.Redmine,
 	JDP.Trackers.RocketChat, JDP.Trackers.Mailx,
 	JDP.Spammer]
 ```
@@ -26,10 +26,10 @@ Modules = [JDP.Trackers.OpenQA]
 Modules = [JDP.Trackers.Bugzilla]
 ```
 
-## Trackers.Progress
+## Trackers.Redmine
 
 ```@autodocs
-Modules = [JDP.Trackers.Progress]
+Modules = [JDP.Trackers.Redmine]
 ```
 
 ## Trackers.RocketChat
