@@ -1,3 +1,4 @@
+"Allows saving and loading data to and from the cache(s)"
 module Repository
 
 using BSON

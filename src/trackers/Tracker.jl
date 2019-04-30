@@ -23,7 +23,25 @@ import JDP
 using JDP.Conf
 using JDP.Templates
 
-"A connection to a tracker API"
+"""A connection to a tracker API
+
+Each Tracker which supports the concept of logging in should create a struct
+like the following
+
+```julia
+struct Session <: Tracker.AbstractSession
+    # Tracker specific session data...
+end
+```
+
+and also implement [`ensure_login!`](@ref)
+
+!!! warn
+
+    This module looks for a struct specifically called `Session` when
+    automatically loading the trackers. So the name is significant.
+
+"""
 abstract type AbstractSession end
 
 "Not really a session"
@@ -93,6 +111,7 @@ get_tracker(repo::TrackerRepo, tla::AbstractString)::Instance = get(repo.instanc
     Instance(tla)
 end
 
+"Get a single tracker from its TLA"
 get_tracker(tla::AbstractString)::Instance = get_tracker(load_trackers(), tla)
 
 mapdic(fn, m) = map(fn, zip(keys(m), values(m))) |> Dict
@@ -106,6 +125,7 @@ catch e
     StaticSession
 end
 
+"Get a collection of all Trackers"
 load_trackers()::TrackerRepo = load_trackers(Conf.get_conf(:trackers))
 load_trackers(conf::Dict)::TrackerRepo = begin
     tryget(api, thing) = haskey(api, thing) ? Template(api[thing]) : nothing

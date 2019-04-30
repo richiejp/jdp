@@ -1,3 +1,4 @@
+"Sends e-mails with the mailx command"
 module Mailx
 
 using JDP.Tracker

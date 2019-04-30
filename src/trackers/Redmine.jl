@@ -1,3 +1,4 @@
+"Allows retrieving issue/bug information from Redmine"
 module Redmine
 
 import HTTP

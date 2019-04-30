@@ -1,3 +1,4 @@
+"Allows retrieving bug information from Bugzilla"
 module Bugzilla
 
 using HTTP

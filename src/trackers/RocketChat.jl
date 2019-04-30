@@ -1,3 +1,4 @@
+"Send messages on Rocket Chat"
 module RocketChat
 
 using HTTP
