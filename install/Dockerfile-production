@@ -40,4 +40,4 @@ RUN echo "key = \"$REDMINE_KEY\"" >> ~/.config/jdp/trackers.toml
 
 RUN echo "[instances.rsc]" >> ~/.config/jdp/trackers.toml
 RUN echo "user = \"$ROCKET_CHAT_USER\"" >> ~/.config/jdp/trackers.toml
-RUN echo "pass = \"$ROCKET_CHAT_TOKEN\"" >> ~/.config/jdp/trackers.toml
+RUN echo "token = \"$ROCKET_CHAT_TOKEN\"" >> ~/.config/jdp/trackers.toml
