@@ -99,7 +99,7 @@ Bug(xml::Dict) = Bug(parse(Int, xml["bug_id"]),
                      xml["short_desc"])
 
 Base.show(io::IO, ::MIME"text/markdown", bug::Bug) =
-    write(io, "**", bug.priority, "**(*", bug.severity, "*) ", bug.status, ": ",
+    write(io, "**", bug.priority, "** _", bug.severity, "_ ", bug.status, ": ",
           bug.short_desc)
 
 function to_md(bug::Dict)::MD
