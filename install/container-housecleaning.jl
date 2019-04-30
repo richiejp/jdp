@@ -19,7 +19,7 @@ dfstr = "yyyy-mm-dd"
 parse_docker_date(str)::DateTime = DateTime(str[1:length(dfstr)], dfstr)
 
 conts_whitelist = ["/redis"]
-images_whitelist = ["jdp:latest", "jdp:production", "jdp-base:latest"
+images_whitelist = ["jdp:latest", "jdp:production", "jdp-base:latest",
                     "opensuse/tumbleweed:latest"]
 
 thetime = now()
