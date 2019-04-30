@@ -358,14 +358,11 @@ post_job_comment(host::AbstractSession, job::Int, text::String) =
 delete_job_comment(host::AbstractSession, job::Int, comment::Int)::Int =
     delete_json(host, "jobs/$job/comments/$comment")["id"]
 
+const step_to_module_result =
+    Dict("ok" => "passed", "unk" => "none", "fail" => "failed",
+         "skip" => "skipped", "missing" => "skipped")
 function map_result_str(res::String)::String
-    if res === "ok"
-        "passed"
-    elseif res === "fail"
-        "failed"
-    else
-        "none"
-    end
+    get(step_to_module_result, res, res)
 end
 
 function get_product(vars::VarsDict)::String
