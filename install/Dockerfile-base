@@ -12,7 +12,7 @@ ARG JULIA_TAR=install/julia-${JULIA_VER}-linux-x86_64.tar.gz
 # RUN zypper in julia
 RUN zypper in -y curl tar gzip bzip2 \
 python3-jupyter python3-jupyter_nbconvert python3-jupyter_client \
-python3-jupyter_notebook redis openQA-client && \
+python3-jupyter_notebook redis openQA-client mailx && \
 zypper clean --all
 
 # There is no default non-root user in the Tumbleweed image, so we create one
