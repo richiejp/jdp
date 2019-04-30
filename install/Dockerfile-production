@@ -38,6 +38,6 @@ RUN echo "apisecret = \"$OSD_SECRET\"" >> ~/.config/jdp/trackers.toml
 RUN echo "[instances.poo]" >> ~/.config/jdp/trackers.toml
 RUN echo "key = \"$REDMINE_KEY\"" >> ~/.config/jdp/trackers.toml
 
-RUN echo "[instances.rsc]" >> ~/.config/jdp/trackers.toml
+RUN echo "[instances.src]" >> ~/.config/jdp/trackers.toml
 RUN echo "user = \"$ROCKET_CHAT_USER\"" >> ~/.config/jdp/trackers.toml
 RUN echo "token = \"$ROCKET_CHAT_TOKEN\"" >> ~/.config/jdp/trackers.toml
