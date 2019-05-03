@@ -3,6 +3,7 @@ module Repository
 
 using BSON
 using Redis
+import Dates: Second, Period
 import Base.Threads: Atomic, atomic_cas!, atomic_xchg!
 
 import JDP.Functional: cmap, c
@@ -232,6 +233,21 @@ function fetch(bref::BugRefs.Ref)::Union{Nothing, AbstractItem}
     else
         @error "No bug type defined for tracker in bugref $bref"
         nothing
+    end
+end
+
+function set_temp_flag(name::String, value::String, ttl::Period)
+    with_conn() do conn
+        key = "temp-flags-$name"
+        set(conn, key, value::String)
+        expire(conn, key, Second(ttl).value)
+    end
+end
+
+function get_temp_flag(name::String)::Union{String, Nothing}
+    with_conn() do conn
+        key = "temp-flags-$name"
+        get(conn, key)
     end
 end
 
