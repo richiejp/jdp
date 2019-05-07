@@ -161,6 +161,9 @@ pages:
       docker run --network production
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build
       -t jdp:production julia --color=yes docs/build.jl
+    - >
+      docker run --network production -t jdp:production
+      julia --color=yes --load run/check-schedule.jl --eval "doit()"
 
 after_script:
   - ls -l
