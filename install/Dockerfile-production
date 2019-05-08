@@ -3,6 +3,10 @@ FROM jdp:latest
 
 LABEL name=jdp-production maintainer=rpalethorpe@suse.com description="JDP with production config"
 
+RUN zypper ar http://download.suse.de/ibs/SUSE:/CA/openSUSE_Leap_15.0/ SUSE_CA &&\
+ zypper ref &&\
+ zypper in -y ca-certificates-suse
+
 ARG REDIS_HOST="redis"
 ARG REDIS_AUTH="notsecret"
 
