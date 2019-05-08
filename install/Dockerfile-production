@@ -3,6 +3,7 @@ FROM jdp:latest
 
 LABEL name=jdp-production maintainer=rpalethorpe@suse.com description="JDP with production config"
 
+USER root
 RUN zypper ar http://download.suse.de/ibs/SUSE:/CA/openSUSE_Leap_15.0/ SUSE_CA &&\
  zypper ref &&\
  zypper in -y ca-certificates-suse
@@ -22,6 +23,7 @@ ARG OSD_SECRET=""
 
 ARG REDMINE_KEY=""
 
+USER jdp
 WORKDIR /home/jdp/src
 
 RUN mkdir -p ~/.config/jdp ~/.config/redis
