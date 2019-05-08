@@ -12,6 +12,8 @@ stages:
   - test
   - deploy
   - execute
+  - refresh
+  - execute2
 
 .make:
   tags:
@@ -136,7 +138,7 @@ stop-redis-eu:
     - Europe
 
 pages:
-  stage: execute
+  stage: refresh
   tags:
     - primary
   environment:
@@ -161,6 +163,17 @@ pages:
       docker run --network production
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build
       -t jdp:production julia --color=yes docs/build.jl
+
+report-check-schedule:
+  stage: execute2
+  tags:
+    - primary
+  environment:
+    name: production
+  only:
+    variables:
+      - $BUILD_DOCS
+  script:
     - >
       docker run --network production -t jdp:production
       julia --color=yes --load run/check-schedule.jl --eval "doit()"
