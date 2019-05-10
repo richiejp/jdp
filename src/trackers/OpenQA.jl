@@ -122,7 +122,7 @@ get_job_comments(host::AbstractSession, job_id::Int64)::Vector{JsonDict} =
 get_machines(host::AbstractSession) = get_json(host, "machines")["Machines"]
 
 get_job_group_json(host::AbstractSession, id::Int64) =
-    get_json(host, "job_groups/$id")[0]
+    get_json(host, "job_groups/$id")[1]
 
 function get_group_jobs(host::AbstractSession, group_id::Int64)::Array{Int64}
     get_json(host, "job_groups/$group_id/jobs")["ids"]
