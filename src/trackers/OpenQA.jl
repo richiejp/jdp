@@ -476,8 +476,14 @@ Repository.fetch(T::Type{JobResult}, ::Type{Vector}, from::String, ids) =
 Repository.fetch(T::Type{JobResult}, V::Type{Vector}, from::String, def::JobResultSetDef) =
     Repository.fetch(T, V, from, Repository.fetch(def, from).ids)
 
-Repository.fetch(T::Type{JobGroup}, from::String, id)::JobGroup =
-    Repository.load("$from-job-group-$id", T)
+function Repository.fetch(T::Type{JobGroup}, from::String, id)::JobGroup
+    g = Repository.load("$from-job-group-$id", T)
+    g ≠ nothing && return g
+
+    g = get_job_group(Tracker.login(from), JobGroup(id))
+    Repository.store("$from-job-group-$id", g)
+    g
+end
 
 function Repository.refresh(def::JobResultSetDef, from::String)::JobResultSet
     jrs = Repository.fetch(JobResult, Vector, from)
