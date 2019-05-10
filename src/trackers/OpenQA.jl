@@ -121,6 +121,9 @@ get_job_comments(host::AbstractSession, job_id::Int64)::Vector{JsonDict} =
 
 get_machines(host::AbstractSession) = get_json(host, "machines")["Machines"]
 
+get_job_group_json(host::AbstractSession, id::Int64) =
+    get_json(host, "job_groups/$id")[0]
+
 function get_group_jobs(host::AbstractSession, group_id::Int64)::Array{Int64}
     get_json(host, "job_groups/$group_id/jobs")["ids"]
 end
@@ -175,8 +178,12 @@ abstract type Item <: Repository.AbstractItem end
 
 struct JobGroup <: Item
     id::Int64
+    parent::Union{Nothing, Int64, JobGroup}
     name::String
+    description::String
 end
+
+JobGroup(id::Int64) = JobGroup(id, nothing, "", "")
 
 mutable struct JobResult <: Item
     name::String
@@ -252,6 +259,9 @@ macro error_with_json(json, exp)
     end
 end
 
+json_to_job_group(g::AbstractDict)::JobGroup =
+    JobGroup(g["id"], g["parent_id"], g["name"], g["description"])
+
 json_to_steps(details::Vector)::Vector{TestStep} = map(
     Iterators.filter(details) do d
         haskey(d, "title") && d["title"] != "wait_serial"
@@ -319,6 +329,9 @@ function flatten(dict::Dict{String, Any})
     dc["settings"] = setts
     dc
 end
+
+get_job_group(host::AbstractSession, group::JobGroup)::JobGroup =
+    json_to_job_group(get_job_group_json(host, group.id))
 
 function save_job_results_json(host::AbstractSession, dir_path::String; kwargs...)
     dir_path = realpath(dir_path)
@@ -463,6 +476,9 @@ Repository.fetch(T::Type{JobResult}, ::Type{Vector}, from::String, ids) =
 Repository.fetch(T::Type{JobResult}, V::Type{Vector}, from::String, def::JobResultSetDef) =
     Repository.fetch(T, V, from, Repository.fetch(def, from).ids)
 
+Repository.fetch(T::Type{JobGroup}, from::String, id)::JobGroup =
+    Repository.load("$from-job-group-$id", T)
+
 function Repository.refresh(def::JobResultSetDef, from::String)::JobResultSet
     jrs = Repository.fetch(JobResult, Vector, from)
     s = JobResultSet(def, def.creator(jrs)::Vector{Int64})
@@ -511,7 +527,9 @@ get_first_job_after_date(jobs, date) =
 function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
                  jrs::Dict{String, JobResult}) where {S <: AbstractSession}
     ses = Tracker.ensure_login!(tracker)
+    group = get_job_group(ses, group)
     jids = @async get_group_jobs(ses, group.id)
+    Repository.store("$(tracker.tla)-job-group-$(group.id)", group)
     min_id = get_first_job_after_date(values(jrs), Date(now()) - Month(1)).id
 
     fjindx = BitSet(j.id for j in values(jrs)

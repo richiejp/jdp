@@ -32,12 +32,12 @@ catch exception
 end
 
 tracker = Tracker.get_tracker("osd")
-jobgroups = [OpenQA.JobGroup(id, name) for (id, name) in [
-    116 => "Kernel",
-    117 => "Network",
-    130 => "HPC",
-    219 => "Public Cloud"
-]]
+jobgroups = [OpenQA.JobGroup(id) for (id) in (
+    116, #Kernel
+    117, #Network
+    130, #HPC
+    219  #Public Cloud
+)]
 
 if !args["norefresh"]
     Repository.refresh(tracker, jobgroups)
