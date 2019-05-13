@@ -14,6 +14,7 @@ stages:
   - execute
   - refresh
   - execute2
+  - post_mortem
 
 .make:
   tags:
@@ -73,6 +74,29 @@ deploy:
       --build-arg REDMINE_KEY=$REDMINE_KEY
       --build-arg ROCKET_CHAT_USER=$ROCKET_CHAT_USER
       --build-arg ROCKET_CHAT_TOKEN=$ROCKET_CHAT_TOKEN ./
+
+notify-new-build:
+  stage: execute
+  extends: .make
+  only:
+    - master
+  script:
+    - >
+      docker run --network production -t jdp:production
+      julia --color=yes --load run/post-deploy.jl
+      --eval "success(\"\"\"$CI_COMMIT_MESSAGE\"\"\", \"$CI_PIPELINE_URL\")"
+
+build-failed:
+  stage: post_mortem
+  extends: .make
+  only:
+    - master
+  when: on_failure
+  script:
+    - >
+      docker run --network production -t jdp:production
+      julia --color=yes --load run/post-deploy.jl
+      --eval "build_failed(\"\"\"$CI_COMMIT_MESSAGE\"\"\", \"$CI_PIPELINE_URL\")"
 
 publish:
   stage: execute
@@ -177,6 +201,17 @@ report-check-schedule:
     - >
       docker run --network production -t jdp:production
       julia --color=yes --load run/check-schedule.jl --eval "doit()"
+
+schedules-failed:
+  stage: post_mortem
+  only:
+    - schedules
+  when: on_failure
+  script:
+    - >
+      docker run --network production -t jdp:production
+      julia --color=yes --load run/post-deploy.jl
+      --eval "build_failed(\"\"\"$CI_COMMIT_MESSAGE\"\"\", \"$CI_PIPELINE_URL\")"
 
 after_script:
   - ls -l
