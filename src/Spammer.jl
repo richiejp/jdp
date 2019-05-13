@@ -29,4 +29,9 @@ function post_message(msg::Message)
     end
 end
 
+function post_message(body::AbstractString, mentions...)
+    msg = Message(body, [m isa String ? m : "$m" for m in mentions])
+    post_message(msg)
+end
+
 end
