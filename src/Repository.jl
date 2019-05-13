@@ -175,8 +175,19 @@ function mload(keys, ::Type{I})::Vector{I} where {I <: AbstractItem}
         res = with_conn() do conn
             mget(conn, keys...)
         end
-        [BSON.load(IOBuffer(item))[I.name.name] for
-         item in res if item != nothing]
+
+        ret = I[]
+        for (item, key) in zip(res, keys)
+            if res ≠ nothing
+                try
+                    push!(ret, BSON.load(IOBuffer(item))[I.name.name])
+                catch exception
+                    @error "Raising item" key exception
+                end
+            end
+        end
+
+        ret
     end
 end
 
