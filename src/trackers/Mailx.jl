@@ -18,6 +18,10 @@ else
     t.session
 end
 
+"""
+    post_message(session, to, subject, message::AbstractString)
+
+Send an email message using the given session"""
 function post_message(ses::Session, to::AbstractString,
                       subject::AbstractString, msg::AbstractString)
     sout = IOBuffer()
@@ -35,11 +39,17 @@ function post_message(ses::Session, to::AbstractString,
     end
 end
 
+"""
+    Spammer.post_message(tracker, message::Spammer.Message)
+
+Maybe send a broadcast/Spammer message to the e-mail list which is configured as
+the from address for this session. Ignores the message if it is a single line or
+the e-mail address is not in the mentions list."""
 function Spammer.post_message(t::Tracker.Instance{Session}, msg::Spammer.Message)
     ses = Tracker.ensure_login!(t)
 
     firstnl = findfirst(isequal('\n'), msg.body)
-    if firstnl ≠ nothing && firstnl < length(msg.body)
+    if firstnl ≠ nothing && firstnl < length(msg.body) && ses.from in msg.mentions
         post_message(ses, ses.from, msg.body[1:firstnl], msg.body)
     else
         @debug "Ignoring broadcast message" msg ses
