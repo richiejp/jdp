@@ -485,6 +485,9 @@ function Repository.fetch(T::Type{JobGroup}, from::String, id)::JobGroup
     g
 end
 
+Repository.fetch(T::Type{JobGroup}, ::Type{Vector}, from::String) =
+    Repository.mload("$from-job-group-*", T)
+
 function Repository.refresh(def::JobResultSetDef, from::String)::JobResultSet
     jrs = Repository.fetch(JobResult, Vector, from)
     s = JobResultSet(def, def.creator(jrs)::Vector{Int64})
