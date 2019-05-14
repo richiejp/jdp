@@ -6,6 +6,7 @@ using HTTP
 import Dates: now, Date, Month, Week, Year
 import MbedTLS
 import DataFrames: DataFrame
+import DataStructures: SortedSet, SortedDict
 
 import JDP.Functional: cifilter, cmap, cimap, cforeach
 using JDP.Templates
@@ -218,7 +219,7 @@ struct TestResult <: Item
     machine::String
     refs::Vector{BugRefs.Ref}
     job::JobResult
-    flags::Vector{String}
+    flags::SortedSet{String}
 end
 
 start_date(job::JobResult)::Union{Nothing, Date} =
@@ -405,7 +406,7 @@ function get_fstest_results!(res::Vector{TestResult},
             var["MACHINE"],
             get_refs(tags, step.name),
             jr,
-            []
+            SortedSet{String}()
         ))
     end
 end
@@ -421,7 +422,7 @@ function get_test_results!(res::Vector{TestResult},
         return
     end
 
-    flags = String[]
+    flags = SortedSet{String}()
     push_flag!(flag::String, cond::Bool) = if cond
         push!(flags, flag)
     end
@@ -613,7 +614,7 @@ function tests_to_dataframe(results::Vector{TestResult})::DataFrame
         push!(cols[6], r.arch)
         push!(cols[7], r.machine)
         push!(cols[8], r.refs)
-        push!(cols[9], r.flags)
+        push!(cols[9], [r.flags...])
     end
 
     DataFrame(cols, [:name, :suit, :product, :build, :result, :arch, :machine, :refs, :flags])
@@ -626,5 +627,6 @@ Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String)::DataFrame
     tests_to_dataframe(Repository.fetch(TestResult, Vector, from))
 
 include("OpenQA-indexes.jl")
+include("OpenQA-Matrix.jl")
 
 end # json
