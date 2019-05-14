@@ -5,7 +5,7 @@ import JDP.Spammer: post_message
 function success(description, joblink)
     txt = """
 New JDP build deployed
-"$description"
+"$(strip(description))"
 $joblink"""
 
     post_message(txt, :rpalethorpe)
@@ -14,7 +14,7 @@ end
 function build_failed(description, joblink)
     txt = """
 JDP build/deployment failed! :dizzy_face:
-"$description"
+"$(strip(description))"
 $joblink"""
 
     post_message(txt, :rpalethorpe)
