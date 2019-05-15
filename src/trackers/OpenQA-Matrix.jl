@@ -48,7 +48,8 @@ mutable struct TestSeq
 end
 
 TestSeq(test::TestResult) =
-    TestSeq(ExemplarTest(test), SortedDict{OrdBuild, Union{TestResult, Nothing}}())
+    TestSeq(ExemplarTest(test),
+            SortedDict{OrdBuild, Union{TestResult, Nothing}}())
 
 mutable struct TestSeqGroup
     degenerate::Bool
@@ -67,7 +68,7 @@ mutable struct BuildMatrix
 end
 
 function build_matrix(results)::BuildMatrix
-    builds = SortedBuilds{Float64}()
+    builds = SortedBuilds{Float64}(Base.Order.Reverse)
     seqs = SortedDict{ExemplarTest, TestSeq}()
 
     # For now we are optimistic about the product and pessimistic about the
@@ -87,4 +88,58 @@ function build_matrix(results)::BuildMatrix
     end
 
     BuildMatrix(builds, seqs)
+end
+
+function Base.show(io::IO, mime::MIME"text/html", m::BuildMatrix)
+    maxrow, maxbuild = if get(io, :limit, true)
+        h, w = displaysize(io)
+        min(h, length(m.rows)), min(max(1, Int(floor(w / 10)) - 5), length(m.builds))
+    else
+        length(m.rows), length(m.builds)
+    end
+
+    write(io, "<table class=\"build-matrix\">")
+    write(io, "<thead><tr>")
+    write(io, "<th>Suit</th><th>Test</th><th>Arch</th><th>Machine</th><th>Flags</th>")
+
+    builds = Iterators.take(m.builds, maxbuild)
+    for b in builds
+        write(io, "<th>", b.orig, "</th>")
+    end
+    maxbuild < length(m.builds) && write(io, "<th>&hellip;</th>")
+
+    write(io, "</tr></thead><tbody>")
+
+    c = 0
+    for (ex, seq) in m.rows
+        t = ex.val
+
+        write(io, "<tr><td>", join(t.suit, ":"), "</td>")
+        write(io, "<td>", t.name, "</td><td>", t.arch, "</td><td>", t.machine, "</td>")
+        write(io, "<td>", join(t.flags, ","), "</td>")
+
+        for b in builds
+            if (test = get(seq.builds, b, nothing)) ≠ nothing
+                write(io, "<td>", test.result, "</td>")
+            else
+                write(io, "<td>none</td>")
+            end
+        end
+        maxbuild < length(m.builds) && write(io, "<td>&hellip;</td>")
+
+        write(io, "</tr>")
+
+        c += 1
+        c > maxrow && break
+    end
+
+    if c > maxrow
+        write(io, "<tr>")
+        for _ in 1:(maxbuild + 5)
+            write(io, "<td>&vellip;</td>")
+        end
+        write(io, "</tr>")
+    end
+
+    write(io, "</tbody></table>")
 end
