@@ -1,4 +1,5 @@
 import Base.Ordering
+import Base.Order
 import Base.lt
 import DataStructures.eq
 
@@ -66,12 +67,42 @@ mutable struct BuildMatrix
     rows::SortedDict{TestResult, TestSeq}
 end
 
-function filter_rows(fn::Function, m::BuildMatrix)
-    BuildMatrix(m.builds, filter(fn, m.rows))
+function filter_seqs(fn::Function, m::BuildMatrix)
+    seqs = SortedDict{TestResult, TestSeq}(m.rows.bt.ord)
+
+    for (t, seq) in m.rows
+        g = Iterators.Generator(m.builds) do b
+            haskey(seq.builds, b) ? seq.builds[b] : nothing
+        end
+
+        if fn(t, g)
+            seqs[t] = seq
+        end
+    end
+
+    BuildMatrix(m.builds, seqs)
+end
+
+truncate_builds(m::BuildMatrix, n::Int) =
+    BuildMatrix(SortedBuilds{Float64}(Iterators.take(m.builds, n), Order.Reverse),
+                m.rows)
+
+function filter_builds(fn::Function, m::BuildMatrix)
+    builds = SortedBuilds{Float64}(Order.Reverse)
+
+    for b in m.builds
+        g = Iterators.Generator(values(m.rows)) do seq
+            haskey(seq.builds, b) ? seq.builds[b] : nothing
+        end
+
+        fn(g) && push!(builds, b)
+    end
+
+    BuildMatrix(builds, m.rows)
 end
 
 function build_matrix(results)::BuildMatrix
-    builds = SortedBuilds{Float64}(Base.Order.Reverse)
+    builds = SortedBuilds{Float64}(Order.Reverse)
     seqs = SortedDict{TestResult, TestSeq}(
         FieldSubsetOrdering(:suit, :name, :arch, :machine, :flags))
 
