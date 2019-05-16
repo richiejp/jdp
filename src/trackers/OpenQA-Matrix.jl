@@ -1,3 +1,7 @@
+import Base.Ordering
+import Base.lt
+import DataStructures.eq
+
 struct OrdBuild{T}
     orig::String
     val::T
@@ -9,30 +13,26 @@ Base.isless(b1::OrdBuild{T}, b2::OrdBuild{T}) where {T} =
     isless(b1.val, b2.val)
 
 Base.isequal(b1::OrdBuild{T}, b2::OrdBuild{T}) where {T} =
-    b1.val == b2.val
+    isequal(b1.val, b2.val)
 
 const SortedBuilds{T} = SortedSet{OrdBuild{T}}
 
-"A test wrapper for helping to group similar test results"
-struct ExemplarTest
-    val::TestResult
+struct FieldSubsetOrdering{N} <: Ordering
+    fields::NTuple{N, Symbol}
+
+    FieldSubsetOrdering(fields...) = new{length(fields)}(fields)
 end
 
-function Base.isless(t1::ExemplarTest, t2::ExemplarTest)
-    e1, e2 = t1.val, t2.val
-
-    ret = all((:suit, :name, :arch, :machine)) do p
-        isless(getproperty(e1, p), getproperty(e2, p))
+function lt(o::FieldSubsetOrdering, a, b)
+    for p in o.fields
+        getproperty(a, p) < getproperty(b, p) && return true
+        getproperty(a, p) ≠ getproperty(b, p) && return false
     end
-    ret && all(a -> isless(a...), zip(e1.flags, e2.flags))
+    false
 end
 
-function Base.isequal(t1::ExemplarTest, t2::ExemplarTest)
-    e1, e2 = t1.val, t2.val
-
-    ret = all((:suit, :name, :arch, :machine, :flags)) do p
-        isequal(getproperty(e1, p), getproperty(e2, p))
-    end
+eq(o::FieldSubsetOrdering, a, b) = all(o.fields) do p
+    getproperty(a, p) == getproperty(b, p)
 end
 
 """Test Sequence - A row in the diff matrix
@@ -43,17 +43,16 @@ end
            found for a build
 """
 mutable struct TestSeq
-    ex::ExemplarTest
-    builds::SortedDict{OrdBuild, Union{TestResult, Nothing}}
+    ex::TestResult
+    builds::SortedDict{OrdBuild, TestResult}
 end
 
 TestSeq(test::TestResult) =
-    TestSeq(ExemplarTest(test),
-            SortedDict{OrdBuild, Union{TestResult, Nothing}}())
+    TestSeq(test, SortedDict{OrdBuild, Union{TestResult, Nothing}}())
 
 mutable struct TestSeqGroup
     degenerate::Bool
-    seqs::SortedDict{ExemplarTest, TestSeq}
+    seqs::SortedDict{TestResult, TestSeq}
 end
 
 Base.isless(t1::TestSeqGroup, t2::TestSeqGroup) =
@@ -64,12 +63,17 @@ Base.isequal(t1::TestSeqGroup, t2::TestSeqGroup) =
 
 mutable struct BuildMatrix
     builds::SortedBuilds
-    rows::SortedDict{ExemplarTest, TestSeq}
+    rows::SortedDict{TestResult, TestSeq}
+end
+
+function filter_rows(fn::Function, m::BuildMatrix)
+    BuildMatrix(m.builds, filter(fn, m.rows))
 end
 
 function build_matrix(results)::BuildMatrix
     builds = SortedBuilds{Float64}(Base.Order.Reverse)
-    seqs = SortedDict{ExemplarTest, TestSeq}()
+    seqs = SortedDict{TestResult, TestSeq}(
+        FieldSubsetOrdering(:suit, :name, :arch, :machine, :flags))
 
     # For now we are optimistic about the product and pessimistic about the
     # test environment, so first pick the best test result for each build
@@ -78,7 +82,7 @@ function build_matrix(results)::BuildMatrix
 
         push!(builds, build)
 
-        seq = get!(seqs, ExemplarTest(res)) do
+        seq = get!(seqs, res) do
             TestSeq(res)
         end
 
@@ -93,7 +97,7 @@ end
 function Base.show(io::IO, mime::MIME"text/html", m::BuildMatrix)
     maxrow, maxbuild = if get(io, :limit, true)
         h, w = displaysize(io)
-        min(h, length(m.rows)), min(max(1, Int(floor(w / 10)) - 5), length(m.builds))
+        min(h, length(m.rows)), min(max(1, Int(floor(w / 5)) - 5), length(m.builds))
     else
         length(m.rows), length(m.builds)
     end
@@ -111,18 +115,16 @@ function Base.show(io::IO, mime::MIME"text/html", m::BuildMatrix)
     write(io, "</tr></thead><tbody>")
 
     c = 0
-    for (ex, seq) in m.rows
-        t = ex.val
-
+    for (t, seq) in m.rows
         write(io, "<tr><td>", join(t.suit, ":"), "</td>")
         write(io, "<td>", t.name, "</td><td>", t.arch, "</td><td>", t.machine, "</td>")
         write(io, "<td>", join(t.flags, ","), "</td>")
 
         for b in builds
-            if (test = get(seq.builds, b, nothing)) ≠ nothing
-                write(io, "<td>", test.result, "</td>")
+            if haskey(seq.builds, b)
+                write(io, "<td>", seq.builds[b].result, "</td>")
             else
-                write(io, "<td>none</td>")
+                write(io, "<td> _ </td>")
             end
         end
         maxbuild < length(m.builds) && write(io, "<td>&hellip;</td>")
