@@ -209,6 +209,14 @@ struct JobResultSet <: Item
     ids::Vector{Int64}
 end
 
+const TestFlags = SortedSet{String}
+
+Base.isless(r::TestFlags, l::TestFlags) =
+    length(r) < length(l) && all(t -> isless(t...), zip(r, l))
+
+Base.isequal(r::TestFlags, l::TestFlags) =
+    length(r) == length(l) && all(t -> isequal(t...), zip(r, l))
+
 struct TestResult <: Item
     name::String
     suit::Vector{String}
@@ -219,7 +227,7 @@ struct TestResult <: Item
     machine::String
     refs::Vector{BugRefs.Ref}
     job::JobResult
-    flags::SortedSet{String}
+    flags::TestFlags
 end
 
 start_date(job::JobResult)::Union{Nothing, Date} =
@@ -406,7 +414,7 @@ function get_fstest_results!(res::Vector{TestResult},
             var["MACHINE"],
             get_refs(tags, step.name),
             jr,
-            SortedSet{String}()
+            TestFlags()
         ))
     end
 end
@@ -422,7 +430,7 @@ function get_test_results!(res::Vector{TestResult},
         return
     end
 
-    flags = SortedSet{String}()
+    flags = TestFlags()
     push_flag!(flag::String, cond::Bool) = if cond
         push!(flags, flag)
     end
