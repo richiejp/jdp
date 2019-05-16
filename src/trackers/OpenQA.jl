@@ -211,11 +211,19 @@ end
 
 const TestFlags = SortedSet{String}
 
-Base.isless(r::TestFlags, l::TestFlags) =
-    length(r) < length(l) && all(t -> isless(t...), zip(r, l))
+function Base.isless(r::TestFlags, l::TestFlags)
+    for (rf, lf) in zip(r, l)
+        rf < lf && return true
+        rf ≠ lf && return false
+    end
+    length(r) < length(l)
+end
 
 Base.isequal(r::TestFlags, l::TestFlags) =
-    length(r) == length(l) && all(t -> isequal(t...), zip(r, l))
+    length(r) == length(l) &&
+    all(t -> isequal(t...), zip(r, l))
+
+Base.:(==)(r::TestFlags, l::TestFlags) = isequal(r, l)
 
 struct TestResult <: Item
     name::String
