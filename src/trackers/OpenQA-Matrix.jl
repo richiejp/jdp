@@ -38,39 +38,43 @@ end
 
 """Test Sequence - A row in the diff matrix
 
-    * exemplar: An arbitrary test result which all other results in the sequence
-                will be similar to
-    * seq: A test result for each build or Nothing if a result could not be
-           found for a build
+    * builds: test results for each build where a result could be found
 """
 mutable struct TestSeq
-    ex::TestResult
     builds::SortedDict{OrdBuild, TestResult}
 end
 
 TestSeq(test::TestResult) =
     TestSeq(test, SortedDict{OrdBuild, Union{TestResult, Nothing}}())
 
-mutable struct TestSeqGroup
-    degenerate::Bool
-    seqs::SortedDict{TestResult, TestSeq}
+function equal_for_builds(ts1::TestSeq, ts2::TestSeq, builds::SortedBuilds)
+    for b in builds
+        hk1, hk2 = haskey(ts1.builds, b), haskey(ts2.builds, b)
+        hk1 ≠ hk2 && return false
+        hk1 && ts1.builds[b].result ≠ ts2.builds[b].result && return false
+    end
+    true
 end
 
-Base.isless(t1::TestSeqGroup, t2::TestSeqGroup) =
-    isless(first(t1.seqs), first(t2.seqs))
-
-Base.isequal(t1::TestSeqGroup, t2::TestSeqGroup) =
-    isequal(first(t1.seqs), first(t2.seqs))
+struct TestSeqGroup
+    tests::Vector{TestResult}
+    seq::TestSeq
+end
 
 mutable struct BuildMatrix
     builds::SortedBuilds
-    rows::SortedDict{TestResult, TestSeq}
+    seqs::SortedDict{TestResult, TestSeq}
+end
+
+struct BuildMatrixGrouped
+    m::BuildMatrix
+    groups::Vector{TestSeqGroup}
 end
 
 function filter_seqs(fn::Function, m::BuildMatrix)
-    seqs = SortedDict{TestResult, TestSeq}(m.rows.bt.ord)
+    seqs = SortedDict{TestResult, TestSeq}(m.seqs.bt.ord)
 
-    for (t, seq) in m.rows
+    for (t, seq) in m.seqs
         g = Iterators.Generator(m.builds) do b
             haskey(seq.builds, b) ? seq.builds[b] : nothing
         end
@@ -85,20 +89,20 @@ end
 
 truncate_builds(m::BuildMatrix, n::Int) =
     BuildMatrix(SortedBuilds{Float64}(Iterators.take(m.builds, n), Order.Reverse),
-                m.rows)
+                m.seqs)
 
 function filter_builds(fn::Function, m::BuildMatrix)
     builds = SortedBuilds{Float64}(Order.Reverse)
 
     for b in m.builds
-        g = Iterators.Generator(values(m.rows)) do seq
+        g = Iterators.Generator(values(m.seqs)) do seq
             haskey(seq.builds, b) ? seq.builds[b] : nothing
         end
 
         fn(g) && push!(builds, b)
     end
 
-    BuildMatrix(builds, m.rows)
+    BuildMatrix(builds, m.seqs)
 end
 
 function build_matrix(results)::BuildMatrix
@@ -128,11 +132,14 @@ end
 function Base.show(io::IO, mime::MIME"text/html", m::BuildMatrix)
     maxrow, maxbuild = if get(io, :limit, true)
         h, w = displaysize(io)
-        min(h, length(m.rows)), min(max(1, Int(floor(w / 5)) - 5), length(m.builds))
+        min(h, length(m.seqs)), min(max(1, Int(floor(w / 5)) - 5), length(m.builds))
     else
-        length(m.rows), length(m.builds)
+        length(m.seqs), length(m.builds)
     end
 
+    write(io, "<p>BuildMatrix: ",
+          repr(length(m.builds)), " builds x ",
+          repr(length(m.seqs)), " tests</p>")
     write(io, "<table class=\"build-matrix\">")
     write(io, "<thead><tr>")
     write(io, "<th>Suit</th><th>Test</th><th>Arch</th><th>Machine</th><th>Flags</th>")
@@ -146,7 +153,7 @@ function Base.show(io::IO, mime::MIME"text/html", m::BuildMatrix)
     write(io, "</tr></thead><tbody>")
 
     c = 0
-    for (t, seq) in m.rows
+    for (t, seq) in m.seqs
         write(io, "<tr><td>", join(t.suit, ":"), "</td>")
         write(io, "<td>", t.name, "</td><td>", t.arch, "</td><td>", t.machine, "</td>")
         write(io, "<td>", join(t.flags, ","), "</td>")
@@ -167,6 +174,109 @@ function Base.show(io::IO, mime::MIME"text/html", m::BuildMatrix)
     end
 
     if c > maxrow
+        write(io, "<tr>")
+        for _ in 1:(maxbuild + 5)
+            write(io, "<td>&vellip;</td>")
+        end
+        write(io, "</tr>")
+    end
+
+    write(io, "</tbody></table>")
+end
+
+function group_matrix(m::BuildMatrix, issimilar::Function)::BuildMatrixGrouped
+    groups = TestSeqGroup[]
+    gtests = nothing
+    gseq = nothing
+
+    for (test, seq) in m.seqs
+        if equal_for_builds(seq, gseq, m.builds) && issimilar(test, gtests[end])
+            push!(gtests, test)
+        else
+            if gtests ≠ nothing
+                push!(groups, TestSeqGroup(gtests, gseq))
+            end
+
+            gtests = TestResult[test]
+            gseq = seq
+        end
+    end
+
+    if gtests ≠ nothing
+        push!(groups, TestSeqGroup(gtests, gseq))
+    end
+
+    BuildMatrixGrouped(m, groups)
+end
+
+function Base.show(io::IO, mime::MIME"text/html", mg::BuildMatrixGrouped)
+    m = mg.m
+    gs = mg.groups
+    maxrow, maxbuild = if get(io, :limit, true)
+        h, w = displaysize(io)
+        min(h, length(gs)), min(max(1, Int(floor(w / 5)) - 5), length(m.builds))
+    else
+        length(gs), length(m.builds)
+    end
+
+    write(io, "<p>BuildMatrixView: ",
+          repr(length(m.builds)), " builds x ",
+          repr(length(gs)), " test groups (", repr(length(m.seqs)) " tests)</p>")
+    write(io, "<table class=\"build-matrix\">")
+    write(io, "<thead><tr>")
+    write(io, "<th>Suit</th><th>Test</th><th>Arch</th><th>Machine</th><th>Flags</th>")
+
+    builds = Iterators.take(m.builds, maxbuild)
+    for b in builds
+        write(io, "<th>", b.orig, "</th>")
+    end
+    maxbuild < length(m.builds) && write(io, "<th>&hellip;</th>")
+
+    write(io, "</tr></thead><tbody>")
+
+    for g in Iterators.take(gs, maxrow)
+        seq = g.seq
+
+        t = g.tests[1]
+        write(io, "<tr><td>", join(t.suit, ":"), "</td>")
+        write(io, "<td>", t.name, "</td><td>", t.arch, "</td><td>", t.machine, "</td>")
+        write(io, "<td>", join(t.flags, ","), "</td>")
+
+        for b in builds
+            if haskey(seq.builds, b)
+                write(io, "<td>", seq.builds[b].result, "</td>")
+            else
+                write(io, "<td> _ </td>")
+            end
+        end
+        maxbuild < length(m.builds) && write(io, "<td>&hellip;</td>")
+        write(io, "</tr>")
+
+        if length(g.tests) > 2
+            write(io, "<tr><td colspan='5'>", length(g.tests) - 2, " similar tests hidden</td>")
+            for b in builds
+                write(io, "<td>&vellip;</td>")
+            end
+            maxbuild < length(m.builds) && write(io, "<td>&hellip;</td>")
+
+            t = g.tests[end]
+            write(io, "<tr><td>", join(t.suit, ":"), "</td>")
+            write(io, "<td>", t.name, "</td><td>", t.arch, "</td><td>", t.machine, "</td>")
+            write(io, "<td>", join(t.flags, ","), "</td>")
+
+            for b in builds
+                if haskey(seq.builds, b)
+                    write(io, "<td>", seq.builds[b].result, "</td>")
+                else
+                    write(io, "<td> _ </td>")
+                end
+            end
+            maxbuild < length(m.builds) && write(io, "<td>&hellip;</td>")
+            write(io, "</tr>")
+        end
+    end
+
+    if length(gs) > maxrow
         write(io, "<tr>")
         for _ in 1:(maxbuild + 5)
             write(io, "<td>&vellip;</td>")
