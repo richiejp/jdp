@@ -221,7 +221,7 @@ function Base.show(io::IO, mime::MIME"text/html", mg::BuildMatrixGrouped)
 
     write(io, "<p>BuildMatrixView: ",
           repr(length(m.builds)), " builds x ",
-          repr(length(gs)), " test groups (", repr(length(m.seqs)) " tests)</p>")
+          repr(length(gs)), " test groups (", repr(length(m.seqs)), " tests)</p>")
     write(io, "<table class=\"build-matrix\">")
     write(io, "<thead><tr>")
     write(io, "<th>Suit</th><th>Test</th><th>Arch</th><th>Machine</th><th>Flags</th>")
