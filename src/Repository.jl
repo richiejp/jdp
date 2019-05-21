@@ -109,7 +109,9 @@ function init()
         for _ in 1:10
             try
                 rconn = getconn()
-            catch
+                break
+            catch exception
+                @debug "Could not get connection" exception
                 sleep(0.1)
             end
         end
@@ -120,9 +122,27 @@ function init()
         rconn
     end
 
-    msg = echo(con.conn, "Echo from $(getpid())")
-    @debug "Echoed back from Redis" msg
+    msg = nothing
+    exception = nothing
+    for _ in 1:10
+        try
+            msg = echo(con.conn, "Echo from $(getpid())")
+            break
+        catch exp
+            exception = exp
+            @debug "Echo failed" exception
+            sleep(1)
+        end
+    end
+
     atomic_xchg!(con.lock, 0);
+
+    if msg == nothing
+        exception ≠ nothing && rethrow(exception)
+        error("Echo to Redis failed, but there is no exception!")
+    else
+        @debug "Echoed back from Redis" msg
+    end
 end
 
 function keys(pattern::String)::Vector{String}
