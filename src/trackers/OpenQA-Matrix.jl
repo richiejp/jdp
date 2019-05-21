@@ -44,8 +44,7 @@ mutable struct TestSeq
     builds::SortedDict{OrdBuild, TestResult}
 end
 
-TestSeq(test::TestResult) =
-    TestSeq(test, SortedDict{OrdBuild, Union{TestResult, Nothing}}())
+TestSeq() = TestSeq(SortedDict{OrdBuild, TestResult}())
 
 function equal_for_builds(ts1::TestSeq, ts2::TestSeq, builds::SortedBuilds)
     for b in builds
@@ -105,10 +104,11 @@ function filter_builds(fn::Function, m::BuildMatrix)
     BuildMatrix(builds, m.seqs)
 end
 
-function build_matrix(results)::BuildMatrix
+function build_matrix(results,
+                      ordering=FieldSubsetOrdering(:suit, :name, :arch,
+                                                   :machine, :flags))::BuildMatrix
     builds = SortedBuilds{Float64}(Order.Reverse)
-    seqs = SortedDict{TestResult, TestSeq}(
-        FieldSubsetOrdering(:suit, :name, :arch, :machine, :flags))
+    seqs = SortedDict{TestResult, TestSeq}(ordering)
 
     # For now we are optimistic about the product and pessimistic about the
     # test environment, so first pick the best test result for each build
@@ -118,7 +118,7 @@ function build_matrix(results)::BuildMatrix
         push!(builds, build)
 
         seq = get!(seqs, res) do
-            TestSeq(res)
+            TestSeq()
         end
 
         if get!(seq.builds, build, res).result != "passed"
@@ -128,6 +128,8 @@ function build_matrix(results)::BuildMatrix
 
     BuildMatrix(builds, seqs)
 end
+
+describe(m::BuildMatrix) = "$(length(m.builds)) builds x $(length(m.seqs)) tests"
 
 function Base.show(io::IO, mime::MIME"text/html", m::BuildMatrix)
     maxrow, maxbuild = if get(io, :limit, true)
@@ -142,7 +144,7 @@ function Base.show(io::IO, mime::MIME"text/html", m::BuildMatrix)
           repr(length(m.seqs)), " tests</p>")
     write(io, "<table class=\"build-matrix\">")
     write(io, "<thead><tr>")
-    write(io, "<th>Suit</th><th>Test</th><th>Arch</th><th>Machine</th><th>Flags</th>")
+    write(io, "<th>Suit</th><th>Name</th><th>Arch</th><th>Machine</th><th>Flags</th>")
 
     builds = Iterators.take(m.builds, maxbuild)
     for b in builds
@@ -156,7 +158,7 @@ function Base.show(io::IO, mime::MIME"text/html", m::BuildMatrix)
     for (t, seq) in m.seqs
         write(io, "<tr><td>", join(t.suit, ":"), "</td>")
         write(io, "<td>", t.name, "</td><td>", t.arch, "</td><td>", t.machine, "</td>")
-        write(io, "<td>", join(t.flags, ","), "</td>")
+        write(io, "<td>", join(t.flags, ":"), "</td>")
 
         for b in builds
             if haskey(seq.builds, b)
@@ -184,13 +186,17 @@ function Base.show(io::IO, mime::MIME"text/html", m::BuildMatrix)
     write(io, "</tbody></table>")
 end
 
-function group_matrix(m::BuildMatrix, issimilar::Function)::BuildMatrixGrouped
+function group_matrix(issimilar::Function, m::BuildMatrix)::BuildMatrixGrouped
     groups = TestSeqGroup[]
     gtests = nothing
     gseq = nothing
 
     for (test, seq) in m.seqs
-        if equal_for_builds(seq, gseq, m.builds) && issimilar(test, gtests[end])
+        is_in_cur_group = (gtests ≠ nothing &&
+                           equal_for_builds(seq, gseq, m.builds) &&
+                           issimilar(test, gtests[end]))
+
+        if is_in_cur_group
             push!(gtests, test)
         else
             if gtests ≠ nothing
@@ -224,7 +230,7 @@ function Base.show(io::IO, mime::MIME"text/html", mg::BuildMatrixGrouped)
           repr(length(gs)), " test groups (", repr(length(m.seqs)), " tests)</p>")
     write(io, "<table class=\"build-matrix\">")
     write(io, "<thead><tr>")
-    write(io, "<th>Suit</th><th>Test</th><th>Arch</th><th>Machine</th><th>Flags</th>")
+    write(io, "<th>Suit</th><th>Name</th><th>Arch</th><th>Machine</th><th>Flags</th>")
 
     builds = Iterators.take(m.builds, maxbuild)
     for b in builds
@@ -240,7 +246,7 @@ function Base.show(io::IO, mime::MIME"text/html", mg::BuildMatrixGrouped)
         t = g.tests[1]
         write(io, "<tr><td>", join(t.suit, ":"), "</td>")
         write(io, "<td>", t.name, "</td><td>", t.arch, "</td><td>", t.machine, "</td>")
-        write(io, "<td>", join(t.flags, ","), "</td>")
+        write(io, "<td>", join(t.flags, ":"), "</td>")
 
         for b in builds
             if haskey(seq.builds, b)
@@ -253,16 +259,32 @@ function Base.show(io::IO, mime::MIME"text/html", mg::BuildMatrixGrouped)
         write(io, "</tr>")
 
         if length(g.tests) > 2
-            write(io, "<tr><td colspan='5'>", length(g.tests) - 2, " similar tests hidden</td>")
-            for b in builds
-                write(io, "<td>&vellip;</td>")
-            end
-            maxbuild < length(m.builds) && write(io, "<td>&hellip;</td>")
+            write(io, "<tr>")
+            for p in (:suit, :name, :arch, :machine, :flags)
+                if all(ot -> getproperty(ot, p) == getproperty(t, p), g.tests)
+                    v = getproperty(t, p)
 
+                    if v isa AbstractString
+                        write(io, "<td>", v, "</td>")
+                    else
+                        write(io, "<td>", join(v, ":"), "</td>")
+                    end
+                else
+                    write(io, "<td>&vellip;</td>")
+                end
+            end
+
+            write(io, "<td colspan='$maxbuild'>",
+                  repr(length(g.tests) - 2), " similar tests hidden</td>")
+            maxbuild < length(m.builds) && write(io, "<td>&hellip;</td>")
+            write(io, "</tr>")
+        end
+
+        if length(g.tests) > 1
             t = g.tests[end]
             write(io, "<tr><td>", join(t.suit, ":"), "</td>")
             write(io, "<td>", t.name, "</td><td>", t.arch, "</td><td>", t.machine, "</td>")
-            write(io, "<td>", join(t.flags, ","), "</td>")
+            write(io, "<td>", join(t.flags, ":"), "</td>")
 
             for b in builds
                 if haskey(seq.builds, b)
