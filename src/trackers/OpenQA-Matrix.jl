@@ -133,7 +133,7 @@ describe(m::BuildMatrix) = "$(length(m.builds)) builds x $(length(m.seqs)) tests
 
 function Base.show(io::IO, mime::MIME"text/html", m::BuildMatrix)
     maxrow, maxbuild = if get(io, :limit, true)
-        h, w = displaysize(io)
+        h, w = displaysize()
         min(h, length(m.seqs)), min(max(1, Int(floor(w / 5)) - 5), length(m.builds))
     else
         length(m.seqs), length(m.builds)
@@ -215,20 +215,45 @@ function group_matrix(issimilar::Function, m::BuildMatrix)::BuildMatrixGrouped
     BuildMatrixGrouped(m, groups)
 end
 
+function write_test_seq_cells(io::IO, t, seq, builds)
+    write(io, "<tr><td style='word-break: break-all'>", join(t.suit, ":"), "</td>")
+    write(io, "<td style='word-break: break-all'>", t.name, "</td><td>", t.arch,
+          "</td><td style='word-break: break-all'>", t.machine, "</td>")
+    write(io, "<td style='word-break: break-all'>", join(t.flags, ":"), "</td>")
+
+    for b in builds
+        if haskey(seq.builds, b)
+            local t = seq.builds[b]
+
+            if t.result != "passed"
+                print(io, "<td><a href=\"https://openqa.suse.de/tests/",
+                      t.job.id, "\"><strong>", t.result, "</strong></a></td>")
+            else
+                print(io, "<td><a href=\"https://openqa.suse.de/tests/",
+                      t.job.id, "\">", t.result, "</a></td>")
+            end
+        else
+            write(io, "<td> _ </td>")
+        end
+    end
+end
+
 function Base.show(io::IO, mime::MIME"text/html", mg::BuildMatrixGrouped)
     m = mg.m
     gs = mg.groups
     maxrow, maxbuild = if get(io, :limit, true)
-        h, w = displaysize(io)
-        min(h, length(gs)), min(max(1, Int(floor(w / 5)) - 5), length(m.builds))
+        h, w = displaysize()
+        h, min(max(1, Int(floor(w / 5)) - 5), length(m.builds))
     else
         length(gs), length(m.builds)
     end
+    actualrows = 0
+    showngroups = 0
 
     write(io, "<p>BuildMatrixView: ",
           repr(length(m.builds)), " builds x ",
           repr(length(gs)), " test groups (", repr(length(m.seqs)), " tests)</p>")
-    write(io, "<table class=\"build-matrix\">")
+    write(io, "<table class='build-matrix'>")
     write(io, "<thead><tr>")
     write(io, "<th>Suit</th><th>Name</th><th>Arch</th><th>Machine</th><th>Flags</th>")
 
@@ -240,31 +265,14 @@ function Base.show(io::IO, mime::MIME"text/html", mg::BuildMatrixGrouped)
 
     write(io, "</tr></thead><tbody>")
 
-    for g in Iterators.take(gs, maxrow)
+    for g in gs
         seq = g.seq
 
         t = g.tests[1]
-        write(io, "<tr><td>", join(t.suit, ":"), "</td>")
-        write(io, "<td>", t.name, "</td><td>", t.arch, "</td><td>", t.machine, "</td>")
-        write(io, "<td>", join(t.flags, ":"), "</td>")
-
-        for b in builds
-            if haskey(seq.builds, b)
-                local t = seq.builds[b]
-
-                if t.result != "passed"
-                    print(io, "<td><a href=\"https://openqa.suse.de/tests/",
-                          t.job.id, "\"><strong>", t.result, "</strong></a></td>")
-                else
-                    print(io, "<td><a href=\"https://openqa.suse.de/tests/",
-                          t.job.id, "\">", t.result, "</a></td>")
-                end
-            else
-                write(io, "<td> _ </td>")
-            end
-        end
+        write_test_seq_cells(io, t, seq, builds)
         maxbuild < length(m.builds) && write(io, "<td>&hellip;</td>")
         write(io, "</tr>")
+        actualrows += 1
 
         if length(g.tests) > 2
             write(io, "<tr>")
@@ -286,35 +294,24 @@ function Base.show(io::IO, mime::MIME"text/html", mg::BuildMatrixGrouped)
                   repr(length(g.tests) - 2), " similar tests hidden</td>")
             maxbuild < length(m.builds) && write(io, "<td>&hellip;</td>")
             write(io, "</tr>")
+            actualrows += 1
         end
 
         if length(g.tests) > 1
             t = g.tests[end]
-            write(io, "<tr><td>", join(t.suit, ":"), "</td>")
-            write(io, "<td>", t.name, "</td><td>", t.arch, "</td><td>", t.machine, "</td>")
-            write(io, "<td>", join(t.flags, ":"), "</td>")
-
-            for b in builds
-                if haskey(seq.builds, b)
-                    local t = seq.builds[b]
-
-                    if t.result != "passed"
-                        print(io, "<td><a href=\"https://openqa.suse.de/tests/",
-                              t.job.id, "\"><strong>", t.result, "</strong></a></td>")
-                    else
-                        print(io, "<td><a href=\"https://openqa.suse.de/tests/",
-                              t.job.id, "\">", t.result, "</a></td>")
-                    end
-                else
-                    write(io, "<td> _ </td>")
-                end
-            end
+            write_test_seq_cells(io, t, seq, builds)
             maxbuild < length(m.builds) && write(io, "<td>&hellip;</td>")
             write(io, "</tr>")
+            actualrows += 1
+        end
+
+        showngroups += 1
+        if actualrows >= maxrow
+            break
         end
     end
 
-    if length(gs) > maxrow
+    if showngroups < length(gs)
         write(io, "<tr>")
         for _ in 1:(maxbuild + 5)
             write(io, "<td>&vellip;</td>")
