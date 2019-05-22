@@ -86,9 +86,17 @@ function filter_seqs(fn::Function, m::BuildMatrix)
     BuildMatrix(m.builds, seqs)
 end
 
-truncate_builds(m::BuildMatrix, n::Int) =
-    BuildMatrix(SortedBuilds{Float64}(Iterators.take(m.builds, n), Order.Reverse),
-                m.seqs)
+function truncate_builds(m::BuildMatrix, n::Int)
+    m2 = BuildMatrix(SortedBuilds{Float64}(Iterators.take(m.builds, n),
+                                           Order.Reverse),
+                     m.seqs)
+
+    filter_seqs(m2) do ex, builds
+        !all(builds) do bres
+            bres == nothing
+        end
+    end
+end
 
 function filter_builds(fn::Function, m::BuildMatrix)
     builds = SortedBuilds{Float64}(Order.Reverse)
