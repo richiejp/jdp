@@ -250,7 +250,15 @@ function Base.show(io::IO, mime::MIME"text/html", mg::BuildMatrixGrouped)
 
         for b in builds
             if haskey(seq.builds, b)
-                write(io, "<td>", seq.builds[b].result, "</td>")
+                local t = seq.builds[b]
+
+                if t.result != "passed"
+                    print(io, "<td><a href=\"https://openqa.suse.de/tests/",
+                          t.job.id, "\"><strong>", t.result, "</strong></a></td>")
+                else
+                    print(io, "<td><a href=\"https://openqa.suse.de/tests/",
+                          t.job.id, "\">", t.result, "</a></td>")
+                end
             else
                 write(io, "<td> _ </td>")
             end
@@ -288,7 +296,15 @@ function Base.show(io::IO, mime::MIME"text/html", mg::BuildMatrixGrouped)
 
             for b in builds
                 if haskey(seq.builds, b)
-                    write(io, "<td>", seq.builds[b].result, "</td>")
+                    local t = seq.builds[b]
+
+                    if t.result != "passed"
+                        print(io, "<td><a href=\"https://openqa.suse.de/tests/",
+                              t.job.id, "\"><strong>", t.result, "</strong></a></td>")
+                    else
+                        print(io, "<td><a href=\"https://openqa.suse.de/tests/",
+                              t.job.id, "\">", t.result, "</a></td>")
+                    end
                 else
                     write(io, "<td> _ </td>")
                 end
