@@ -4,6 +4,7 @@ include(joinpath(@__DIR__, "../src/init.jl"))
 
 import Distributed: @spawn, @everywhere, @sync, myid
 @everywhere using Weave
+@everywhere import Highlights
 
 using JDP.IOHelpers
 using JDP.BugRefs
@@ -25,7 +26,9 @@ end
 @everywhere weave_ipynb(name::String, args=Dict()) = try
     cd(joinpath(@__DIR__, "../notebooks")) do
         @info "Weaving $(joinpath(pwd(), name)).ipynb on worker $(myid())"
-        weave("$name.ipynb"; doctype="md2html", out_path=$reppath, args=args)
+        weave("$name.ipynb"; doctype="md2html",
+              css="weave.css", highlight_theme=Highlights.Themes.GitHubTheme,
+              out_path=$reppath, args=args)
     end
 catch exception
     @error "Exception while weaving $name" exception
