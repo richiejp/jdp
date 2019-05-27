@@ -7,6 +7,7 @@ import Dates: now, Date, Month, Week, Year
 import MbedTLS
 import DataFrames: DataFrame
 import DataStructures: SortedSet, SortedDict
+import TOML
 
 import JDP.Functional: cifilter, cmap, cimap, cforeach
 using JDP.Templates
@@ -641,6 +642,98 @@ Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String, ids)::Data
 
 Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String)::DataFrame =
     tests_to_dataframe(Repository.fetch(TestResult, Vector, from))
+
+"""
+    test_prefs = load_notify_preferences(from::String, invert=true)::Dict{String, Vector{String}}
+
+This loads and parses TOML formatted user notification preferences stored in
+the OpenQA job group descriptions. Each user can set one or more patterns
+which are matched against test suit, test name, test flags and maybe more to
+determine if they should be sent a notification regarding some test.
+
+### Arguments
+
+- `from`: This is the TLA of the tracker (e.g. "osd") where the
+          description text should be loaded from.
+- `invert`: Whether to invert the mapping from user -> tests to test -> users.
+            Default is `true`
+
+### OpenQA Input
+
+The raw OpenQA job group description text should contain something like the
+following.
+
+```toml
+<code>
+[JDP.notify.on-status-diff] <br>
+rpalethorpe = ['LTP', 'OpenQA'] <br>
+metan = 'LTP' <br>
+pvorel = 'LTP' <br>
+mmoese = ['nvmftests', 'LTP'] <br>
+lansuse = 'fstests' <br>
+yosun = 'fstests' <br>
+cfconrad = 'udev.no-partlabel-links' <br>
+</code>
+```
+
+Only toml inside a the first code tag will be parsed. The `<br>` tags just
+effect the appearance in OpenQA. You should include them to make it readable.
+
+For each user name you can set a single string or a vector of strings. These
+are then passed to `occursin` as plain strings or maybe regexes depending on
+the report.
+
+### Returns
+
+This returns a Dictionary mapping each pattern string to a vector of
+users. Unless `invert=false` in which case the resulting dictionary matches
+the TOML except that single strings are wrapped in a vector.
+
+"""
+function load_notify_preferences(from::String, invert=true)::Dict{String, Vector{String}}
+    jgroups = Repository.fetch(OpenQA.JobGroup, Vector, "osd")
+    [jgroup.id => jgroup.name for jgroup in jgroups]
+
+    userprefs = Dict{String, Set{String}}()
+    for jgroup in jgroups
+        toml = match(r"<code>(.*)</code>"s, jgroup.description)
+        if toml == nothing
+            @info "$(jgroup.name) has no code section for settings, ignoring"
+            continue
+        end
+        parser = TOML.Parser(replace(toml[1], "<br>" => ""))
+        config = TOML.parse(parser)
+        if config == nothing
+            @error "Job description TOML parsing error" jgroup.name parser.error jgroup.description
+            continue
+        end
+        if (haskey(config, "JDP") &&
+            haskey(config["JDP"], "notify") &&
+            haskey(config["JDP"]["notify"], "on-status-diff"))
+
+            config = TOML.table2dict(config)
+            for (k, v) in config["JDP"]["notify"]["on-status-diff"]
+                patterns = get!(userprefs, k, Set())
+                v isa Vector ? push!(patterns, v...) : push!(patterns, v)
+            end
+        else
+            @info "$(jgroup.name) is mssing a notify status diff section, ignoring"
+        end
+    end
+
+    testprefs = Dict{String, Vector{String}}()
+    if invert
+        for (user, patterns) = userprefs, p = patterns
+            push!(get!(testprefs, p, []), user)
+        end
+    else
+        for (user, patterns) = pairs(userprefs)
+            testprefs[user] = collect(patterns)
+        end
+    end
+
+    testprefs
+end
 
 include("OpenQA-indexes.jl")
 include("OpenQA-Matrix.jl")
