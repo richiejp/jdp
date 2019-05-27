@@ -30,7 +30,7 @@ end
 
 makedocs(
     modules = [JDP],
-    format = Documenter.HTML(),
+    format = Documenter.HTML(assets = ["assets/favicon.ico"]),
     sitename = "JDP",
     clean = args["clean"],
     pages = pages
