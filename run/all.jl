@@ -105,5 +105,5 @@ catch exception
 end
 
 weave_ipynb("Report-DataFrames", Dict("builds" => builds));
-weave_ipynb("Report-HPC");
+# weave_ipynb("Report-HPC");
 weave_ipynb("Report-Status-Diff");
