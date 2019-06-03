@@ -644,6 +644,31 @@ Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String)::DataFrame
     tests_to_dataframe(Repository.fetch(TestResult, Vector, from))
 
 """
+    dict = extract_toml("text... <code data-type='TOML'>[JDP.some.toml]<br> ... </code>")
+
+Find the first instance of toml contained inside some text formatted for
+OpenQA job comments or group descriptions.
+
+Only toml inside a the first code tag will be parsed. Code tags which don't
+have a `data-type` of TOML will be ignored. The `<br>` tags just effect the
+appearance in OpenQA. You should include them to make it readable.
+
+"""
+function extract_toml(text::AbstractString)::Union{Nothing, AbstractDict}
+    m = match(r"<code data-type=[\"']TOML[\"']>(.*)</code>"s, text)
+    m == nothing && return nothing
+
+    toml = replace(m[1], "<br>" => "")
+    parser = TOML.Parser(toml)
+    config = TOML.parse(parser)
+    if config == nothing
+        @error "Parsing TOML" parser.error toml
+    end
+
+    config
+end
+
+"""
     test_prefs = load_notify_preferences(from::String, invert=true)::Dict{String, Vector{String}}
 
 This loads and parses TOML formatted user notification preferences stored in
@@ -664,7 +689,7 @@ The raw OpenQA job group description text should contain something like the
 following.
 
 ```toml
-<code>
+<code data-type='TOML'>
 [JDP.notify.on-status-diff] <br>
 rpalethorpe = ['LTP', 'OpenQA'] <br>
 metan = 'LTP' <br>
@@ -675,9 +700,6 @@ yosun = 'fstests' <br>
 cfconrad = 'udev.no-partlabel-links' <br>
 </code>
 ```
-
-Only toml inside a the first code tag will be parsed. The `<br>` tags just
-effect the appearance in OpenQA. You should include them to make it readable.
 
 For each user name you can set a single string or a vector of strings. These
 are then passed to `occursin` as plain strings or maybe regexes depending on
@@ -696,20 +718,10 @@ function load_notify_preferences(from::String, invert=true)::Dict{String, Vector
 
     userprefs = Dict{String, Set{String}}()
     for jgroup in jgroups
-        toml = match(r"<code>(.*)</code>"s, jgroup.description)
-        if toml == nothing
-            @info "$(jgroup.name) has no code section for settings, ignoring"
-            continue
-        end
-        parser = TOML.Parser(replace(toml[1], "<br>" => ""))
-        config = TOML.parse(parser)
-        if config == nothing
-            @error "Job description TOML parsing error" jgroup.name parser.error jgroup.description
-            continue
-        end
-        if (haskey(config, "JDP") &&
-            haskey(config["JDP"], "notify") &&
-            haskey(config["JDP"]["notify"], "on-status-diff"))
+        config = extract_toml(jgroup.description)
+        if config ≠ nothing && (haskey(config, "JDP") &&
+                                haskey(config["JDP"], "notify") &&
+                                haskey(config["JDP"]["notify"], "on-status-diff"))
 
             config = TOML.table2dict(config)
             for (k, v) in config["JDP"]["notify"]["on-status-diff"]
@@ -717,7 +729,7 @@ function load_notify_preferences(from::String, invert=true)::Dict{String, Vector
                 v isa Vector ? push!(patterns, v...) : push!(patterns, v)
             end
         else
-            @info "$(jgroup.name) is mssing a notify status diff section, ignoring"
+            @info "No notify preferences loaded from $(jgroup.name)"
         end
     end
 

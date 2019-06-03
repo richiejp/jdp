@@ -10,6 +10,12 @@ Notifications preferences can be set by adding TOML sections to OpenQA job
 group descriptions. These are at least read by the
 [Status Difference](reports/Report-Status-Diff.html) report.
 
+The functions below extract and interpret the TOML.
+
+```@docs
+JDP.Trackers.OpenQA.extract_toml
+```
+
 ```@docs
 JDP.Trackers.OpenQA.load_notify_preferences
 ```
