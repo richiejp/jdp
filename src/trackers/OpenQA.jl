@@ -687,7 +687,7 @@ function extract_toml(text::AbstractString)::Union{Nothing, AbstractDict}
         @error "Parsing TOML" parser.error toml
     end
 
-    config
+    TOML.table2dict(config)
 end
 
 """
@@ -745,7 +745,6 @@ function load_notify_preferences(from::String, invert=true)::Dict{String, Vector
                                 haskey(config["JDP"], "notify") &&
                                 haskey(config["JDP"]["notify"], "on-status-diff"))
 
-            config = TOML.table2dict(config)
             for (k, v) in config["JDP"]["notify"]["on-status-diff"]
                 patterns = get!(userprefs, k, Set())
                 v isa Vector ? push!(patterns, v...) : push!(patterns, v)
