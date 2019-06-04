@@ -126,6 +126,9 @@ get_machines(host::AbstractSession) = get_json(host, "machines")["Machines"]
 get_job_group_json(host::AbstractSession, id::Int64) =
     get_json(host, "job_groups/$id")[1]
 
+get_job_groups_json(host::AbstractSession) =
+    get_json(host, "job_groups")
+
 function get_group_jobs(host::AbstractSession, group_id::Int64)::Array{Int64}
     get_json(host, "job_groups/$group_id/jobs")["ids"]
 end
@@ -278,7 +281,11 @@ macro error_with_json(json, exp)
 end
 
 json_to_job_group(g::AbstractDict)::JobGroup =
-    JobGroup(g["id"], g["parent_id"], g["name"], g["description"])
+    JobGroup(g["id"], g["parent_id"], g["name"],
+             g["description"] == nothing ? "" : g["description"])
+
+json_to_job_groups(gs::AbstractVector)::Vector{JobGroup} =
+    [json_to_job_group(g) for g in gs]
 
 json_to_steps(details::Vector)::Vector{TestStep} = map(
     Iterators.filter(details) do d
@@ -350,6 +357,9 @@ end
 
 get_job_group(host::AbstractSession, group::JobGroup)::JobGroup =
     json_to_job_group(get_job_group_json(host, group.id))
+
+get_job_groups(host::AbstractSession)::Vector{JobGroup} =
+    json_to_job_groups(get_job_groups_json(host))
 
 function save_job_results_json(host::AbstractSession, dir_path::String; kwargs...)
     dir_path = realpath(dir_path)
@@ -591,6 +601,18 @@ end
 function Repository.refresh(tracker::Tracker.Instance{S},
                             group::JobGroup) where {S <: AbstractSession}
     Repository.refresh(tracker, [group])
+end
+
+function Repository.refresh(tracker::Tracker.Instance{S},
+                            ::Type{JobGroup}) where {S <: AbstractSession}
+
+    groups = get_job_groups(Tracker.ensure_login!(tracker))
+
+    for group in groups
+        Repository.store("$(tracker.tla)-job-group-$(group.id)", group)
+    end
+
+    groups
 end
 
 function jobs_to_tests!(jrs::Vector{JobResult}, from::String)::Vector{TestResult}
