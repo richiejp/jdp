@@ -444,7 +444,7 @@ function get_test_results!(res::Vector{TestResult},
                            tags::Tags)
     var = jr.vars
 
-    if haskey(var, "XFSTESTS") && m.name == "1_"
+    if haskey(var, "XFSTESTS") && startswith(m.name, "1_")
         get_fstest_results!(res, jr, m, tags)
         return
     end
