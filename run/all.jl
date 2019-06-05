@@ -42,13 +42,13 @@ allres = Repository.fetch(OpenQA.TestResult, Vector, tracker.tla,
 @info "We now have $(length(allres)) test results!"
 
 build_tuples = (parse(Float64, test.build) => test.build for test
-                in allres if test.product == "sle-15-SP1-Installer-DVD")
+                in allres if test.product == "sle-12-SP5-Server-DVD")
 latest = reduce(build_tuples, init=0 => "0") do b, o
     b[1] > o[1] ? b : o
 end
 
 build_tuples = (parse(Float64, test.build) => test.build for test
-                in allres if startswith(test.product, "sle-15-SP1") &&
+                in allres if startswith(test.product, "sle-12-SP5") &&
                 "Public Cloud" in test.flags)
 latest_pc = reduce(build_tuples, init=0 => "0") do b, o
     b[1] > o[1] ? b : o
