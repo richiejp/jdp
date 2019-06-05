@@ -13,6 +13,7 @@ stages:
   - deploy
   - execute
   - refresh
+  - pages
   - execute2
   - post_mortem
 
@@ -161,8 +162,27 @@ stop-redis-eu:
   tags:
     - Europe
 
-pages:
+refresh-openqa:
   stage: refresh
+  tags:
+    - primary
+  environment:
+    name: production
+  only:
+    variables:
+      - $BUILD_DOCS
+  artifacts:
+    paths:
+      - public
+  script:
+    - docker stop refresh-openqa || true
+    - docker rm -f refresh-openqa || true
+    - >
+      docker run --name refresh-openqa --network production -t jdp:production
+      julia --color=yes run/refresh-openqa.jl
+
+pages:
+  stage: pages
   tags:
     - primary
   environment:
