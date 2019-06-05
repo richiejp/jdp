@@ -21,6 +21,8 @@ Initially JDP is targeted at SUSE's QA Kernel & Networking team's
 requirements, but this is intended to have general applicability at least
 within SUSE QA.
 
+![Video Presentation](https://w3.suse.cz/~rpalethorpe/jdp-poc-pres.webm)
+
 !!! tip
 
     This README is best viewed through the [docs site](https://rpalethorpe.io.suse.de/jdp/) ([public
