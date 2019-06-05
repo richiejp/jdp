@@ -171,9 +171,6 @@ refresh-openqa:
   only:
     variables:
       - $BUILD_DOCS
-  artifacts:
-    paths:
-      - public
   script:
     - docker stop refresh-openqa || true
     - docker rm -f refresh-openqa || true
