@@ -32,9 +32,9 @@ allres = get!(args, "results") do
     Repository.fetch(OpenQA.TestResult, Vector, "osd",
                      OpenQA.RecentOrInterestingJobsDef)
 end
-product_short = get!(args, "product_short", "SLE15 SP1")
-products = get!(args, "products", ["sle-15-SP1"])
-release = get!(args, "release", "Beta3")
+product_short = get!(args, "product_short", "SLE12 SP5")
+products = get!(args, "products", ["sle-12-SP5"])
+release = get!(args, "release", "Beta1")
 builds = get!(args, "builds", ["152.1"])
 
 trackers = Tracker.load_trackers()
