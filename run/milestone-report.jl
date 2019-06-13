@@ -78,6 +78,7 @@ The following test groups are covered:
 
 - Kernel
 - Network
+- File Systems
 - HPC
 - Public Cloud
 
