@@ -611,11 +611,18 @@ function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
                  jrs::Dict{String, JobResult}) where {S <: AbstractSession}
     ses = Tracker.ensure_login!(tracker)
     jids = @async get_group_jobs(ses, group.id)
-    min_id = get_first_job_after_date(values(jrs), Date(now()) - Month(1)).id
 
-    fjindx = BitSet(j.id for j in values(jrs)
-                    if occursin(r"^(skipped|cancelled|done)$", j.state))
-    jids = filter(jid -> jid >= min_id && !(jid in fjindx), fetch(jids))
+    jids = if isempty(jrs)
+        jids = fetch(jids)
+        min_id = maximum(jids) - 20_000
+        filter(id -> id > min_id, jids)
+    else
+        min_id = get_first_job_after_date(values(jrs), Date(now()) - Month(1)).id
+
+        fjindx = BitSet(j.id for j in values(jrs)
+                        if occursin(r"^(skipped|cancelled|done)$", j.state))
+        filter(jid -> jid >= min_id && !(jid in fjindx), fetch(jids))
+    end
     jobn = length(jids)
 
     @info "Refreshing $jobn jobs from the $(group.name) group ($(group.id))"
