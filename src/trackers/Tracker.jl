@@ -21,6 +21,7 @@ export Api, TrackerRepo, get_tracker, load_trackers
 
 import JDP
 using JDP.Conf
+using JDP.Lazy
 using JDP.Templates
 
 """A connection to a tracker API
@@ -75,6 +76,12 @@ Instance(tla::String) =
     Instance{StaticSession}(nothing, nothing, tla, nothing, nothing)
 Instance(tla::SubString)::Instance = Instance(String(tla))
 
+struct InstanceLink <: Lazy.AbstractLink
+    tla::String
+end
+
+Base.:(==)(r::InstanceLink, l::InstanceLink) = r.tla == l.tla
+
 """Returns an active session
 
 If the tracker already has an active session then return it, otherwise create
@@ -110,9 +117,11 @@ get_tracker(repo::TrackerRepo, tla::AbstractString)::Instance = get(repo.instanc
     @warn "Unknown tracker identifier (TLA) `$tla`"
     Instance(tla)
 end
+Lazy.load(repo::TrackerRepo, link::InstanceLink) = get_tracker(repo, link.tla)
 
 "Get a single tracker from its TLA"
 get_tracker(tla::AbstractString)::Instance = get_tracker(load_trackers(), tla)
+Lazy.load(link::InstanceLink) = get_tracker(link.tla)
 
 mapdic(fn, m) = map(fn, zip(keys(m), values(m))) |> Dict
 

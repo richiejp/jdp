@@ -11,6 +11,7 @@ import TOML
 
 import JDP.Functional: cifilter, cmap, cimap, cforeach
 using JDP.Templates
+using JDP.Lazy
 using JDP.Repository
 using JDP.Tracker
 using JDP.BugRefs
@@ -123,6 +124,9 @@ get_job_comments(host::AbstractSession, job_id::Int64)::Vector{JsonDict} =
 
 get_machines(host::AbstractSession) = get_json(host, "machines")["Machines"]
 
+get_job_group_parent_json(host::AbstractSession, id::Int64) =
+    get_json(host, "parent_groups/$id")[1]
+
 get_job_group_json(host::AbstractSession, id::Int64) =
     get_json(host, "job_groups/$id")[1]
 
@@ -163,13 +167,6 @@ struct TestModule
 end
 
 struct Comment
-    author::String
-    created::String
-    updated::String
-    text::String
-end
-
-struct CommentEx1
     id::Int64
     author::String
     created::String
@@ -181,18 +178,37 @@ const VarsDict = Dict{String, Union{Int64, String, Nothing}}
 
 abstract type Item <: Repository.AbstractItem end
 
-struct JobGroup <: Item
+struct Link{T} <: Lazy.AbstractLink where {T <: Item}
+    host::Tracker.InstanceLink
     id::Int64
-    parent::Union{Nothing, Int64, JobGroup}
+end
+
+Link{T}(tla::String, id) where T = Link{T}(Tracker.InstanceLink(tla), id)
+
+Base.:(==)(r::Link, l::Link) = false
+Base.:(==)(r::Link{T}, l::Link{T}) where T =
+    r.host == l.host && r.id == l.id
+
+abstract type AbstractJobGroup <: Item end
+
+struct JobGroupParent <: AbstractJobGroup
+    id::Int64
+    parent::Union{Link{JobGroupParent}, Tracker.InstanceLink}
     name::String
     description::String
 end
 
-JobGroup(id::Int64) = JobGroup(id, nothing, "", "")
+struct JobGroup <: AbstractJobGroup
+    id::Int64
+    parent::Union{Link{JobGroupParent}, Tracker.InstanceLink}
+    name::String
+    description::String
+end
 
 mutable struct JobResult <: Item
     name::String
     id::Int64
+    group::Link{JobGroup}
     state::String
     logs::Vector{String}
     vars::VarsDict
@@ -200,7 +216,7 @@ mutable struct JobResult <: Item
     start::Union{String, Nothing}
     finish::Union{String, Nothing}
     modules::Vector{TestModule}
-    comments::Vector{Union{Comment, CommentEx1}}
+    comments::Vector{Comment}
 end
 
 struct JobResultSetDef
@@ -280,12 +296,16 @@ macro error_with_json(json, exp)
     end
 end
 
-json_to_job_group(g::AbstractDict)::JobGroup =
-    JobGroup(g["id"], g["parent_id"], g["name"],
+json_to_job_group_parent(tla::String, g::AbstractDict)::JobGroup =
+    JobGroup(g["id"], Tracker.InstanceLink(tla), g["name"],
              g["description"] == nothing ? "" : g["description"])
 
-json_to_job_groups(gs::AbstractVector)::Vector{JobGroup} =
-    [json_to_job_group(g) for g in gs]
+json_to_job_group(tla::String, g::AbstractDict)::JobGroup =
+    JobGroup(g["id"], Link{JobGroupParent}(tla, g["parent_id"]), g["name"],
+             g["description"] == nothing ? "" : g["description"])
+
+json_to_job_groups(tla::String, gs::AbstractVector)::Vector{JobGroup} =
+    [json_to_job_group(tla, g) for g in gs]
 
 json_to_steps(details::Vector)::Vector{TestStep} = map(
     Iterators.filter(details) do d
@@ -304,32 +324,33 @@ json_to_modules(results::Vector)::Vector{TestModule} = map(results) do r
                                    json_to_steps(r["details"])))
 end
 
-json_to_comments(comments::String)::Vector{CommentEx1} =
+json_to_comments(comments::String)::Vector{Comment} =
     convert(Vector{JsonDict},
             JSON.parse(comments; dicttype=JsonDict)) |> json_to_comments
 
-json_to_comments(comments::Vector{JsonDict})::Vector{CommentEx1} = map(comments) do c
-    @error_with_json(c, CommentEx1(c["id"],
-                                   c["userName"],
-                                   c["created"],
-                                   c["updated"],
-                                   c["text"]))
+json_to_comments(comments::Vector{JsonDict})::Vector{Comment} = map(comments) do c
+    @error_with_json(c, Comment(c["id"],
+                                c["userName"],
+                                c["created"],
+                                c["updated"],
+                                c["text"]))
 end
 
-function json_to_job(job::String; vars::String="", comments::String="")::JobResult
-    json_to_job(JSON.parse(job; dicttype=JsonDict)["job"];
+function json_to_job(tla::String, job::String; vars::String="", comments::String="")::JobResult
+    json_to_job(tla, JSON.parse(job; dicttype=JsonDict)["job"];
                 vars=vars == "" ? nothing : JSON.parse(vars; dicttype=VarsDict),
                 comments=comments == "" ? nothing : json_to_comments(comments))
 end
 
-function json_to_job(job::JsonDict;
+function json_to_job(tla::String, job::JsonDict;
                      vars::Union{VarsDict, Nothing}=nothing,
-                     comments::Union{Vector{CommentEx1}, Nothing}=nothing)::JobResult
+                     comments::Union{Vector{Comment}, Nothing}=nothing)::JobResult
     j = job
     @error_with_json(job,
         JobResult(
             j["name"],
             j["id"],
+            Link{JobGroup}(tla, j["group_id"]),
             j["state"],
             vcat(j["logs"], j["ulogs"]),
             vars == nothing ? j["settings"] : vars,
@@ -355,11 +376,23 @@ function flatten(dict::Dict{String, Any})
     dc
 end
 
-get_job_group(host::AbstractSession, group::JobGroup)::JobGroup =
-    json_to_job_group(get_job_group_json(host, group.id))
+function get_job_group_parent(host::Tracker.Instance, id::Int64)::JobGroupParent
+    ses = Tracker.ensure_login!(host)
+    json = get_job_group_parent_json(ses, id)
+    json_to_job_group_parent(host.tla, json)
+end
 
-get_job_groups(host::AbstractSession)::Vector{JobGroup} =
-    json_to_job_groups(get_job_groups_json(host))
+function get_job_group(host::Tracker.Instance, id::Int64)::JobGroup
+    ses = Tracker.ensure_login!(host)
+    json = get_job_group_json(ses, id)
+    json_to_job_group(host.tla, json)
+end
+
+function get_job_groups(host::Tracker.Instance)::Vector{JobGroup}
+    ses = Tracker.ensure_login!(host)
+    json = get_job_groups_json(ses)
+    json_to_job_groups(host.tla, json)
+end
 
 function save_job_results_json(host::AbstractSession, dir_path::String; kwargs...)
     dir_path = realpath(dir_path)
@@ -482,7 +515,7 @@ function get_test_results!(res::Vector{TestResult},
     ))
 end
 
-function parse_comments(comments::Vector{Union{Comment, CommentEx1}},
+function parse_comments(comments::Vector{Comment},
                         trackers::TrackerRepo)::Tags
     tags = Tags()
 
@@ -504,11 +537,20 @@ Repository.fetch(T::Type{JobResult}, ::Type{Vector}, from::String, ids) =
 Repository.fetch(T::Type{JobResult}, V::Type{Vector}, from::String, def::JobResultSetDef) =
     Repository.fetch(T, V, from, Repository.fetch(def, from).ids)
 
+function Repository.fetch(T::Type{JobGroupParent}, from::String, id)::JobGroupParent
+    g = Repository.load("$from-job-group-parent-$id", T)
+    g ≠ nothing && return g
+
+    g = get_job_group_parent(Tracker.get_tracker(from), id)
+    Repository.store("$from-job-group-parent-$id", g)
+    g
+end
+
 function Repository.fetch(T::Type{JobGroup}, from::String, id)::JobGroup
     g = Repository.load("$from-job-group-$id", T)
     g ≠ nothing && return g
 
-    g = get_job_group(Tracker.login(from), JobGroup(id))
+    g = get_job_group(Tracker.get_tracker(from), id)
     Repository.store("$from-job-group-$id", g)
     g
 end
@@ -529,6 +571,10 @@ function Repository.fetch(def::JobResultSetDef, from::String)::JobResultSet
     set ≠ nothing && return set
 
     Repository.refresh(def, from)
+end
+
+function Lazy.load(link::Link{T})::T where T <: Item
+    Repository.fetch(T, link.host.tla, link.id)
 end
 
 function refresh_comments(pred::Function, from::String)
@@ -564,9 +610,7 @@ get_first_job_after_date(jobs, date) =
 function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
                  jrs::Dict{String, JobResult}) where {S <: AbstractSession}
     ses = Tracker.ensure_login!(tracker)
-    group = get_job_group(ses, group)
     jids = @async get_group_jobs(ses, group.id)
-    Repository.store("$(tracker.tla)-job-group-$(group.id)", group)
     min_id = get_first_job_after_date(values(jrs), Date(now()) - Month(1)).id
 
     fjindx = BitSet(j.id for j in values(jrs)
@@ -580,7 +624,7 @@ function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
         res = @async get_job_results(ses, jid)
         coms = @async get_job_comments(ses, jid) |> json_to_comments
         vars = @async get_job_vars(ses, jid)
-        json_to_job(fetch(res); vars=fetch(vars), comments=fetch(coms))
+        json_to_job(tracker.tla, fetch(res); vars=fetch(vars), comments=fetch(coms))
     end |> cforeach() do job
         k = "$(tracker.tla)-job-$(job.id)"
         Repository.store(k, job)
@@ -606,7 +650,7 @@ end
 function Repository.refresh(tracker::Tracker.Instance{S},
                             ::Type{JobGroup}) where {S <: AbstractSession}
 
-    groups = get_job_groups(Tracker.ensure_login!(tracker))
+    groups = get_job_groups(tracker)
 
     for group in groups
         Repository.store("$(tracker.tla)-job-group-$(group.id)", group)

@@ -7,6 +7,7 @@ include("IOHelpers.jl")
 include("Conf.jl")
 
 include("Templates.jl")
+include("Lazy.jl")
 include("trackers/Tracker.jl")
 include("BugRefsParser.jl")
 include("BugRefs.jl")

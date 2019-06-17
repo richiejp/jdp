@@ -1,11 +1,13 @@
 @testset "OpenQA" begin
     datadir = joinpath(@__DIR__, "../data")
+    tla = "tla"
     jobtext = read(joinpath(datadir, "2069419-job-details.json"), String)
     comtext = read(joinpath(datadir, "2069419-job-comments.json"), String)
     vartext = read(joinpath(datadir, "vars.json"), String)
 
-    job = OpenQA.json_to_job(jobtext; vars=vartext, comments=comtext)
+    job = OpenQA.json_to_job(tla, jobtext; vars=vartext, comments=comtext)
     @test job.name == "sle-12-SP4-Server-DVD-s390x-Build0393-ltp_net_stress_interface@s390x-kvm-sle12"
+    @test job.group == OpenQA.Link{OpenQA.JobGroup}("tla", 155)
     @test job.result == "failed"
     @test job.vars["MACHINE"] == "aarch64"
     @test job.comments[1].author == "pvorel"
@@ -26,6 +28,6 @@
         vartext = joinpath(datadir, "$id-job-vars.json") |>
             cdoif(readstr, isfile) |> cdefault("")
     
-        job = @test_nowarn OpenQA.json_to_job(jobtext; vars=vartext, comments=comtext)
+        job = @test_nowarn OpenQA.json_to_job(tla, jobtext; vars=vartext, comments=comtext)
     end
 end
