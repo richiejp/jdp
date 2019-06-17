@@ -301,7 +301,13 @@ json_to_job_group_parent(tla::String, g::AbstractDict)::JobGroup =
              g["description"] == nothing ? "" : g["description"])
 
 json_to_job_group(tla::String, g::AbstractDict)::JobGroup =
-    JobGroup(g["id"], Link{JobGroupParent}(tla, g["parent_id"]), g["name"],
+    JobGroup(g["id"],
+             if g["parent_id"] == nothing
+                 Tracker.InstanceLink(tla)
+             else
+                 Link{JobGroupParent}(tla, g["parent_id"])
+             end,
+             g["name"],
              g["description"] == nothing ? "" : g["description"])
 
 json_to_job_groups(tla::String, gs::AbstractVector)::Vector{JobGroup} =
