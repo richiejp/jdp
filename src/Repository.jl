@@ -211,6 +211,15 @@ function mload(keys, ::Type{I})::Vector{I} where {I <: AbstractItem}
     end
 end
 
+function drop(pattern::String)::Integer
+    ids = keys(pattern)
+    isempty(ids) && return 0
+
+    with_conn() do conn
+        del(conn, ids...)
+    end
+end
+
 refresh(t::Tracker.Instance{S}, bref::BugRefs.Ref) where {S} =
     @warn "Refresh BugRefs not defined for tracker $(t.tla) and $S"
 
