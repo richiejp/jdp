@@ -81,6 +81,7 @@ struct InstanceLink <: Lazy.AbstractLink
 end
 
 Base.:(==)(r::InstanceLink, l::InstanceLink) = r.tla == l.tla
+Base.hash(l::InstanceLink, h::UInt) = hash(l.tla, h)
 
 """Returns an active session
 

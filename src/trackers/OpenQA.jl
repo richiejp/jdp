@@ -188,6 +188,7 @@ Link{T}(tla::String, id) where T = Link{T}(Tracker.InstanceLink(tla), id)
 Base.:(==)(r::Link, l::Link) = false
 Base.:(==)(r::Link{T}, l::Link{T}) where T =
     r.host == l.host && r.id == l.id
+Base.hash(l::Link, h::UInt) = hash(l.host, hash(l.id, h))
 
 abstract type AbstractJobGroup <: Item end
 
@@ -205,6 +206,12 @@ struct JobGroup <: AbstractJobGroup
     description::String
 end
 
+get_host(h::Tracker.InstanceLink) = h
+get_host(g::Link) = get_host(Lazy.load(g))
+get_host(g::AbstractJobGroup) = get_host(g.parent)
+
+Link(g::JobGroup) = Link{JobGroup}(get_host(g), g.id)
+
 mutable struct JobResult <: Item
     name::String
     id::Int64
@@ -218,6 +225,8 @@ mutable struct JobResult <: Item
     modules::Vector{TestModule}
     comments::Vector{Comment}
 end
+
+get_host(j::JobResult) = get_host(Lazy.load(j.group))
 
 struct JobResultSetDef
     name::String
@@ -296,9 +305,9 @@ macro error_with_json(json, exp)
     end
 end
 
-json_to_job_group_parent(tla::String, g::AbstractDict)::JobGroup =
-    JobGroup(g["id"], Tracker.InstanceLink(tla), g["name"],
-             g["description"] == nothing ? "" : g["description"])
+json_to_job_group_parent(tla::String, g::AbstractDict)::JobGroupParent =
+    JobGroupParent(g["id"], Tracker.InstanceLink(tla), g["name"],
+                   g["description"] == nothing ? "" : g["description"])
 
 json_to_job_group(tla::String, g::AbstractDict)::JobGroup =
     JobGroup(g["id"],
@@ -562,7 +571,7 @@ function Repository.fetch(T::Type{JobGroup}, from::String, id)::JobGroup
 end
 
 Repository.fetch(T::Type{JobGroup}, ::Type{Vector}, from::String) =
-    Repository.mload("$from-job-group-*", T)
+    Repository.mload("$from-job-group-[0-9]*", T)
 
 function Repository.refresh(def::JobResultSetDef, from::String)::JobResultSet
     jrs = Repository.fetch(JobResult, Vector, from)
@@ -747,6 +756,12 @@ function extract_toml(text::AbstractString)::Union{Nothing, AbstractDict}
     TOML.table2dict(config)
 end
 
+struct NotifyPref
+    group::Link{JobGroup}
+    user::String
+    pattern::String
+end
+
 """
     test_prefs = load_notify_preferences(from::String, invert=true)::Dict{String, Vector{String}}
 
@@ -791,38 +806,30 @@ users. Unless `invert=false` in which case the resulting dictionary matches
 the TOML except that single strings are wrapped in a vector.
 
 """
-function load_notify_preferences(from::String, invert=true)::Dict{String, Vector{String}}
+function load_notify_preferences(from::String)::Vector{NotifyPref}
     jgroups = Repository.fetch(OpenQA.JobGroup, Vector, "osd")
-    [jgroup.id => jgroup.name for jgroup in jgroups]
 
-    userprefs = Dict{String, Set{String}}()
+    prefs = NotifyPref[]
     for jgroup in jgroups
         config = extract_toml(jgroup.description)
         if config ≠ nothing && (haskey(config, "JDP") &&
                                 haskey(config["JDP"], "notify") &&
                                 haskey(config["JDP"]["notify"], "on-status-diff"))
 
+            link = Link(jgroup)
             for (k, v) in config["JDP"]["notify"]["on-status-diff"]
-                patterns = get!(userprefs, k, Set())
-                v isa Vector ? push!(patterns, v...) : push!(patterns, v)
+                if v isa Vector
+                    push!(prefs, (NotifyPref(link, k, p) for p in v)...)
+                else
+                    push!(prefs, NotifyPref(link, k, v))
+                end
             end
         else
-            @info "No notify preferences loaded from $(jgroup.name)"
+            @debug "No notify preferences loaded from $(jgroup.name)"
         end
     end
 
-    testprefs = Dict{String, Vector{String}}()
-    if invert
-        for (user, patterns) = userprefs, p = patterns
-            push!(get!(testprefs, p, []), user)
-        end
-    else
-        for (user, patterns) = pairs(userprefs)
-            testprefs[user] = collect(patterns)
-        end
-    end
-
-    testprefs
+    prefs
 end
 
 include("OpenQA-indexes.jl")
