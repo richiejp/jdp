@@ -74,4 +74,15 @@ default(::Nothing, def) = def
 default(val, _) = val
 cdefault = bc(default)
 
+function groupby(f::Function, v::Vector)::Dict
+    d = Dict()
+
+    for e in v
+        g = get!(() -> [], d, f(e))
+        push!(g, e)
+    end
+
+    d
+end
+
 end
