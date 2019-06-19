@@ -8,6 +8,7 @@ import MbedTLS
 import DataFrames: DataFrame
 import DataStructures: SortedSet, SortedDict
 import TOML
+import DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 
 import JDP.Functional: cifilter, cmap, cimap, cforeach
 using JDP.Templates
@@ -756,26 +757,34 @@ function extract_toml(text::AbstractString)::Union{Nothing, AbstractDict}
     TOML.table2dict(config)
 end
 
+"""A single notification preference
+
+This can be matched against to decide whether to send a notification.
+
+### Fields
+
+$TYPEDFIELDS
+"""
 struct NotifyPref
+    "A link to the job group this preference is valid for"
     group::Link{JobGroup}
+    "The user this preference is for"
     user::String
+    "Some arbitrary pattern for matching against test properties"
     pattern::String
 end
 
-"""
-    test_prefs = load_notify_preferences(from::String, invert=true)::Dict{String, Vector{String}}
+"""$TYPEDSIGNATURES
 
 This loads and parses TOML formatted user notification preferences stored in
 the OpenQA job group descriptions. Each user can set one or more patterns
-which are matched against test suit, test name, test flags and maybe more to
-determine if they should be sent a notification regarding some test.
+which could be matched against test suit, test name, test flags, etc. or
+something else depending on the script.
 
 ### Arguments
 
 - `from`: This is the TLA of the tracker (e.g. "osd") where the
           description text should be loaded from.
-- `invert`: Whether to invert the mapping from user -> tests to test -> users.
-            Default is `true`
 
 ### OpenQA Input
 
@@ -786,24 +795,19 @@ following.
 <code data-type='TOML'>
 [JDP.notify.on-status-diff] <br>
 rpalethorpe = ['LTP', 'OpenQA'] <br>
-metan = 'LTP' <br>
+metan = '.' <br>
 pvorel = 'LTP' <br>
-mmoese = ['nvmftests', 'LTP'] <br>
-lansuse = 'fstests' <br>
-yosun = 'fstests' <br>
-cfconrad = 'udev.no-partlabel-links' <br>
 </code>
 ```
 
 For each user name you can set a single string or a vector of strings. These
-are then passed to `occursin` as plain strings or maybe regexes depending on
-the report.
+may then be interpreted as plain text, globs or Regexs depending on the
+script.
 
 ### Returns
 
-This returns a Dictionary mapping each pattern string to a vector of
-users. Unless `invert=false` in which case the resulting dictionary matches
-the TOML except that single strings are wrapped in a vector.
+This returns a vector of [`NotifyPref`](@ref) structures. You may wish to call
+[`Functional.groupby`](@ref) on these to build an index.
 
 """
 function load_notify_preferences(from::String)::Vector{NotifyPref}
