@@ -2,9 +2,11 @@
 
 [[BSONqs]]
 deps = ["Mmap"]
-path = "/home/rich/.julia/dev/BSONqs"
+git-tree-sha1 = "480e3c474e057e4a9f4d84c4cff20acbebeb01ea"
+repo-rev = "qs"
+repo-url = "https://github.com/richiejp/BSONqs.jl.git"
 uuid = "d4e7598c-6ff7-5b24-8fdc-8d1c0c33c9cf"
-version = "0.4.0"
+version = "0.5.0"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -79,7 +81,7 @@ version = "0.8.0"
 
 [[Documenter]]
 deps = ["Base64", "DocStringExtensions", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Markdown", "REPL", "Unicode"]
-git-tree-sha1 = "1c682e69f448a14794ed4638e15cde5eb158b112"
+git-tree-sha1 = "b734ea7c2e2b44b72ad6006e61d38b5a42d20abe"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaDocs/Documenter.jl.git"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
