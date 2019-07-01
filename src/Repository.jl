@@ -181,7 +181,7 @@ function load(key::String, ::Type{I})::Union{I, Nothing} where {I <: AbstractIte
         get(conn, key)
     end
     if res != nothing
-        BSON.load(IOBuffer(res))[I.name.name]
+        BSON.Document(IOBuffer(res), I)[I.name.name]
     end
 end
 
@@ -199,13 +199,11 @@ function mload(keys, ::Type{I})::Vector{I} where {I <: AbstractItem}
 
         ret = I[]
         for (item, key) in zip(res, keys)
-            if res ≠ nothing
-                try
-                    push!(ret, BSON.load(IOBuffer(item))[I.name.name])
-                catch exception
-                    @error "Raising item" key exception
-                end
-            end
+          try
+            push!(ret, BSON.Document(IOBuffer(item), I)[I.name.name])
+          catch exception
+            @error "Raising item" key exception
+          end
         end
 
         ret
