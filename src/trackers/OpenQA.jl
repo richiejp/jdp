@@ -235,7 +235,6 @@ struct JobResultSetDef
 end
 
 struct JobResultSet <: Item
-    def::JobResultSetDef
     ids::Vector{Int64}
 end
 
@@ -576,7 +575,7 @@ Repository.fetch(T::Type{JobGroup}, ::Type{Vector}, from::String) =
 
 function Repository.refresh(def::JobResultSetDef, from::String)::JobResultSet
     jrs = Repository.fetch(JobResult, Vector, from)
-    s = JobResultSet(def, def.creator(jrs)::Vector{Int64})
+    s = JobResultSet(def.creator(jrs)::Vector{Int64})
 
     Repository.store("$from-jobset-$(def.name)", s) || @error "Did not save" def.name
     s
