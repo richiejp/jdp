@@ -1,7 +1,8 @@
 "Allows saving and loading data to and from the cache(s)"
 module Repository
 
-using BSON
+using BSONqs
+const BSON = BSONqs
 using Redis
 import Dates: Second, Period
 import Base.Threads: Atomic, atomic_cas!, atomic_xchg!

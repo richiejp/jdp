@@ -4,7 +4,7 @@ authors = ["Richard Palethorpe <rpalethorpe@suse.com>"]
 version = "0.1.0"
 
 [deps]
-BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+BSONqs = "d4e7598c-6ff7-5b24-8fdc-8d1c0c33c9cf"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"

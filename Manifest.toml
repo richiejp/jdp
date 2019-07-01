@@ -1,12 +1,10 @@
 # This file is machine-generated - editing it directly is not advised
 
-[[BSON]]
-deps = ["Profile", "Test"]
-git-tree-sha1 = "1e376ead5e576486dcd16c7cf307e183f0d76aa3"
-repo-rev = "read-perf"
-repo-url = "https://github.com/richiejp/BSON.jl.git"
-uuid = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
-version = "0.2.3+"
+[[BSONqs]]
+deps = ["Mmap"]
+path = "/home/rich/.julia/dev/BSONqs"
+uuid = "d4e7598c-6ff7-5b24-8fdc-8d1c0c33c9cf"
+version = "0.4.0"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -49,9 +47,9 @@ version = "1.3.0"
 
 [[DataFrames]]
 deps = ["CategoricalArrays", "Compat", "IteratorInterfaceExtensions", "Missings", "PooledArrays", "Printf", "REPL", "Reexport", "SortingAlgorithms", "Statistics", "StatsBase", "TableTraits", "Tables", "Unicode"]
-git-tree-sha1 = "3891a62fd843662af9f78f25bdd415530b9b9c1e"
+git-tree-sha1 = "279baa6358fd5e944deccab88434f69c74cfc722"
 uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-version = "0.18.2"
+version = "0.18.3"
 
 [[DataStructures]]
 deps = ["InteractiveUtils", "OrderedCollections", "Random", "Serialization", "Test"]
@@ -73,17 +71,17 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[DocStringExtensions]]
 deps = ["LibGit2", "Markdown", "Pkg", "Test"]
-git-tree-sha1 = "e09dc3cca285d29be2084a794f3d45c5cd5d6f06"
-repo-rev = "typed-fields"
-repo-url = "https://github.com/richiejp/DocStringExtensions.jl"
+git-tree-sha1 = "6e9ac8c16026a277470a5fbf4cb56c9786c971ea"
+repo-rev = "master"
+repo-url = "https://github.com/JuliaDocs/DocStringExtensions.jl.git"
 uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
-version = "0.7.0+"
+version = "0.8.0"
 
 [[Documenter]]
 deps = ["Base64", "DocStringExtensions", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Markdown", "REPL", "Unicode"]
-git-tree-sha1 = "970b40e708648bb2a3fb89767cf2182a4b919db4"
-repo-rev = "video"
-repo-url = "https://github.com/richiejp/Documenter.jl.git"
+git-tree-sha1 = "1c682e69f448a14794ed4638e15cde5eb158b112"
+repo-rev = "master"
+repo-url = "https://github.com/JuliaDocs/Documenter.jl.git"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 version = "0.22.4"
 
@@ -94,10 +92,10 @@ uuid = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
 version = "0.9.1"
 
 [[FileIO]]
-deps = ["Pkg", "Random", "Test"]
-git-tree-sha1 = "da32159d4a2e526338506685e280e39ed2f18961"
+deps = ["Pkg"]
+git-tree-sha1 = "351f001a78aa1b7ad2696e386e110b5abd071c71"
 uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-version = "1.0.6"
+version = "1.0.7"
 
 [[FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
@@ -108,11 +106,11 @@ uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
 [[HTTP]]
 deps = ["Base64", "Dates", "IniFile", "MbedTLS", "Sockets"]
-git-tree-sha1 = "44d6582197bff7c6f95e0bd2c5c99b163d4cb84a"
+git-tree-sha1 = "854fad2a2b9cc6678f70ed15a65fc7e572056d39"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaWeb/HTTP.jl.git"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "0.8.0"
+version = "0.8.2"
 
 [[Highlights]]
 deps = ["DocStringExtensions", "InteractiveUtils", "REPL", "Test"]
@@ -155,9 +153,9 @@ version = "0.20.0"
 
 [[JuliaInterpreter]]
 deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
-git-tree-sha1 = "599cc7c6683e54cd0b3786ee37800db037e22df4"
+git-tree-sha1 = "ed46097f465a091f6b126966015048193791743a"
 uuid = "aa1ae85d-cabe-5617-a682-6adf51b2e16a"
-version = "0.5.2"
+version = "0.6.0"
 
 [[LibGit2]]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
@@ -228,10 +226,6 @@ version = "0.5.2"
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
-[[Profile]]
-deps = ["Printf"]
-uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
-
 [[REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
@@ -262,9 +256,9 @@ version = "0.5.2"
 
 [[Revise]]
 deps = ["CodeTracking", "Distributed", "FileWatching", "JuliaInterpreter", "LibGit2", "LoweredCodeUtils", "OrderedCollections", "Pkg", "REPL", "UUIDs", "Unicode"]
-git-tree-sha1 = "f4cd86477685d5095f8cbce2a47f69ae9cf5c963"
+git-tree-sha1 = "09cbf077a36bf58e7d5d2b026bb2af8c92931993"
 uuid = "295af30f-e4ad-537b-8983-00126c2a3abe"
-version = "2.1.4"
+version = "2.1.6"
 
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
