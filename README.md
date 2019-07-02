@@ -16,12 +16,15 @@ experimentation in this area has a convex payoff.
   [not a source of truth](development/index.html#Not-a-source-of-truth-1).
 * JDP can post back to trackers; it can automate workflows other than
   reporting.
+* JDP is intended to fit *into* a CI/CD pipeline or take over unusual sections
+  of a pipeline, it is not intended as a replacement for Jenkins, GoCD,
+  GitlabCI, etc.
 
 Initially JDP is targeted at SUSE's QA Kernel & Networking team's
-requirements, but this is intended to have general applicability at least
-within SUSE QA.
+requirements, however it is a general purpose tool at its core. It could be
+used with any type of data for most any type of workflow or reporting.
 
-![Video Presentation](https://w3.suse.cz/~rpalethorpe/jdp-poc-pres.webm)
+![Video Presentation (internal)](https://w3.suse.cz/~rpalethorpe/jdp-poc-pres.webm)
 
 !!! tip
 
