@@ -35,7 +35,7 @@ Get the configuration for `name`. If a temporary in-memory conf has been set
 with `set_conf` then it will return that. Otherwise it will return the
 contents of `../conf/name.toml` merged with `~/.config/jdp/name.toml`. The
 contents of the home directory config win in the event of a conflict."""
-get_conf(name::Symbol)::Dict = get(tmp_conf, name) do
+get_conf(name::Symbol)::Dict{AbstractString, Any} = get(tmp_conf, name) do
     fname = "$name.toml"
     sconf = joinpath(src_path, fname)
     uconf = joinpath(usr_path, fname)

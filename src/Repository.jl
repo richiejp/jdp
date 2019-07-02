@@ -6,6 +6,7 @@ const BSON = BSONqs
 using Redis
 import Dates: Second, Period
 import Base.Threads: Atomic, atomic_cas!, atomic_xchg!
+import Sockets: TCPSocket
 
 import JDP.Functional: cmap, c
 using JDP.Conf
@@ -34,25 +35,25 @@ rconns = SharedConnection[]
 
 "Use [`with_conn`](@ref)"
 function getconn()::SharedConnection
-    global rconns
+    cs = rconns::Vector{SharedConnection}
 
-    for conn in rconns
+    for conn in cs
         if atomic_cas!(conn.lock, 0, 1) == 0
             return conn
         end
     end
 
-    if MAX_CONNECTIONS < length(rconns)
+    if MAX_CONNECTIONS < length(cs)
         error("Redis connection limit ($MAX_CONNECTIONS) reached")
     end
 
-    @debug "Creating Redis connection" length(rconns)
+    @debug "Creating Redis connection" length(cs)
     dconf = Conf.get_conf(:data)
     conn = SharedConnection(
         Atomic{Int}(1),
-        RedisConnection(;host=get(dconf, "host", "127.0.0.1"),
-                        password=get(dconf, "auth", "")))
-    push!(rconns, conn)
+        RedisConnection(;host=get(dconf, "host", "127.0.0.1")::String,
+                        password=get(dconf, "auth", "")::String))
+    push!(cs, conn)
 
     conn
 end
@@ -189,21 +190,62 @@ function mload(pattern::String, T::Type{I})::Vector{I} where {I <: AbstractItem}
     mload(keys(pattern), T)
 end
 
+function readtocrlf(sk::TCPSocket)::Vector{UInt8}
+    seencr = false
+    l = Base.StringVector(0)
+
+    while !eof(sk)
+        c = read(sk, UInt8)
+
+        if c == 0x0d
+            @assert !seencr "Already seen CR"
+            seencr = true
+        elseif c == 0x0a
+            @assert seencr "Got LF, but not seen CR"
+            return l
+        else
+            @assert !seencr "Expected LF, but got $(Char(c))"
+            push!(l, c)
+        end
+    end
+
+    error("Unexpected eof after: $(String(l))")
+end
+
 function mload(keys, ::Type{I})::Vector{I} where {I <: AbstractItem}
     if isempty(keys)
         I[]
     else
-        res = with_conn() do conn
-            mget(conn, keys...)
-        end
+        ret = Vector{I}(undef, length(keys))
 
-        ret = I[]
-        for (item, key) in zip(res, keys)
-          try
-            push!(ret, BSON.Document(IOBuffer(item), I)[I.name.name])
-          catch exception
-            @error "Raising item" key exception
-          end
+        with_conn() do conn
+            Redis.execute_command_without_reply(conn, ["mget", keys...])
+
+            # Bypass the Redis library for reading the item array because it
+            # would be difficult to optimise it for this
+            l = readtocrlf(conn.socket)
+            @assert l[1] == UInt8('*') "Expected array response"
+            l[1] = UInt8('0')
+            count = parse(Int64, String(l))
+            @assert count == length(keys)
+
+            for (i, key) in enumerate(keys)
+                l = readtocrlf(conn.socket)
+                @assert l[1] == UInt8('$') "Expected bulk string (\$), but got $(Char(l[1]))"
+                l[1] = UInt8('0')
+                len = parse(Int64, String(l))
+
+                item = read(conn.socket, len + 2)
+                @assert length(item)-2 == len "Read bytes $(length(l)) ≠ specified bytes $len"
+                @assert item[end-1] == 0x0d && item[end] == 0x0a "crlf should follow"
+                resize!(item, length(item)-2)
+
+                try
+                    ret[i] = BSON.Document(IOBuffer(item), I)[I.name.name]
+                catch exception
+                    @error "Raising item" key exception
+                end
+            end
         end
 
         ret
