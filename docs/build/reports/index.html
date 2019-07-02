@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Reports · JDP</title><link href="https://cdnjs.cloudflare.com/ajax/libs/normalize/4.2.0/normalize.min.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Mono" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.2.0/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link href="../assets/documenter.css" rel="stylesheet" type="text/css"/><link href="../assets/favicon.ico" rel="icon" type="image/x-icon"/></head><body><nav class="toc"><a href="../"><img class="logo" src="../assets/logo.svg" alt="JDP logo"/></a><h1>JDP</h1><select id="version-selector" onChange="window.location.href=this.value" style="visibility: hidden"></select><form class="search" id="search-form" action="../search/"><input id="search-query" name="q" type="text" placeholder="Search docs"/></form><ul><li><a class="toctext" href="../">Home</a></li><li><a class="toctext" href="../bug-tagging/">Bug Tagging</a></li><li><a class="toctext" href="../user-preferences/">User Preferences</a></li><li><span class="toctext">Reference</span><ul><li><a class="toctext" href="../bugrefs/">BugRefs</a></li><li><a class="toctext" href="../conf/">Conf</a></li><li><a class="toctext" href="../functional/">Functional</a></li><li><a class="toctext" href="../repository/">Repository</a></li><li><a class="toctext" href="../trackers/">Trackers</a></li></ul></li><li><a class="toctext" href="../development/">Development</a></li><li class="current"><a class="toctext" href>Reports</a><ul class="internal"><li class="toplevel"><a class="toctext" href="#External-HTML-Reports-1">External HTML Reports</a></li><li class="toplevel"><a class="toctext" href="#Markdown-1">Markdown</a></li><li><a class="toctext" href="#Raw-links-1">Raw links</a></li><li><a class="toctext" href="#Rendered-Inline-1">Rendered Inline</a></li></ul></li></ul></nav><article id="docs"><header><nav><ul><li><a href>Reports</a></li></ul><a class="edit-page" href="https://github.com//blob/master/docs/src/reports.md"><span class="fa"></span> Edit on GitHub</a></nav><hr/><div id="topbar"><span>Reports</span><a class="fa fa-bars" href="#"></a></div></header><h1><a class="nav-anchor" id="Static-Reports-1" href="#Static-Reports-1">Static Reports</a></h1><p>This instance of JDP has been configured to generate some static reports at the same time as the documentation. These are listed below.</p><h1><a class="nav-anchor" id="External-HTML-Reports-1" href="#External-HTML-Reports-1">External HTML Reports</a></h1><p>These reports were generated directly as HTML, so we generate some links to them using the code displayed.</p><pre><code class="language-julia">using Markdown
+
+html_report_paths = filter(readdir(&quot;reports&quot;)) do entry
+	endswith(entry, &quot;.html&quot;) &amp;&amp;
+	isfile(&quot;reports/$entry&quot;) &amp;&amp;
+	entry != &quot;index.html&quot;
+end
+
+join(map(html_report_paths) do path
+	&quot;* [$(path[1:end-5])]($path)&quot;
+end, &quot;\n&quot;) |&gt; Markdown.parse</code></pre><div class="markdown"></div><h1><a class="nav-anchor" id="Markdown-1" href="#Markdown-1">Markdown</a></h1><p>The following reports were generated as Markdown or plain text which is the preferred format of <a href="https://juliadocs.github.io/Documenter.jl/stable/">Documenter.jl</a>. So we can include them inline, although they probably won&#39;t be displayed exactly as intended or indexed correctly.</p><h2><a class="nav-anchor" id="Raw-links-1" href="#Raw-links-1">Raw links</a></h2><p>The following code will create links to the raw Markdown report texts.</p><pre><code class="language-julia">using Markdown
+
+md_report_paths = filter(readdir(&quot;reports&quot;)) do entry
+	endswith(entry, &quot;.md&quot;) &amp;&amp;
+	isfile(&quot;reports/$entry&quot;)
+end
+
+links = join(map(md_report_paths) do path
+	&quot;* [$(path[1:end-3])]($path)&quot;
+end, &quot;\n&quot;)
+
+Markdown.parse(links)</code></pre><div class="markdown"></div><h2><a class="nav-anchor" id="Rendered-Inline-1" href="#Rendered-Inline-1">Rendered Inline</a></h2><p>This will try to render the Markdown inline. Everything below the code is the content of the reports.</p><pre><code class="language-julia">inline = join(map(md_report_paths) do path
+	&quot;&quot;&quot;# [$(path[1:end-3])]($path)
+	---
+
+	$(read(&quot;reports/$path&quot;, String))
+	&quot;&quot;&quot;
+end, &quot;\n&quot;)
+
+Markdown.parse(inline)</code></pre><div class="markdown"></div><footer><hr/><a class="previous" href="../development/"><span class="direction">Previous</span><span class="title">Development</span></a></footer></article></body></html>
