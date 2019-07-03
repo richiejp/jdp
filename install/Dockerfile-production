@@ -21,6 +21,9 @@ ARG ROCKET_CHAT_TOKEN=""
 ARG OSD_KEY=""
 ARG OSD_SECRET=""
 
+ARG OOO_KEY=""
+ARG OOO_SECRET=""
+
 ARG REDMINE_KEY=""
 
 USER jdp
@@ -40,6 +43,10 @@ RUN echo "pass = \"$BUGZILLA_PASS\"" >> ~/.config/jdp/trackers.toml
 RUN echo "[instances.osd]" >> ~/.config/jdp/trackers.toml
 RUN echo "apikey = \"$OSD_KEY\"" >> ~/.config/jdp/trackers.toml
 RUN echo "apisecret = \"$OSD_SECRET\"" >> ~/.config/jdp/trackers.toml
+
+RUN echo "[instances.ooo]" >> ~/.config/jdp/trackers.toml
+RUN echo "apikey = \"$OOO_KEY\"" >> ~/.config/jdp/trackers.toml
+RUN echo "apisecret = \"$OOO_SECRET\"" >> ~/.config/jdp/trackers.toml
 
 RUN echo "[instances.poo]" >> ~/.config/jdp/trackers.toml
 RUN echo "key = \"$REDMINE_KEY\"" >> ~/.config/jdp/trackers.toml
