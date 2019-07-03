@@ -58,7 +58,7 @@ host = "openqa.suse.de"
 #apikey = ""
 #apisecret = ""
 
-[instance.o3]
+[instances.ooo]
 api = "OpenQA"
 host = "openqa.opensuse.org"
 

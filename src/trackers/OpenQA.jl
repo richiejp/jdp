@@ -596,13 +596,13 @@ function refresh_comments(pred::Function, from::String)
     trackers = load_trackers()
     tracker = get_tracker(trackers, from)
 
-    @info "Loading existing jobs"
+    @info "$from: Loading existing jobs"
     all = Repository.fetch(JobResult, Vector, from)
     jrs = filter(pred, all)
 
-    @info "Refreshing comments on $(length(jrs)) jobs"
+    @info "$from: Refreshing comments on $(length(jrs)) jobs"
     for (i, job) in enumerate(jrs)
-        @info "GET job $i/$(length(jrs))"
+        @info "$from: GET job $i/$(length(jrs))"
         ses = Tracker.ensure_login!(tracker)
         comments = try
             json_to_comments(get_job_comments(ses, job.id))
@@ -640,9 +640,9 @@ function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
     end
     jobn = length(jids)
 
-    @info "Refreshing $jobn jobs from the $(group.name) group ($(group.id))"
+    @info "$(tracker.tla): Refreshing $jobn jobs from the $(group.name) group ($(group.id))"
     jids |> enumerate |> cimap() do (indx, jid)
-        @info "GET job $jid ($indx of $jobn)"
+        @info "$(tracker.tla): GET job $jid ($indx of $jobn)"
         res = @async get_job_results(ses, jid)
         coms = @async get_job_comments(ses, jid) |> json_to_comments
         vars = @async get_job_vars(ses, jid)

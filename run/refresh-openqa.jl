@@ -10,19 +10,22 @@ using JDP.Repository
 argdefs = IOHelpers.ShellArgDefs(Set(["skipjobs"]), Dict())
 args = IOHelpers.parse_args(argdefs, ARGS).named
 
-tracker = Tracker.get_tracker("osd")
-jobgroups = filter(Repository.refresh(tracker, OpenQA.JobGroup)) do g
-    if (toml = OpenQA.extract_toml(g.description)) == nothing || !haskey(toml, "JDP")
-        false
-    else
-        @info "Found JDP config on Job Group $(g.name) ($(g.id))"
-        true
-    end
-end
+trackers = [Tracker.get_tracker("osd"), Tracker.get_tracker("ooo")]
 
-if !args["skipjobs"]
-    Repository.refresh(tracker, jobgroups)
-    Repository.refresh(OpenQA.RecentOrInterestingJobsDef, "osd")
-else
-    @warn "Skipping refreshing the jobs"
+asyncmap(trackers) do tracker
+    jobgroups = filter(Repository.refresh(tracker, OpenQA.JobGroup)) do g
+        if (toml = OpenQA.extract_toml(g.description)) == nothing || !haskey(toml, "JDP")
+            false
+        else
+            @info "$(tracker.tla): Found JDP config on Job Group $(g.name) ($(g.id))"
+            true
+        end
+    end
+
+    if !args["skipjobs"]
+        Repository.refresh(tracker, jobgroups)
+        Repository.refresh(OpenQA.RecentOrInterestingJobsDef, tracker.tla)
+    else
+        @warn "$(tracker.tla): Skipping refreshing the jobs"
+    end
 end
