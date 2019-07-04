@@ -814,25 +814,19 @@ This returns a vector of [`NotifyPref`](@ref) structures. You may wish to call
 
 """
 function load_notify_preferences(from::String)::Vector{NotifyPref}
-    jgroups = Repository.fetch(OpenQA.JobGroup, Vector, "osd")
+    jgroups = Repository.fetch(OpenQA.JobGroup, Vector, from)
 
     prefs = NotifyPref[]
     for jgroup in jgroups
-        config = extract_toml(jgroup.description)
-        if config ≠ nothing && (haskey(config, "JDP") &&
-                                haskey(config["JDP"], "notify") &&
-                                haskey(config["JDP"]["notify"], "on-status-diff"))
+        (config = extract_toml(jgroup.description)) ≠ nothing || continue
 
-            link = Link(jgroup)
-            for (k, v) in config["JDP"]["notify"]["on-status-diff"]
-                if v isa Vector
-                    push!(prefs, (NotifyPref(link, k, p) for p in v)...)
-                else
-                    push!(prefs, NotifyPref(link, k, v))
-                end
+        link = Link(jgroup)
+        for (k, v) in get(config, ("JDP", "notify", "on-status-diff"), Dict())
+            if v isa Vector
+                push!(prefs, (NotifyPref(link, k, p) for p in v)...)
+            else
+                push!(prefs, NotifyPref(link, k, v))
             end
-        else
-            @debug "No notify preferences loaded from $(jgroup.name)"
         end
     end
 
