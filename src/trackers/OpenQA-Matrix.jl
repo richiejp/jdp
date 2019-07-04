@@ -224,6 +224,8 @@ function group_matrix(issimilar::Function, m::BuildMatrix)::BuildMatrixGrouped
 end
 
 function write_test_seq_cells(io::IO, t, seq, builds)
+    uri = get_uri(t)
+
     write(io, "<tr><td style='word-break: break-all'>", join(t.suit, ":"), "</td>")
     write(io, "<td style='word-break: break-all'>", t.name, "</td><td>", t.arch,
           "</td><td style='word-break: break-all'>", t.machine, "</td>")
@@ -233,13 +235,11 @@ function write_test_seq_cells(io::IO, t, seq, builds)
         if haskey(seq.builds, b)
             local t = seq.builds[b]
 
-            if t.result != "passed"
-                print(io, "<td><a href=\"https://openqa.suse.de/tests/",
-                      t.job.id, "\"><strong>", t.result, "</strong></a></td>")
-            else
-                print(io, "<td><a href=\"https://openqa.suse.de/tests/",
-                      t.job.id, "\">", t.result, "</a></td>")
-            end
+            print(io, "<td><a href=\"", uri, "\">")
+            t.result ≠ "passed" && print(io, "<strong>")
+            print(io, t.result)
+            t.result ≠ "passed" && print(io, "</strong>")
+            print(io, "</a></td>")
         else
             write(io, "<td> _ </td>")
         end

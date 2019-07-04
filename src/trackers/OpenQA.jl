@@ -93,8 +93,7 @@ get_json(host::Session, path::String; api::Bool=true) =
     JSON.parse(get_raw(host, path; api=api); dicttype=JsonDict)
 
 get_json(path::String, from::String; api::Bool=true) =
-    get_json(Tracker.ensure_login!(get_tracker(load_trackers(), from)),
-             path; api=api)
+    get_json(Tracker.login(from), path; api=api)
 
 post_raw(ses::Session, path::String, post::String) = read(
     `$(ses.cmd) $(ses.host) --apikey $(ses.apikey) --apisecret $(ses.apisecret) $path post $post`,
@@ -208,7 +207,7 @@ struct JobGroup <: AbstractJobGroup
 end
 
 get_host(h::Tracker.InstanceLink) = h
-get_host(g::Link) = get_host(Lazy.load(g))
+get_host(g::Link) = g.host
 get_host(g::AbstractJobGroup) = get_host(g.parent)
 
 Link(g::JobGroup) = Link{JobGroup}(get_host(g), g.id)
@@ -227,7 +226,7 @@ mutable struct JobResult <: Item
     comments::Vector{Comment}
 end
 
-get_host(j::JobResult) = get_host(Lazy.load(j.group))
+get_host(j::JobResult) = get_host(j.group.host)
 
 struct JobResultSetDef
     name::String
@@ -272,9 +271,18 @@ start_date(job::JobResult)::Union{Nothing, Date} =
 
 get_fqn(tr::TestResult)::String = join(vcat(tr.suit, tr.name), ":")
 
+function get_uri(tr::TestResult)::String
+    host = Lazy.load(get_host(tr.job))
+
+    if host.scheme ≠ nothing && host.host ≠ nothing
+        "$(host.scheme)://$(host.host)/tests/$(tr.job.id)#step/$(tr.name)/1"
+    else
+        "https://openqa.suse.de/tests/$(tr.job.id)#step/$(tr.name)/1"
+    end
+end
+
 Base.show(io::IO, ::MIME"text/markdown", tr::TestResult) =
-    print(io, "[", get_fqn(tr), "](https://openqa.suse.de/tests/", tr.job.id,
-          "#step/", tr.name, "/1) @ `", tr.job.name, "`")
+    print(io, "[", get_fqn(tr), "](", get_uri(tr), ") @ `", tr.job.name, "`")
 
 const JsonDict = Dict{String,
                       Union{String, Int, Float64, Nothing, Dict, Vector}}

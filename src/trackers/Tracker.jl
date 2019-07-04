@@ -24,6 +24,10 @@ using JDP.Conf
 using JDP.Lazy
 using JDP.Templates
 
+function __init__()
+    global cached_repo = load_trackers()
+end
+
 """A connection to a tracker API
 
 Each Tracker which supports the concept of logging in should create a struct
@@ -121,7 +125,7 @@ end
 Lazy.load(repo::TrackerRepo, link::InstanceLink) = get_tracker(repo, link.tla)
 
 "Get a single tracker from its TLA"
-get_tracker(tla::AbstractString)::Instance = get_tracker(load_trackers(), tla)
+get_tracker(tla::AbstractString)::Instance = get_tracker(cached_repo, tla)
 Lazy.load(link::InstanceLink) = get_tracker(link.tla)
 
 mapdic(fn, m) = map(fn, zip(keys(m), values(m))) |> Dict
@@ -155,7 +159,7 @@ load_trackers(conf::Dict)::TrackerRepo = begin
             get(inst, "host", nothing))
     end
 
-    TrackerRepo(apis, insts)
+    global cached_repo = TrackerRepo(apis, insts)
 end
 
 function get_bug_type(tracker::Instance{S})::Union{Nothing, Type} where {S}

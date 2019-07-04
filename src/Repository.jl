@@ -286,11 +286,6 @@ end
 refresh(t::Tracker.Instance{S}, items::Vector{I}) where {S, I <: AbstractItem} =
     map(c(refresh)(t), items)
 
-function refresh(items::Vector{I}, from::String) where {I <: AbstractItem}
-    tracker = Tracker.get_tracker(Tracker.load_trackers(), from)
-    refresh(tracker, from)
-end
-
 """Get one or more items of the given in the specified container
 
 The exact behaviour depends on what is requested. If the data can not be

@@ -73,14 +73,11 @@ function get_xml(ses::Session, path::String; query::String="")::Dict
         String |> parse_xml
 end
 
-function get_raw_bug(ses::Session, id::Int64)::Dict
+get_raw_bug(ses::Session, id::Int64)::Dict =
     get_xml(ses, "/show_bug.cgi", query="id=$id")["bug"]
-end
 
-function get_raw_bug(from::String, id::Int64)::Dict
-    t = get_tracker(load_trackers(), from)
-    get_raw_bug(Tracker.ensure_login!(t), id)
-end
+get_raw_bug(from::String, id::Int64)::Dict =
+    get_raw_bug(Tracker.login(from), id)
 
 abstract type Item <: Repository.AbstractItem end
 
@@ -136,11 +133,7 @@ function Repository.fetch(::Type{Bug}, bref::BugRefs.Ref)::Union{Bug, Nothing}
     end
 end
 
-function Repository.fetch(::Type{Bug}, ::Type{Vector}, from::String)::Vector{Bug}
-    trackers = load_trackers()
-    tracker = get_tracker(trackers, from)
-
+Repository.fetch(::Type{Bug}, ::Type{Vector}, from::String)::Vector{Bug} =
     Repository.mload("$from-bug-*", Bug)
-end
 
 end # module
