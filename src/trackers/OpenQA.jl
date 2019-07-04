@@ -623,19 +623,21 @@ get_first_job_after_date(jobs, date) =
         (jobs -> sort(jobs; by=jp->jp[1].id)) |> first |> first
 
 function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
-                 jrs::Dict{String, JobResult}) where {S <: AbstractSession}
+                 jrs::Dict{String, JobResult}, maxjobs::Int) where {S <: AbstractSession}
     ses = Tracker.ensure_login!(tracker)
     jids = @async get_group_jobs(ses, group.id)
 
     jids = if isempty(jrs)
         jids = fetch(jids)
-        min_id = maximum(jids) - 20_000
+        min_id = maximum(jids) - maxjobs
         filter(id -> id > min_id, jids)
     else
-        min_id = get_first_job_after_date(values(jrs), Date(now()) - Month(1)).id
-
         fjindx = BitSet(j.id for j in values(jrs)
                         if occursin(r"^(skipped|cancelled|done)$", j.state))
+
+        min_id = max(get_first_job_after_date(values(jrs), Date(now()) - Month(1)).id,
+                     maximum(fetch(jids)) - maxjobs)
+
         filter(jid -> jid >= min_id && !(jid in fjindx), fetch(jids))
     end
     jobn = length(jids)
@@ -659,14 +661,16 @@ function Repository.refresh(tracker::Tracker.Instance{S},
     jrs = Dict("$(tracker.tla)-job-$(job.id)" => job for
                job in Repository.fetch(JobResult, Vector, tracker.tla))
 
-    for group in groups
-        refresh!(tracker, group, jrs)
+    for g in groups
+        conf = (d = OpenQA.extract_toml(g.description)) ≠ nothing ? d : Dict()
+
+        refresh!(tracker, g, jrs, get(conf, ("JDP", "refresh", "maxjobs"), 20_000))
     end
 end
 
 function Repository.refresh(tracker::Tracker.Instance{S},
                             group::JobGroup) where {S <: AbstractSession}
-    Repository.refresh(tracker, [group])
+    Repository.refresh(tracker, [group], maxjobs)
 end
 
 function Repository.refresh(tracker::Tracker.Instance{S},

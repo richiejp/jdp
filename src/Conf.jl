@@ -9,6 +9,17 @@ function __init__()
     global usr_path = joinpath(homedir(), ".config/jdp")
 end
 
+Base.get(d::Dict{K}, keychain::Tuple{K}, default) where K =
+    get(d, first(keychain), default)
+
+function Base.get(d::Dict{K}, keychain::NTuple{N, K}, default) where {N, K}
+    k = first(keychain)
+
+    !haskey(d, k) && return default
+
+    get(d[k]::Dict, keychain[2:end], default)
+end
+
 "Override the user specific config path for unit testing"
 set_usr_path(path::String) = global usr_path = path
 
