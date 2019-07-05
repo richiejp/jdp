@@ -38,6 +38,13 @@ struct ShellArgDefs
     named::Dict{AbstractString, Type}
 end
 
+parse_named(::Type{Vector{S}}, arg) where S <: AbstractString = split(arg, ",")
+parse_named(::Type{Vector{T}}, arg) where T = map(split(arg, ",")) do s
+    parse(T, s)
+end
+parse_named(::Type{S}, arg) where S <: AbstractString = arg
+parse_named(::Type{T}, arg) where T = parse(T, arg)
+
 function parse_args(defs::ShellArgDefs, argsv::Vector{S})::ShellArgs where {S <: AbstractString}
     positional = S[]
     named = Dict{S, Any}()
@@ -62,7 +69,7 @@ function parse_args(defs::ShellArgDefs, argsv::Vector{S})::ShellArgs where {S <:
                     error("Expected a value after '$arg'")
                 else
                     (arg, state) = itr
-                    named[name] = defs.named[name] <: Vector ? split(arg, ",") : arg
+                    named[name] = parse_named(defs.named[name], arg)
                 end
             else
                 error("Unrecognised argument '$arg'")
