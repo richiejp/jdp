@@ -62,23 +62,25 @@ struct Session <: AbstractSession
     apisecret::String
 end
 
-Session(host::String, key::String, secret::String) =
-    Session(host, `openqa-client --json-output --host`, key, secret)
+Session(scheme::String, host::String, key::String, secret::String) =
+    Session("$scheme://$host", `openqa-client --json-output --host`,
+            key, secret)
 
-Session(host::String) = Session(host, "1234567890ABCDEF", "1234567890ABCDEF")
+Session(scheme::String, host::String) =
+    Session(scheme, host, "1234567890ABCDEF", "1234567890ABCDEF")
 
 Tracker.ensure_login!(t::Tracker.Instance{Session}) = if t.session == nothing
     conf = Conf.get_conf(:trackers)["instances"]
     if !haskey(conf, t.tla)
         @warn "No host definition in trackers.toml for $(t.host)"
-        return t.session = Session(t.host)
+        return t.session = Session(t.scheme, t.host)
     end
 
     host = conf[t.tla]
     if haskey(host, "apikey") && haskey(host, "apisecret")
-        return t.session = Session(t.host, host["apikey"], host["apisecret"])
+        return t.session = Session(t.scheme, t.host, host["apikey"], host["apisecret"])
     end
-    t.session = Session(t.host)
+    t.session = Session(t.scheme, t.host)
 else
     t.session
 end
