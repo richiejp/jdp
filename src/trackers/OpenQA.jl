@@ -108,11 +108,6 @@ delete_json(ses::Session, path::String) = JSON.parse(read(
     `$(ses.cmd) $(ses.host) --apikey $(ses.apikey) --apisecret $(ses.apisecret) $path delete`,
     String); dicttype=JsonDict)
 
-o3 = Session("openqa.opensuse.org")
-no3 = NativeSession("https://openqa.opensuse.org")
-osd = Session("openqa.suse.de")
-nosd = NativeSession("https://openqa.suse.de")
-
 get_job_vars(host::AbstractSession, job_id::Int64)::Union{VarsDict, Nothing} = try
     path = "tests/$job_id/file/vars.json"
     JSON.parse(get_raw(host, path; api=false); dicttype=VarsDict)
