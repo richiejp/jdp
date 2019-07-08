@@ -14,8 +14,10 @@ using JDP.Repository
 using JDP.Functional
 using JDP.Conf
 
-argdefs = IOHelpers.ShellArgDefs(Set(["norefresh", "dryrun"]), Dict())
+argdefs = IOHelpers.ShellArgDefs(Set(["norefresh", "dryrun"]),
+                                 Dict("host" => String))
 args = IOHelpers.parse_args(argdefs, ARGS).named
+get!(args, "host", "osd")
 
 reppath = joinpath(Conf.data(:datadir), "reports")
 if !ispath(reppath)
@@ -34,40 +36,8 @@ catch exception
     @error "Exception while weaving $name" exception
 end
 
-tracker = Tracker.get_tracker("osd")
-
-allres = Repository.fetch(OpenQA.TestResult, Vector, tracker.tla,
-                          OpenQA.RecentOrInterestingJobsDef)
-
-@info "We now have $(length(allres)) test results!"
-
-build_tuples = (parse(Float64, test.build) => test.build for test
-                in allres if test.product == "sle-12-SP5-Server-DVD")
-latest = reduce(build_tuples, init=0 => "0") do b, o
-    b[1] > o[1] ? b : o
-end
-
-build_tuples = (parse(Float64, test.build) => test.build for test
-                in allres if startswith(test.product, "sle-12-SP5") &&
-                "Public Cloud" in test.flags)
-latest_pc = reduce(build_tuples, init=0 => "0") do b, o
-    b[1] > o[1] ? b : o
-end
-
-allres = nothing # Avoid OOM killer
-
-builds = [latest[2], latest_pc[2]]
-args["builds"] = builds
-@info "Latest build is $(latest[2]) (Public Cloud $(latest_pc[2]))"
 weave_ipynb("Propagate Bug Tags", args)
 
-if !args["norefresh"]
-    @info "Refreshing comments after bug tag propagation"
-
-    OpenQA.refresh_comments(job -> job.vars["BUILD"] in builds, tracker.tla)
-end
-
-GC.gc()
 @info "Generating Reports in $reppath"
 
 try
@@ -76,10 +46,8 @@ try
     MilestoneSandbox = Module(:MilestoneSandbox)
 
     # It appears include(x) is not created for us when using Module directly
-    Base.eval(MilestoneSandbox, quote
-              include(x) = Base.include($MilestoneSandbox, x)
-              args = Dict{String, Any}("builds" => $builds)
-              end)
+    Base.eval(MilestoneSandbox,
+              :(include(x) = Base.include($MilestoneSandbox, x)))
 
     @info "Running run/milestone-report.jl on worker $(myid())"
     output = joinpath(reppath, "Milestone-Report.md")
@@ -94,6 +62,4 @@ catch exception
     @error "Milestone Report Error" exception
 end
 
-weave_ipynb("Report-DataFrames", Dict("builds" => builds));
-# weave_ipynb("Report-HPC");
 weave_ipynb("Report-Status-Diff");

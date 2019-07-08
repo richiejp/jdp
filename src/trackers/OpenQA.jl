@@ -548,6 +548,9 @@ function parse_comments(comments::Vector{Comment},
     tags
 end
 
+Repository.fetch(T::Type{JobResult}, from::String, id::Int64) =
+    Repository.load("$from-job-$id", T)
+
 Repository.fetch(T::Type{JobResult}, ::Type{Vector}, from::String) =
     Repository.mload("$from-job-[0-9]*", T)
 

@@ -16,7 +16,7 @@ import JDP.Functional: cimap, cforeach
 
 argdefs = IOHelpers.ShellArgDefs(Set(["refresh"]), Dict(
     "product_short" => String,
-    "products" => Vector{String},
+    "product" => String,
     "release" => String,
     "builds" => Vector{String}
 ))
@@ -33,9 +33,25 @@ allres = get!(args, "results") do
                      OpenQA.RecentOrInterestingJobsDef)
 end
 product_short = get!(args, "product_short", "SLE12 SP5")
-products = get!(args, "products", ["sle-12-SP5"])
+product = get!(args, "product", "sle-12-SP5")
 release = get!(args, "release", "Beta1")
-builds = get!(args, "builds", ["152.1"])
+builds = get!(args, "builds") do
+    prodbuilds = Dict{String, OpenQA.SortedBuilds}()
+
+    for r in filter(r -> occursin(Regex(product), r.product), allres)
+        bs = get!(prodbuilds, r.product) do
+            OpenQA.SortedBuilds{Float64}(Base.Order.Reverse)
+        end
+        push!(bs, OpenQA.OrdBuild(Float64, r.build))
+    end
+
+    for (p, bs) in prodbuilds
+        builds = [b.orig for b in Iterators.take(bs, 5)]
+        @info "Builds for $p: $(join(builds, ", "))"
+    end
+
+    unique([first(bs).orig for (_, bs) in prodbuilds])
+end
 
 trackers = Tracker.load_trackers()
 
@@ -48,8 +64,7 @@ refdict = Dict{BugRefs.Ref, Vector{OpenQA.TestResult}}(
 )
 
 Iterators.filter(allres) do t
-    (t.build in builds) && !isempty(t.refs) &&
-        any(prefix -> startswith(t.product, prefix), products)
+    startswith(t.product, product) && (t.build in builds) && !isempty(t.refs)
 end |> cimap() do t
     (rf => t for rf in t.refs)
 end |> flatten |> cforeach() do (rf, t)
