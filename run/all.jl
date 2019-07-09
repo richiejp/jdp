@@ -14,7 +14,7 @@ using JDP.Repository
 using JDP.Functional
 using JDP.Conf
 
-argdefs = IOHelpers.ShellArgDefs(Set([]),
+argdefs = IOHelpers.ShellArgDefs(Set(["public"]),
                                  Dict("host" => String,
                                       "product" => String))
 args = IOHelpers.parse_args(argdefs, ARGS).named
@@ -62,4 +62,8 @@ catch exception
     @error "Milestone Report Error" exception
 end
 
-weave_ipynb("Report-Status-Diff");
+if args["public"]
+    weave_ipynb("Report-Status-Diff-OpenSUSE");
+else
+    weave_ipynb("Report-Status-Diff");
+end

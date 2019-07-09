@@ -26,7 +26,7 @@ pages:
     - >
       docker run --name report-public --network production -t
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/data jdp:production
-      julia --color=yes run/all.jl --host ooo --product opensuse-Tumbleweed
+      julia --color=yes run/all.jl --host ooo --product opensuse-Tumbleweed --public
     - >
       docker run --network production
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build

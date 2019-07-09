@@ -30,27 +30,29 @@ USER jdp
 WORKDIR /home/jdp/src
 
 RUN mkdir -p ~/.config/jdp ~/.config/redis
-RUN echo "host = \"$REDIS_HOST\"" > ~/.config/jdp/data.toml
-RUN echo "auth = \"$REDIS_AUTH\"" >> ~/.config/jdp/data.toml
+RUN echo $'# Redis host name and auth token \n\
+host = "$REDIS_HOST" \n\
+auth = "$REDIS_AUTH"' > ~/.config/jdp/data.toml
 RUN cp conf/redis-master.conf ~/.config/redis/master.conf \
 && echo "requirepass $REDIS_AUTH" >> ~/.config/redis/master.conf
 
-RUN echo "[instances]" > ~/.config/jdp/trackers.toml
-RUN echo "[instances.bsc]" >> ~/.config/jdp/trackers.toml
-RUN echo "user = \"$BUGZILLA_USER\"" >> ~/.config/jdp/trackers.toml
-RUN echo "pass = \"$BUGZILLA_PASS\"" >> ~/.config/jdp/trackers.toml
-
-RUN echo "[instances.osd]" >> ~/.config/jdp/trackers.toml
-RUN echo "apikey = \"$OSD_KEY\"" >> ~/.config/jdp/trackers.toml
-RUN echo "apisecret = \"$OSD_SECRET\"" >> ~/.config/jdp/trackers.toml
-
-RUN echo "[instances.ooo]" >> ~/.config/jdp/trackers.toml
-RUN echo "apikey = \"$OOO_KEY\"" >> ~/.config/jdp/trackers.toml
-RUN echo "apisecret = \"$OOO_SECRET\"" >> ~/.config/jdp/trackers.toml
-
-RUN echo "[instances.poo]" >> ~/.config/jdp/trackers.toml
-RUN echo "key = \"$REDMINE_KEY\"" >> ~/.config/jdp/trackers.toml
-
-RUN echo "[instances.src]" >> ~/.config/jdp/trackers.toml
-RUN echo "user = \"$ROCKET_CHAT_USER\"" >> ~/.config/jdp/trackers.toml
-RUN echo "token = \"$ROCKET_CHAT_TOKEN\"" >> ~/.config/jdp/trackers.toml
+RUN echo $'# Tracker login details \n\
+[instances] \n\
+[instances.bsc] \n\
+user = "$BUGZILLA_USER" \n\
+pass = "$BUGZILLA_PASS" \n\
+\n\
+[instances.osd] \n\
+apikey = "$OSD_KEY" \n\
+apisecret = "$OSD_SECRET" \n\
+\n\
+[instances.ooo] \n\
+apikey = "$OOO_KEY" \n\
+apisecret = "$OOO_SECRET" \n\
+\n\
+[instances.poo] \n\
+key = "$REDMINE_KEY" \n\
+\n\
+[instances.src] \n\
+user = "$ROCKET_CHAT_USER" \n\
+token = "$ROCKET_CHAT_TOKEN"' >> ~/.config/jdp/trackers.toml
