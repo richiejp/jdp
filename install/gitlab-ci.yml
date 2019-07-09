@@ -1,11 +1,6 @@
 # See gitlab-ci.md and Dockerfile
-
-before_script:
-  - pwd && ls -l
-  - docker network create production || true
-
-variables:
-  DOM: "de.suse.gitlab"
+include:
+  - local: 'install/gitlab-ci-shared.yml'
 
 stages:
   - build
@@ -16,12 +11,6 @@ stages:
   - pages
   - execute2
   - post_mortem
-
-.make:
-  tags:
-    - primary
-  except:
-    - schedules
 
 build-base:
   stage: build
@@ -201,7 +190,7 @@ pages:
     - >
       docker run --name report --network production -t
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/data jdp:production
-      julia --color=yes run/all.jl
+      julia --color=yes run/all.jl --host osd --product sle-12-SP5
     - >
       docker run --network production
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build

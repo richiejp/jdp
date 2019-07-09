@@ -14,10 +14,10 @@ using JDP.Repository
 using JDP.Functional
 using JDP.Conf
 
-argdefs = IOHelpers.ShellArgDefs(Set(["norefresh", "dryrun"]),
-                                 Dict("host" => String))
+argdefs = IOHelpers.ShellArgDefs(Set([]),
+                                 Dict("host" => String,
+                                      "product" => String))
 args = IOHelpers.parse_args(argdefs, ARGS).named
-get!(args, "host", "osd")
 
 reppath = joinpath(Conf.data(:datadir), "reports")
 if !ispath(reppath)

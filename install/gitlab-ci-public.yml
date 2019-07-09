@@ -1,0 +1,46 @@
+include:
+  - local: 'install/gitlab-ci-shared.yml'
+
+stages:
+  - pages
+  - post_mortem
+
+pages:
+  stage: pages
+  tags:
+    - primary
+  environment:
+    name: production
+  only:
+    variables:
+      - $BUILD_DOCS
+  artifacts:
+    paths:
+      - public
+  script:
+    - docker stop report-public || true
+    - docker rm -f report-public || true
+    - >
+      docker inspect -f "{{index .Config.Labels \"$DOM.commit\"}}" jdp:production
+    - mkdir -p public/reports
+    - >
+      docker run --name report-public --network production -t
+      --mount type=bind,src=$(pwd)/public,target=/home/jdp/data jdp:production
+      julia --color=yes run/all.jl --host ooo --product opensuse-Tumbleweed
+    - >
+      docker run --network production
+      --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build
+      -t jdp:production julia --color=yes docs/build.jl
+
+build-failed:
+  stage: post_mortem
+  extends: .make
+  only:
+    - master
+  when: on_failure
+  script:
+    - >
+      docker run --network production -t jdp:production
+      julia --color=yes --load run/post-deploy.jl
+      --eval "build_failed(\"\"\"$CI_COMMIT_MESSAGE\"\"\", \"$CI_PIPELINE_URL\")"
+

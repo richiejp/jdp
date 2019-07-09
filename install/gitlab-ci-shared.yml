@@ -1,0 +1,12 @@
+before_script:
+  - pwd && ls -l
+  - docker network create production || true
+
+variables:
+  DOM: "de.suse.gitlab"
+
+.make:
+  tags:
+    - primary
+  except:
+    - schedules
