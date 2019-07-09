@@ -220,9 +220,3 @@ schedules-failed:
       docker run --network production -t jdp:production
       julia --color=yes --load run/post-deploy.jl
       --eval "refresh_failed(\"$CI_PIPELINE_URL\")"
-
-after_script:
-  - ls -l
-  - docker ps --all -f label=$DOM.job_id=$CI_JOB_ID -f label=$DOM.commit=$CI_COMMIT_SHA
-  - docker images --all -f label=$DOM.job_id=$CI_JOB_ID -f label=$DOM.commit=$CI_COMMIT_SHA
-  - julia --color=yes install/container-housecleaning.jl

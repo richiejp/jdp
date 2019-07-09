@@ -32,15 +32,14 @@ pages:
       --mount type=bind,src=$(pwd)/public,target=/home/jdp/src/docs/build
       -t jdp:production julia --color=yes docs/build.jl
 
-build-failed:
+schedules-failed:
   stage: post_mortem
-  extends: .make
   only:
-    - master
+    - schedules
   when: on_failure
   script:
     - >
       docker run --network production -t jdp:production
       julia --color=yes --load run/post-deploy.jl
-      --eval "build_failed(\"\"\"$CI_COMMIT_MESSAGE\"\"\", \"$CI_PIPELINE_URL\")"
+      --eval "refresh_failed(\"$CI_PIPELINE_URL\")"
 
