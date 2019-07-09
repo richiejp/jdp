@@ -631,7 +631,8 @@ get_first_job_after_date(jobs, date) =
         (jobs -> sort(jobs; by=jp->jp[1].id)) |> first |> first
 
 function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
-                 jrs::Dict{String, JobResult}, maxjobs::Int) where {S <: AbstractSession}
+                  jrs::Dict{String, JobResult}, fjindx::BitSet,
+                  maxjobs::Int) where {S <: AbstractSession}
     ses = Tracker.ensure_login!(tracker)
     jids = @async get_group_jobs(ses, group.id)
 
@@ -640,9 +641,6 @@ function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
         min_id = maximum(jids) - maxjobs
         filter(id -> id > min_id, jids)
     else
-        fjindx = BitSet(j.id for j in values(jrs)
-                        if occursin(r"^(skipped|cancelled|done)$", j.state))
-
         min_id = max(get_first_job_after_date(values(jrs), Date(now()) - Month(1)).id,
                      maximum(fetch(jids)) - maxjobs)
 
@@ -664,15 +662,65 @@ function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
     end
 end
 
+function get_product_builds(results)
+    prodbuilds = Dict{String, OpenQA.SortedBuilds}()
+
+    for (p, b) in results
+        bs = get!(prodbuilds, p) do
+            OpenQA.SortedBuilds{Float64}(Base.Order.Reverse)
+        end
+        push!(bs, OpenQA.OrdBuild(Float64, b))
+    end
+
+    prodbuilds
+end
+get_product_builds(results::Vector{JobResult}) =
+    get_product_builds(get_product(j.vars) => j.vars["BUILD"] for j in results)
+get_product_builds(results::Vector{TestResult}) =
+    get_product_builds(j.product => j.build for j in results)
+
 function Repository.refresh(tracker::Tracker.Instance{S},
                             groups::Vector{JobGroup}) where {S <: AbstractSession}
     jrs = Dict("$(tracker.tla)-job-$(job.id)" => job for
                job in Repository.fetch(JobResult, Vector, tracker.tla))
+    fjindx = BitSet(j.id for j in values(jrs)
+                    if occursin(r"^(skipped|cancelled|done)$", j.state))
 
     for g in groups
         conf = (d = OpenQA.extract_toml(g.description)) ≠ nothing ? d : Dict()
 
-        refresh!(tracker, g, jrs, get(conf, ("JDP", "refresh", "maxjobs"), 20_000))
+        refresh!(tracker, g, jrs, fjindx,
+                 get(conf, ("JDP", "refresh", "maxjobs"), 20_000))
+    end
+
+    # Refresh comments on the most recent build's jobs if we haven't already
+    # refreshed those jobs
+    groupids = BitSet(g.id for g in groups)
+    prodbuilds = Dict{String, String}()
+    groupjobs = collect(Iterators.filter(j -> j.group.id in groupids, values(jrs)))
+    for (p, bs) in get_product_builds(groupjobs)
+        prodbuilds[p] = first(bs).orig
+    end
+    filter!(groupjobs) do j
+        (j.id in fjindx) && prodbuilds[get_product(j.vars)] == j.vars["BUILD"]
+    end
+    ses = Tracker.ensure_login!(tracker)
+    n = length(groupjobs)
+    @info "$(tracker.tla): Refreshing $n job comments"
+
+    for (i, j) in enumerate(groupjobs)
+        @info "$(tracker.tla): GET job $(j.id) ($i of $n)"
+
+        comments = try
+            json_to_comments(get_job_comments(ses, j.id))
+        catch
+            nothing
+        end
+
+        if comments != nothing
+            j.comments = comments
+            Repository.store("$(tracker.tla)-job-$(j.id)", j)
+        end
     end
 end
 
