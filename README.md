@@ -29,7 +29,7 @@ used with any type of data for most any type of workflow or reporting.
 !!! tip
 
     This README is best viewed through the [docs site](https://rpalethorpe.io.suse.de/jdp/) ([public
-    mirror](https://richiejp.github.io/jdp/)).
+    mirror](https://palethorpe.gitlab.io/jdp)).
     Otherwise *admonition blocks* like this will be misinterpreted as literal
     blocks.
 
@@ -133,7 +133,7 @@ various scripts/services. See `install/gitlab-ci.*`.
 # Documentation
 
 Further documentation can be found at
-[richiejp.github.io/jdp](https://richiejp.github.io/jdp) or
+[palethorpe.gitlab.io/jdp](https://palethorpe.gitlab.io/jdp) or
 [rpalethorpe.io.suse.de/jdp](https://rpalethorpe.io.suse.de/jdp)
 
 You can also find documentation at the Julia REPL by typing `?` followed by an
