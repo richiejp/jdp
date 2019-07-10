@@ -78,3 +78,39 @@ of tags which match its pattern. If you delete the comment containing the tag
     This will be expanded to the Fully Qualified Name (FQN). For example;
     `fstests:btrfs:generic-349` if it is in the btrfs test suite or
     `fstests:xfs:generic-349` if it is in the xfs suit.
+
+## Advanced Tagging (Not implemented yet)
+
+*This is just a discussion of how bug tagging could be improved, by creating
+a more expressive bug tag syntax.*
+
+An alternative syntax could provide more expressive bug tags which give you precise
+control over the tagging. This would essentially be a domain specific language
+with some similarities to SQL in appearance.
+
+For example:
+
+```
+TAG test-name01 WITH bug#1234 WHERE arch = * AND product = sle*
+```
+
+Would tag all instances of `test-name01` with `bug#1234` for all archictures
+and all products begining with 'sle'. However the exact effect of the tag
+would depend on the implicit behaviour of missing fields like `flags` and
+`machine`.
+
+The current tag behaviour would be expressed by something like this if we make
+everything explicit:
+
+```
+TAG test-name WITH bug#1234 WHERE arch = * AND build = * AND flags = * AND
+machine = * AND result = failed* AND suit = this.suit AND
+job.host = this.job.host
+```
+
+Fields such as `build` should default to `*` (meaning any build matches),
+whereas for `suit` it should default to the current test's suit. This creates
+an issue for the user in terms of finding out which fields exist and what
+their default behaviour is. Even if all the fields default to the same thing,
+this will create unexpected behaviour.
+
