@@ -46,8 +46,10 @@ try
     MilestoneSandbox = Module(:MilestoneSandbox)
 
     # It appears include(x) is not created for us when using Module directly
-    Base.eval(MilestoneSandbox,
-              :(include(x) = Base.include($MilestoneSandbox, x)))
+    Base.eval(MilestoneSandbox, quote
+        args = $args
+        include(x) = Base.include($MilestoneSandbox, x)
+    end)
 
     @info "Running run/milestone-report.jl on worker $(myid())"
     output = joinpath(reppath, "Milestone-Report.md")
