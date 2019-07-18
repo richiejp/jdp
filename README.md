@@ -25,6 +25,7 @@ requirements, however it is a general purpose tool at its core. It could be
 used with any type of data for most any type of workflow or reporting.
 
 ![Video Presentation (internal)](https://w3.suse.cz/~rpalethorpe/jdp-poc-pres.webm)
+[Video Presentation (external)](https://youtu.be/Nzha4itchg8)
 
 !!! tip
 
