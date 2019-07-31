@@ -634,15 +634,19 @@ function refresh!(tracker::Tracker.Instance{S}, group::JobGroup,
                   jrs::Dict{String, JobResult}, fjindx::BitSet,
                   maxjobs::Int) where {S <: AbstractSession}
     ses = Tracker.ensure_login!(tracker)
-    jids = @async get_group_jobs(ses, group.id)
+    jids = get_group_jobs(ses, group.id)
+
+    if isempty(jids)
+        @info "$(tracker.tla): Group $(group.name) ($(group.id)) is empty"
+        return
+    end
 
     jids = if isempty(jrs)
-        jids = fetch(jids)
         min_id = maximum(jids) - maxjobs
         filter(id -> id > min_id, jids)
     else
         min_id = max(get_first_job_after_date(values(jrs), Date(now()) - Month(1)).id,
-                     maximum(fetch(jids)) - maxjobs)
+                     maximum(jids) - maxjobs)
 
         filter(jid -> jid >= min_id && !(jid in fjindx), fetch(jids))
     end
