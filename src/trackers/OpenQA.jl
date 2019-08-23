@@ -796,18 +796,20 @@ Repository.fetch(::Type{TestResult}, ::Type{DataFrame}, from::String)::DataFrame
     tests_to_dataframe(Repository.fetch(TestResult, Vector, from))
 
 """
-    dict = extract_toml("text... <code data-type='TOML'>[JDP.some.toml]<br> ... </code>")
+    dict = extract_toml("markdown... ```toml [JDP.some.toml] ... ```")
 
 Find the first instance of toml contained inside some text formatted for
 OpenQA job comments or group descriptions.
 
-Only toml inside a the first code tag will be parsed. Code tags which don't
-have a `data-type` of TOML will be ignored. The `<br>` tags just effect the
-appearance in OpenQA. You should include them to make it readable.
+Only toml inside a the first code tag will be parsed. Code tags which are not
+marked as TOML will be ignored. OpenQA now refuses to display embedded HTML,
+so use the markdown style code chunks. Parsing of the HTML code tags may be
+removed in the future.
 
 """
 function extract_toml(text::AbstractString)::Union{Nothing, AbstractDict}
     m = match(r"<code data-type=[\"']TOML[\"']>(.*)</code>"s, text)
+    m = m == nothing ? match(r"```toml\s(.*)```"s, text) : m
     m == nothing && return nothing
 
     toml = replace(m[1], "<br>" => "")
