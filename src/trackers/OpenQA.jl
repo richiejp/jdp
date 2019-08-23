@@ -98,7 +98,7 @@ get_json(path::String, from::String; api::Bool=true) =
     get_json(Tracker.login(from), path; api=api)
 
 post_raw(ses::Session, path::String, post::String) = read(
-    `$(ses.cmd) $(ses.host) --apikey $(ses.apikey) --apisecret $(ses.apisecret) $path post $post`,
+    `$(ses.cmd) $(ses.host) --apikey $(ses.apikey) --apisecret $(ses.apisecret) $path post "$post"`,
     String)
 
 post_json(ses::Session, path::String, post::String) =
