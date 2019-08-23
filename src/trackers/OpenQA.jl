@@ -854,15 +854,13 @@ something else depending on the script.
 ### OpenQA Input
 
 The raw OpenQA job group description text should contain something like the
-following.
+following wrapped in a Markdown code chunk (with toml as the type).
 
 ```toml
-<code data-type='TOML'>
-[JDP.notify.on-status-diff] <br>
-rpalethorpe = ['LTP', 'OpenQA'] <br>
-metan = '.' <br>
-pvorel = 'LTP' <br>
-</code>
+[JDP.notify.on-status-diff]
+rpalethorpe = ['LTP', 'OpenQA']
+metan = '.'
+pvorel = 'LTP'
 ```
 
 For each user name you can set a single string or a vector of strings. These
