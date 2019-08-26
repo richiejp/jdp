@@ -149,9 +149,8 @@ end
 
 function keys(pattern::String)::Vector{String}
     res = with_conn() do conn
-        Redis.execute_command(conn, ["keys", pattern])
+        String.(Redis.execute_command(conn, ["keys", pattern]))
     end
-    convert(Vector{String}, res)
 end
 
 function store(key::String, value::Dict)::Bool
