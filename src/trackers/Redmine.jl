@@ -53,6 +53,8 @@ Bug(i::Dict) = Bug(i["id"],
                    i["status"]["name"],
                    i["subject"])
 
+tags(issue::Bug) = map(m -> m[1], eachmatch(r"\[([\w\s-]+)\]", issue.short_desc))
+
 Base.show(io::IO, ::MIME"text/markdown", issue::Bug) =
     write(io, "**", issue.priority, "** ", issue.status, ": ", issue.short_desc)
 

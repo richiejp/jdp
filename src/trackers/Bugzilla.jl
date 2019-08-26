@@ -87,13 +87,15 @@ mutable struct Bug <: Item
     priority::String
     status::String
     short_desc::String
+    arches::Vector{String}
 end
 
 Bug(xml::Dict) = Bug(parse(Int, xml["bug_id"]),
                      xml["bug_severity"],
                      xml["priority"],
                      xml["bug_status"],
-                     xml["short_desc"])
+                     xml["short_desc"],
+                     [xml["rep_platform"]])
 
 Base.show(io::IO, ::MIME"text/markdown", bug::Bug) =
     write(io, "**", bug.priority, "** _", bug.severity, "_ ", bug.status, ": ",
