@@ -10,7 +10,7 @@ ARG JULIA_TAR=install/julia-${JULIA_VER}-linux-x86_64.tar.gz
 # numerical libraries have compilation issues with other libraries and... well
 # we just install from tar ball for now.
 # RUN zypper in julia
-RUN zypper ar -f https://download.opensuse.org/repositories/devel:/openQA/openSUSE_Leap_15.1/ oqa
+RUN zypper ar -f https://download.opensuse.org/repositories/devel:/openQA/openSUSE_Leap_15.1 oqa
 RUN zypper in -y curl tar gzip bzip2 python3-jupyter python3-jupyter_nbconvert \
     	      	 python3-jupyter_client python3-jupyter_notebook redis mailx
 RUN zypper in -y --from oqa openQA-client
