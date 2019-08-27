@@ -671,9 +671,9 @@ function get_product_builds(results)
 
     for (p, b) in results
         bs = get!(prodbuilds, p) do
-            OpenQA.SortedBuilds{Float64}(Base.Order.Reverse)
+            OpenQA.SortedBuilds{Vector{Int}}(Base.Order.Reverse)
         end
-        push!(bs, OpenQA.OrdBuild(Float64, b))
+        push!(bs, OpenQA.OrdBuild(Vector{Int}, b))
     end
 
     prodbuilds

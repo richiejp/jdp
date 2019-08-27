@@ -16,6 +16,10 @@ Base.isless(b1::OrdBuild{T}, b2::OrdBuild{T}) where {T} =
 Base.isequal(b1::OrdBuild{T}, b2::OrdBuild{T}) where {T} =
     isequal(b1.val, b2.val)
 
+OrdBuild(::Type{Vector{Int}}, orig) =
+    OrdBuild(orig,
+             [parse(Int, s) for s in split(orig, r"[\s_,:.-]")])
+
 const SortedBuilds{T} = SortedSet{OrdBuild{T}}
 
 struct FieldSubsetOrdering{N} <: Ordering
@@ -87,7 +91,7 @@ function filter_seqs(fn::Function, m::BuildMatrix)
 end
 
 function truncate_builds(m::BuildMatrix, n::Int)
-    m2 = BuildMatrix(SortedBuilds{Float64}(Iterators.take(m.builds, n),
+    m2 = BuildMatrix(SortedBuilds{Vector{Int}}(Iterators.take(m.builds, n),
                                            Order.Reverse),
                      m.seqs)
 
@@ -99,7 +103,7 @@ function truncate_builds(m::BuildMatrix, n::Int)
 end
 
 function filter_builds(fn::Function, m::BuildMatrix)
-    builds = SortedBuilds{Float64}(Order.Reverse)
+    builds = SortedBuilds{Vector{Int}}(Order.Reverse)
 
     for b in m.builds
         g = Iterators.Generator(values(m.seqs)) do seq
@@ -115,13 +119,13 @@ end
 function build_matrix(results,
                       ordering=FieldSubsetOrdering(:suit, :name, :arch,
                                                    :machine, :flags))::BuildMatrix
-    builds = SortedBuilds{Float64}(Order.Reverse)
+    builds = SortedBuilds{Vector{Int}}(Order.Reverse)
     seqs = SortedDict{TestResult, TestSeq}(ordering)
 
     # For now we are optimistic about the product and pessimistic about the
     # test environment, so first pick the best test result for each build
     for res::TestResult in results
-        build = OrdBuild(Float64, res.build)
+        build = OrdBuild(Vector{Int}, res.build)
 
         push!(builds, build)
 
