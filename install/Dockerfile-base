@@ -10,10 +10,11 @@ ARG JULIA_TAR=install/julia-${JULIA_VER}-linux-x86_64.tar.gz
 # numerical libraries have compilation issues with other libraries and... well
 # we just install from tar ball for now.
 # RUN zypper in julia
-RUN zypper in -y curl tar gzip bzip2 \
-python3-jupyter python3-jupyter_nbconvert python3-jupyter_client \
-python3-jupyter_notebook redis openQA-client mailx && \
-zypper clean --all
+RUN zypper ar -f https://download.opensuse.org/repositories/devel:/openQA/openSUSE_Leap_15.1/ oqa
+RUN zypper in -y curl tar gzip bzip2 python3-jupyter python3-jupyter_nbconvert \
+    	      	 python3-jupyter_client python3-jupyter_notebook redis mailx
+RUN zypper in -y --from oqa openQA-client
+RUN zypper clean --all
 
 # There is no default non-root user in the Tumbleweed image, so we create one
 # because doing everything as root unecessarily is probably immoral or something
