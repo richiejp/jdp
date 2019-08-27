@@ -40,9 +40,9 @@ builds = get!(args, "builds") do
 
     for r in filter(r -> occursin(Regex(product), r.product), allres)
         bs = get!(prodbuilds, r.product) do
-            OpenQA.SortedBuilds{Float64}(Base.Order.Reverse)
+            OpenQA.SortedBuilds{Vector{Int}}(Base.Order.Reverse)
         end
-        push!(bs, OpenQA.OrdBuild(Float64, r.build))
+        push!(bs, OpenQA.OrdBuild(Vector{Int}, r.build))
     end
 
     for (p, bs) in prodbuilds
