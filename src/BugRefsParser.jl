@@ -28,6 +28,7 @@ Base.:(==)(t1::AbstractToken, t2::AbstractToken) = false
 struct Token{T} <: AbstractToken
     src::String
     range::UnitRange
+    quoted::Bool
 end
 
 const Test = Token{:Test}
@@ -47,7 +48,7 @@ end
 
 Base.:(==)(t1::Token{T}, t2::Token{T}) where {T} = tokval(t1) == tokval(t2)
 
-const WILDCARD = Test("*", 1:1)
+const WILDCARD = Test("*", 1:1, false)
 
 struct Ref <: AbstractToken
     tracker::Tracker
@@ -156,19 +157,25 @@ macro pusherr(ctx, err)
     esc(:(pusherr!($ctx, $err()); return nothing))
 end
 
-function parse_name!(text::String, ctx::ParseContext;
-                     prestart::Union{Int, Nothing}=nothing)::Union{Test, Nothing}
-    (_, i) = ctx.itr
-    start = prestart !== nothing ? prestart : i - 1
+function parse_name!(text::String, ctx::ParseContext, start::Int)::Union{Test, Nothing}
+    (c, i) = ctx.itr
+
+    quoted = start == i - 1 && c == '`'
+    quoted && iterate!(text, ctx)
     
     while ctx.itr !== nothing
         (c, i) = ctx.itr
 
         @match c begin
-            'A':'z' || '0':'9' || '-' || '_' || '*' || '/' => nothing
+            'A':'Z' || 'a':'z' || '0':'9' || '-' || '_' || '*' || '/' => nothing
             ',' || ':' || ' ' => begin
-                @pusherr(ctx, :InvalidNameChar, i - start < 2)
-                return Test(text, start:(i - 2))
+                @pusherr(ctx, :InvalidNameChar, quoted || i - start < 2)
+                return Test(text, start:(i - 2), quoted)
+            end
+            '`' => begin
+                @pusherr(ctx, :InvalidNameChar, !quoted || i - start < 4)
+                iterate!(text, ctx)
+                return Test(text, (start + 1):(i - 3), quoted)
             end
             _ => @pusherr(ctx, :InvalidNameChar)
         end
@@ -190,7 +197,7 @@ function parse_tracker!(text::String, ctx::ParseContext)::Union{Tracker, Nothing
             'A':'z' => nothing
             '#' => begin
                 @pusherr(ctx, :InvalidTrackerChar, i - start < 2)
-                return Tracker(text, start:(i - 2))
+                return Tracker(text, start:(i - 2), false)
             end
             _ => @pusherr(ctx, :InvalidTrackerChar)
         end
@@ -222,9 +229,9 @@ function parse_ref!(text::String, ctx::ParseContext)::Union{ID, Nothing}
 
     @pusherr(ctx, :ZeroLengthID, i - start < 2)
     if ctx.itr !== nothing
-        ID(text, start:(i - 2))
+        ID(text, start:(i - 2), false)
     else
-        ID(text, start:(i - 1))
+        ID(text, start:(i - 1), false)
     end
 end
 
@@ -258,10 +265,10 @@ function parse_name_or_bugref!(text::String,
         (c, i) = ctx.itr
 
         @match c begin
-            'A':'z' => iterate!(text, ctx)
+            'A':'Z' || 'a':'z' => iterate!(text, ctx)
             '#' => begin
                 @pusherr(ctx, InvalidTrackerChar, i - start < 2)
-                tracker = Tracker(text, start:(i - 2))
+                tracker = Tracker(text, start:(i - 2), false)
                 ref = parse_ref!(text, ctx)
                 if ref !== nothing
                     return Ref(tracker, ref)
@@ -269,7 +276,7 @@ function parse_name_or_bugref!(text::String,
                     return nothing
                 end
             end
-            _ => return parse_name!(text, ctx; prestart=start)
+            _ => return parse_name!(text, ctx, start)
         end
     end
 end
@@ -296,7 +303,7 @@ Below is the approximate syntax in EBNF. Assume letter ∈ [a-Z] and digit ∈
 ','. However there should be no gap between ':' and '!'.
 
 ```
-testname = letter | digit { letter | digit | '_' | '-' }
+testname = [`] letter | digit { letter | digit | '_' | '-' } [`]
 tracker = letter { letter }
 id = letter | digit { letter | digit }
 bugref = tracker '#' id
@@ -311,6 +318,12 @@ and 2 with both bug references.
 Comments many contain many taggings along with other random text. If the
 algorithm finds an error it discards the current tagging and starts trying to
 parse a new tagging from the point where it failed.
+
+If a test name is surrounded by backticks (like `inline code` in Markdown),
+they are not included in the test name, however the parser will mark the name
+token as 'quoted'. Quoted names are interpreted by the
+[`JDP.BugRefs.extract_tags!`](@ref) method as meaning the
+[`JDP.BugRefs.Ref`](@ref) has been 'propagated'.
 
 """
 function parse_comment(text::String)::Tuple{Array{Tagging}, ParseContext}

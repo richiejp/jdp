@@ -1,15 +1,13 @@
 # Bug Tagging
 
-This page will act as a guide to tagging anomalies (usually test
-failures) with references to a [`JDP.Tracker`](@ref) item.
+Usually, a bug tag, is a way of linking a failing test with a known
+bug. Generally speaking though, it is a many-to-many relation between two
+types of object, niether of which may be a 'bug'.
 
-In an abstract, very general sense, a bug tag (see [`JDP.BugRefs`](@ref)) is
-an expression which can be used to link an anomaly (or type of anomaly) to
-some other entity. However, usually we tag test failures with a bug/issue
-entry in a tracker, so we shall call them bug tags (for now).
-
-At the very least, bug tags can be used to automatically identify test
-failures or other anomalies which have already been investigated.
+Some testing and issue tracking frameworks have a way of defining
+relationships between objects, others don't. Most however, allow one to make
+comments on issues or tests (or other objects). JDP can parse these comments
+and extract bug tags from them.
 
 ## Tagging in OpenQA
 
@@ -33,22 +31,29 @@ or even
     * test03:bug#2,bug#3
 
 You can included other text in your comments and it will mostly be
-ignored. Also white-space is not significant around the `:`. There is also
-some flexibility in how you write the test names. For example `/` will be
-substituted with `-`, allowing you to use either.
+ignored. Also white-space is not significant around the `:` (except for
+anti-tags, see below). There is also some flexibility in how you write the
+test names. For example `/` will be substituted with `-`, allowing you to use
+either.
 
 The full rules are in the [`JDP.BugRefsParser`](@ref).
+
+## Propagation
 	
-The Propagate Bug Tags script will propagate bug tags from one failed job to
-another when the bug tag expression is satisfied. In this case, if the test
-`generic-349`[^1] has failed and the environment matches.
+The 'Propagate Bug Tags' script will automatically copy bug tags from older or
+similar test results. It checks if the test name and bug architecture match,
+if they don't, then it won't copy the bug.
+
+It also checks if the bug or issue is still 'open'. If it is not open then
+only an advisory notice will be posted, which won't be interpreted as a bug
+tag by OpenQA or any other JDP reports.
 
 !!! warning
 
     If OpenQA's built in bugref carry over is also enabled, then you may get
     some strange interactions between it and the JDP script.
 
-When bug tags are propagated you will see a comment like the following
+When bug tags are propagated you will see a comment like the following.
 
 !!! tip "JDP wrote N days ago"
 
@@ -56,28 +61,33 @@ When bug tags are propagated you will see a comment like the following
     
     The following bug tags have been propagated: 
     
-    - generic-349: bsc#1128319 [**P5 - None**(*Normal*) NEW: Bug title 1]
-    - generic-350: bsc#1128321 [**P5 - None**(*Normal*) NEW: Bug title 2]
+    - `generic-349`: bsc#1128319 [**P5 - None**(*Normal*) NEW: Bug title 1]
+	    + From fstests:btrfs:generic-349 @ some-job-name@ppc64le-virtio
+    - `generic-350`: bsc#1128321 [**P5 - None**(*Normal*) NEW: Bug title 2]
+	    + From fstests:btrfs:generic-350 @ some-job-name@aarch64
 
-To prevent an old tag from being propagating to new jobs you can add an
-'anti-tag', like:
+There are two ways to prevent an old tag from being propagating to new jobs.
+One is to add an 'anti-tag', like:
 
     generic-349:! bsc#1128319
 
-An anti-tag won't be propagated itself. It just stops any more propagations
-of tags which match its pattern. If you delete the comment containing the tag
-(and update the cache) then propagation should continue.
+An anti-tag won't be propagated itself. It just stops any more propagations of
+tags which match its pattern. If you delete the comment containing the
+anti-tag (and update the cache) then propagation should continue.
 
 !!! warning
 
     You should write the `!` immediately after the `:`. Do not insert
     white-space between them.
 
-[^1]:
+Another way to stop propagation is to delete[1] the original tag(s)
 
-    This will be expanded to the Fully Qualified Name (FQN). For example;
-    `fstests:btrfs:generic-349` if it is in the btrfs test suite or
-    `fstests:xfs:generic-349` if it is in the xfs suit.
+Propagted bug tags will be ignored by the script during future
+propagations. This means that the 'From' line should link to the test where
+the original tag was added. This also means that if the original tag is
+deleted then propagation will stop.
+
+[^1]: Or modify the comment, by adding backticks around the test names
 
 ## Advanced Tagging (Not implemented yet)
 

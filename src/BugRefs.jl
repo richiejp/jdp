@@ -20,7 +20,7 @@ import ..BugRefsParser: tokval
 
 WILDCARD = String(tokval(BugRefsParser.WILDCARD))
 
-export BugRef, Tags, extract_refs, extract_tags!, get_refs
+export BugRef, Tags, extract_tags!, get_refs
 
 const ID = String
 
@@ -29,16 +29,19 @@ struct Ref
     tracker::(Tracker.Instance)
     id::ID
     negated::Bool
+    propagated::Bool
 end
 
-Ref(pref::BugRefsParser.Ref, trackers::TrackerRepo, negated::Bool)::Ref =
-    Ref(get_tracker(trackers, tokval(pref.tracker)), ID(tokval(pref.id)), negated)
+Ref(pref::BugRefsParser.Ref, trackers::TrackerRepo, negated::Bool, propagated::Bool)::Ref =
+    Ref(get_tracker(trackers, tokval(pref.tracker)),
+        ID(tokval(pref.id)), negated, propagated)
 
-Ref(sref::String, trackers::TrackerRepo, negated=false)::Ref =
-    Ref(BugRefsParser.parse_bugref(sref), trackers, negated)
+Ref(sref::String, trackers::TrackerRepo, negated=false, propagated=false)::Ref =
+    Ref(BugRefsParser.parse_bugref(sref), trackers, negated, propagated)
 
 Base.:(==)(r::Ref, ro::Ref) =
-    r.tracker == ro.tracker && r.id == ro.id && r.negated == ro.negated
+    r.tracker == ro.tracker && r.id == ro.id &&
+    r.negated == ro.negated && r.propagated == ro.propagated
 
 Base.hash(r::Ref, h::UInt) = hash(r.tracker, hash(r.id, hash(r.negated, h)))
 
@@ -106,24 +109,15 @@ function get_refs(tags::Tags, name::String)::Vector{Ref}
     refs
 end
 
-function extract_refs(text::String, trackers::TrackerRepo)::Array{Ref}
-    (tags, _) = BugRefsParser.parse_comment(text)
-    refs = Ref[]
-
-    for tag = tags, ref = tag.refs
-        push!(refs, Ref(ref, trackers, tag.negated))
-    end
-
-    refs
-end
-
 "Parse some text for Bug tags and add them to the given tags index"
 function extract_tags!(index::Tags, text::String, trackers::TrackerRepo)::Tags
     (tags, _) = BugRefsParser.parse_comment(text)
 
     for tag = tags, test = tag.tests
         refs = get!(() -> [], index, replace(tokval(test), "/" => "-"))
-        append!(refs, map(pref -> Ref(pref, trackers, tag.negated), tag.refs))
+        append!(refs, map(tag.refs) do pref
+            Ref(pref, trackers, tag.negated, test.quoted)
+        end)
     end
 
     index

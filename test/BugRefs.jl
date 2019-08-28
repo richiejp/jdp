@@ -13,7 +13,7 @@ naked_bugrefs = "$bugref1, $bugref2"
 naked_bugrefs2 = "$bugref1, $bugref3"
 naked_bugrefs3 = "$bugref1 $bugref3"
 anti_bugref = "$testname1:! $bugref1"
-
+propagated = "This is an automated message from the [JDP Propagate Bug Tags](https://rpalethorpe.io.suse.de/jdp/reports/Propagate%20Bug%20Tags.html) report\n\nThe following bug tags have been propagated: \n\n- `preadv203_64`: poo#53759 [**P3 - Normal** New: [kernel][ltp] Investigate preadv203 failures]\n    + From [LTP:syscalls:preadv203_64](https://openqa.suse.de/tests/3021740#step/preadv203_64/1) @ `sle-12-SP5-Server-DVD-ppc64le-Build0209-ltp_syscalls@ppc64le-virtio`\n- `fallocate05`: bsc#1099134 [**P3 - Medium** _Normal_ NEW: Btrfs fallocate PUNCH_HOLE | KEEP_SIZE fails on filled up FS on ppc64le]\n    + From [LTP:syscalls:fallocate05](https://openqa.suse.de/tests/2970184#step/fallocate05/1) @ `sle-12-SP5-Server-DVD-ppc64le-Build0197-ltp_syscalls@ppc64le-virtio`\n- `preadv203`: poo#53759 [**P3 - Normal** New: [kernel][ltp] Investigate preadv203 failures]\n    + From [LTP:syscalls:preadv203](https://openqa.suse.de/tests/3021740#step/preadv203/1) @ `sle-12-SP5-Server-DVD-ppc64le-Build0209-ltp_syscalls@ppc64le-virtio`\n- `copy_file_range02`: poo#55370 [**P3 - Normal** In Progress: [kernel][ltp][publiccloud] investigate copy_file_range02 failure]\n    + From [LTP:syscalls:copy_file_range02](https://openqa.suse.de/tests/3234220#step/copy_file_range02/1) @ `sle-12-SP5-Azure-Basic-On-Demand-x86_64-Build2.4-publiccloud_ltp_syscalls@az_Standard_A2_v2`\n"
 pvorel1 = """
 if4-addr-change_ifconfig: poo#40400, if4-mtu-change_ip, f4-mtu-change_ifconfig: poo#40403
 
@@ -27,14 +27,14 @@ end
 
 @testset "Bug Reference parsing" begin
     ctx = BugRefsParser.ParseContext("$testname1 ")
-    res = BugRefsParser.parse_name!("$testname1 ", ctx)
+    res = BugRefsParser.parse_name!("$testname1 ", ctx, 1)
     print_errors(ctx)
     @test length(ctx.errors) < 1
     @test ctx.line == 1 && ctx.col == length(testname1) + 1
     @test BugRefsParser.tokval(res) == testname1
 
     ctx = BugRefsParser.ParseContext("$testname1:")
-    res = BugRefsParser.parse_name!("$testname1:", ctx)
+    res = BugRefsParser.parse_name!("$testname1:", ctx, 1)
     print_errors(ctx)
     @test length(ctx.errors) < 1
     @test ctx.line == 1 && ctx.col == length(testname1) + 1
@@ -124,6 +124,12 @@ end
     @test BugRefsParser.tokval(taggings[1].refs[1]) == bugref1
     @test taggings[1].negated == true
 
+    (taggings, ctx) = parse_comment(propagated)
+    print_errors(ctx)
+    @test length(taggings) == 4
+    @test all(t -> !t.negated, taggings)
+    @test all(t -> t.quoted, Iterators.flatten(t.tests for t in taggings))
+
     println("Benchmarking:")
     btexts = [text_messy, many_to_many, many_spaces, many_to_many2, naked_bugrefs]
     for t in btexts
@@ -145,16 +151,17 @@ end
         "t" => Instance("t")))
     bref(s) = BugRefs.Ref(s, trackers)
     
-    refs = extract_refs(naked_bugrefs2, trackers)
-    @test length(refs) == 2
-
     tags = extract_tags!(BugRefs.Tags(), pvorel1, trackers)
     @test length(tags) == 4
     @test tags[BugRefs.WILDCARD] == [bref("t#2007414")]
 
     tags = extract_tags!(BugRefs.Tags(), anti_bugref, trackers)
-    @test tags[testname1] == [BugRefs.Ref(bugref1, trackers, true)]
+    @test tags[testname1] == [BugRefs.Ref(bugref1, trackers, true, false)]
 
+    tags = extract_tags!(BugRefs.Tags(), propagated, trackers)
+    @test length(tags) == 4
+    @test all(rf -> rf.propagated, Iterators.flatten(values(tags)))
+    
     ref = bref("foo#bar")
     @test ref.tracker.tla == "foo"
     @test ref.id == "bar"
@@ -163,8 +170,4 @@ end
     ref = bref("foo#baz")
     @test ref.tracker.tla == "foo"
     @test ref.id == "baz"
-
-    io = IOBuffer()
-    show(io, MIME("text/html"), ref)
-    @test String(take!(io)) == """<a href="https://foo/bar/baz">foo#baz</a>"""
 end
