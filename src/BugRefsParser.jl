@@ -173,9 +173,9 @@ function parse_name!(text::String, ctx::ParseContext, start::Int)::Union{Test, N
                 return Test(text, start:(i - 2), quoted)
             end
             '`' => begin
-                @pusherr(ctx, :InvalidNameChar, !quoted || i - start < 4)
+                @pusherr(ctx, :InvalidNameChar, !quoted || i - start < 3)
                 iterate!(text, ctx)
-                return Test(text, (start + 1):(i - 3), quoted)
+                return Test(text, (start + 1):(i - 2), quoted)
             end
             _ => @pusherr(ctx, :InvalidNameChar)
         end
@@ -195,9 +195,9 @@ function parse_tracker!(text::String, ctx::ParseContext)::Union{Tracker, Nothing
 
         @match c begin
             'A':'z' => nothing
-            '#' => begin
+            '#' || '@' => begin
                 @pusherr(ctx, :InvalidTrackerChar, i - start < 2)
-                return Tracker(text, start:(i - 2), false)
+                return Tracker(text, start:(i - 2), c === '@')
             end
             _ => @pusherr(ctx, :InvalidTrackerChar)
         end
@@ -212,7 +212,7 @@ function parse_ref!(text::String, ctx::ParseContext)::Union{ID, Nothing}
     (c, i) = ctx.itr
     start = i - 1
 
-    if c === '#'
+    if c === '#' || c === '@'
         iterate!(text, ctx)
         start += 1
     end
@@ -266,9 +266,9 @@ function parse_name_or_bugref!(text::String,
 
         @match c begin
             'A':'Z' || 'a':'z' => iterate!(text, ctx)
-            '#' => begin
+            '#' || '@' => begin
                 @pusherr(ctx, InvalidTrackerChar, i - start < 2)
-                tracker = Tracker(text, start:(i - 2), false)
+                tracker = Tracker(text, start:(i - 2), c === '@')
                 ref = parse_ref!(text, ctx)
                 if ref !== nothing
                     return Ref(tracker, ref)
@@ -306,7 +306,7 @@ Below is the approximate syntax in EBNF. Assume letter ∈ [a-Z] and digit ∈
 testname = [`] letter | digit { letter | digit | '_' | '-' } [`]
 tracker = letter { letter }
 id = letter | digit { letter | digit }
-bugref = tracker '#' id
+bugref = tracker '#' | '@' id
 tagging = testname {',' testname} ':' ['!'] bugref {',' bugref}
 taggings = tagging { tagging }
 ```

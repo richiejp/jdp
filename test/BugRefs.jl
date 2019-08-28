@@ -14,6 +14,7 @@ naked_bugrefs2 = "$bugref1, $bugref3"
 naked_bugrefs3 = "$bugref1 $bugref3"
 anti_bugref = "$testname1:! $bugref1"
 propagated = "This is an automated message from the [JDP Propagate Bug Tags](https://rpalethorpe.io.suse.de/jdp/reports/Propagate%20Bug%20Tags.html) report\n\nThe following bug tags have been propagated: \n\n- `preadv203_64`: poo#53759 [**P3 - Normal** New: [kernel][ltp] Investigate preadv203 failures]\n    + From [LTP:syscalls:preadv203_64](https://openqa.suse.de/tests/3021740#step/preadv203_64/1) @ `sle-12-SP5-Server-DVD-ppc64le-Build0209-ltp_syscalls@ppc64le-virtio`\n- `fallocate05`: bsc#1099134 [**P3 - Medium** _Normal_ NEW: Btrfs fallocate PUNCH_HOLE | KEEP_SIZE fails on filled up FS on ppc64le]\n    + From [LTP:syscalls:fallocate05](https://openqa.suse.de/tests/2970184#step/fallocate05/1) @ `sle-12-SP5-Server-DVD-ppc64le-Build0197-ltp_syscalls@ppc64le-virtio`\n- `preadv203`: poo#53759 [**P3 - Normal** New: [kernel][ltp] Investigate preadv203 failures]\n    + From [LTP:syscalls:preadv203](https://openqa.suse.de/tests/3021740#step/preadv203/1) @ `sle-12-SP5-Server-DVD-ppc64le-Build0209-ltp_syscalls@ppc64le-virtio`\n- `copy_file_range02`: poo#55370 [**P3 - Normal** In Progress: [kernel][ltp][publiccloud] investigate copy_file_range02 failure]\n    + From [LTP:syscalls:copy_file_range02](https://openqa.suse.de/tests/3234220#step/copy_file_range02/1) @ `sle-12-SP5-Azure-Basic-On-Demand-x86_64-Build2.4-publiccloud_ltp_syscalls@az_Standard_A2_v2`\n"
+advisory = replace(propagated, "#" => "@")
 pvorel1 = """
 if4-addr-change_ifconfig: poo#40400, if4-mtu-change_ip, f4-mtu-change_ifconfig: poo#40403
 
@@ -161,7 +162,13 @@ end
     tags = extract_tags!(BugRefs.Tags(), propagated, trackers)
     @test length(tags) == 4
     @test all(rf -> rf.propagated, Iterators.flatten(values(tags)))
-    
+    @test tags["preadv203_64"] == [BugRefs.Ref("poo#53759", trackers, false, true)]
+
+    tags = extract_tags!(BugRefs.Tags(), advisory, trackers)
+    @test length(tags) == 4
+    @test all(rf -> rf.propagated, Iterators.flatten(values(tags)))
+    @test tags["preadv203_64"] == [BugRefs.Ref("poo@53759", trackers, false, true)]
+
     ref = bref("foo#bar")
     @test ref.tracker.tla == "foo"
     @test ref.id == "bar"

@@ -30,25 +30,28 @@ struct Ref
     id::ID
     negated::Bool
     propagated::Bool
+    advisory::Bool
 end
 
 Ref(pref::BugRefsParser.Ref, trackers::TrackerRepo, negated::Bool, propagated::Bool)::Ref =
     Ref(get_tracker(trackers, tokval(pref.tracker)),
-        ID(tokval(pref.id)), negated, propagated)
+        ID(tokval(pref.id)), negated, propagated, pref.tracker.quoted)
 
 Ref(sref::String, trackers::TrackerRepo, negated=false, propagated=false)::Ref =
     Ref(BugRefsParser.parse_bugref(sref), trackers, negated, propagated)
 
 Base.:(==)(r::Ref, ro::Ref) =
     r.tracker == ro.tracker && r.id == ro.id &&
-    r.negated == ro.negated && r.propagated == ro.propagated
+    r.negated == ro.negated && r.propagated == ro.propagated &&
+    r.advisory == ro.advisory
 
-Base.hash(r::Ref, h::UInt) = hash(r.tracker, hash(r.id, hash(r.negated, h)))
+Base.hash(r::Ref, h::UInt) =
+    hash(r.tracker, hash(r.id, hash(r.negated, hash(r.propagated, hash(r.advisory, h)))))
 
 Base.show(io::IO, ::MIME"text/plain", ref::Ref) = if ref.negated
-    write(io, "!", ref.tracker.tla, "#", ref.id)
+    write(io, "!", ref.tracker.tla, ref.advisory ? "@" : "#", ref.id)
 else
-    write(io, ref.tracker.tla, "#", ref.id)
+    write(io, ref.tracker.tla, ref.advisory ? "@" : "#", ref.id)
 end
 
 Base.show(io::IO, ref::Ref) = show(io, MIME("text/plain"), ref)
@@ -67,7 +70,9 @@ function Base.show(io::IO, ::MIME"text/html", ref::Ref)
     else
         Tracker.write_get_item_html_url(io, ref.tracker, ref.id)
     end
-    write(io, "\">"); write(io, ref.tracker.tla, "#", ref.id); write(io, "</a>")
+    write(io, "\">")
+    write(io, ref.tracker.tla, ref.advisory ? "@" : "#", ref.id)
+    write(io, "</a>")
 end
 
 function Base.show(io::IO, ::MIME"text/markdown", ref::Ref)
@@ -78,7 +83,9 @@ function Base.show(io::IO, ::MIME"text/markdown", ref::Ref)
     if ref.negated
         write(io, "**!**")
     end
-    write(io, "["); write(io, ref.tracker.tla, "#", ref.id); write(io, "](")
+    write(io, "[")
+    write(io, ref.tracker.tla, ref.advisory ? "@" : "#", ref.id)
+    write(io, "](")
     if ref.tracker.api == nothing
         write(io, host)
     else
