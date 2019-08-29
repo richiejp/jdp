@@ -263,6 +263,7 @@ end
 refresh(t::Tracker.Instance{S}, bref::BugRefs.Ref) where {S} =
     @warn "Refresh BugRefs not defined for tracker $(t.tla) and $S"
 
+"Refresh and return the bug referenced by bref"
 refresh(bref::BugRefs.Ref) = refresh(bref.tracker, bref)
 
 """Refresh the local cached data for the given item(s)

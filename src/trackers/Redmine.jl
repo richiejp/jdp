@@ -62,8 +62,8 @@ function Repository.refresh(t::Tracker.Instance{Session}, bref::BugRefs.Ref)::Bu
     ses = Tracker.ensure_login!(t)
     issue = get_issue(ses, parse(Int64, bref.id)) |> Bug
 
+    @info "$(t.tla): GET bug $(bref.id)"
     Repository.store("$(t.tla)-issue-$(bref.id)", issue)
-    @info "GOT $bref " issue
 
     issue
 end

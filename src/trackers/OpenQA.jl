@@ -684,11 +684,13 @@ get_product_builds(results::Vector{TestResult}) =
     get_product_builds(j.product => j.build for j in results)
 
 function Repository.refresh(tracker::Tracker.Instance{S},
-                            groups::Vector{JobGroup}) where {S <: AbstractSession}
+                            groups::Vector{JobGroup},
+                            bug_refresh_chnl::Channel{BugRefs.Ref}) where {S <: AbstractSession}
     jrs = Dict("$(tracker.tla)-job-$(job.id)" => job for
                job in Repository.fetch(JobResult, Vector, tracker.tla))
     fjindx = BitSet(j.id for j in values(jrs)
                     if occursin(r"^(skipped|cancelled|done)$", j.state))
+    trackers = Tracker.load_trackers()
 
     for g in groups
         conf = (d = OpenQA.extract_toml(g.description)) ≠ nothing ? d : Dict()
@@ -725,12 +727,12 @@ function Repository.refresh(tracker::Tracker.Instance{S},
             j.comments = comments
             Repository.store("$(tracker.tla)-job-$(j.id)", j)
         end
-    end
-end
 
-function Repository.refresh(tracker::Tracker.Instance{S},
-                            group::JobGroup) where {S <: AbstractSession}
-    Repository.refresh(tracker, [group], maxjobs)
+        # Also refresh any items from other trackers which appear in these comments
+        tags = BugRefs.Tags()
+        foreach(c -> BugRefs.extract_tags!(tags, c.text, trackers), j.comments)
+        foreach(rf -> put!(bug_refresh_chnl, rf), Iterators.flatten(values(tags)))
+    end
 end
 
 function Repository.refresh(tracker::Tracker.Instance{S},

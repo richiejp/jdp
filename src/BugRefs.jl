@@ -104,7 +104,7 @@ Base.show(io::IO, ::MIME"text/markdown", refs::Vector{Ref}) = foreach(refs) do r
     write(io, " ")
 end
 
-const Tags = Dict{String, Array{Ref}}
+const Tags = Dict{String, Vector{Ref}}
 
 function get_refs(tags::Tags, name::String)::Vector{Ref}
     refs = Vector{Ref}()
