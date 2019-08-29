@@ -15,9 +15,15 @@ args = IOHelpers.parse_args(argdefs, ARGS).named
 trackers = [Tracker.get_tracker("osd"), Tracker.get_tracker("ooo")]
 errors = []
 
+make_channel(f, sz) = if VERSION >= v"1.3.0"
+    Channel{BugRefs.Ref}(f, sz)
+else
+    Channel(f; ctype=BugRefs.Ref, csize=sz)
+end
+
 # OK, so we don't just refresh OpenQA, but also other tracker items we find
 # references to
-bug_refresh_chnl = Channel{BugRefs.Ref}(256) do c
+bug_refresh_chnl = make_channel(256) do c
     seen_bug_ids = Set{Tuple{String, String}}()
 
     for bref in c
