@@ -24,10 +24,10 @@ uuid = "324d7699-5711-5eae-9e2f-1d82baa6b597"
 version = "0.5.5"
 
 [[CodeTracking]]
-deps = ["InteractiveUtils", "Test", "UUIDs"]
-git-tree-sha1 = "9b21a2dfe51ba71fdc5688039075819196595367"
+deps = ["InteractiveUtils", "UUIDs"]
+git-tree-sha1 = "0becdab7e6fbbcb7b88d8de5b72e5bb2f28239f3"
 uuid = "da1fd8a2-8d9e-5ec2-8556-3022fb5608a2"
-version = "0.5.7"
+version = "0.5.8"
 
 [[Codecs]]
 deps = ["Test"]
@@ -54,9 +54,9 @@ version = "1.0.1"
 
 [[DataFrames]]
 deps = ["CategoricalArrays", "Compat", "DataAPI", "InvertedIndices", "IteratorInterfaceExtensions", "Missings", "PooledArrays", "Printf", "REPL", "Reexport", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
-git-tree-sha1 = "48ef38bd7cf0e8fd598bda981409eb6ef4b96cbd"
+git-tree-sha1 = "934b75a90b6cb315f9ea0df961768a02c1da1612"
 uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-version = "0.19.2"
+version = "0.19.3"
 
 [[DataStructures]]
 deps = ["InteractiveUtils", "OrderedCollections"]
@@ -91,7 +91,7 @@ version = "0.8.0"
 
 [[Documenter]]
 deps = ["Base64", "Dates", "DocStringExtensions", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Markdown", "REPL", "Test", "Unicode"]
-git-tree-sha1 = "6344b0ea75cc3b49cd087ff884ffdf9d6b42892f"
+git-tree-sha1 = "84b56abd692b780e6b9956adb3a53e08554de9f8"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaDocs/Documenter.jl.git"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
@@ -132,9 +132,9 @@ version = "0.4.1"
 
 [[IJulia]]
 deps = ["Base64", "Conda", "Dates", "InteractiveUtils", "JSON", "Markdown", "MbedTLS", "Pkg", "Printf", "REPL", "Random", "SoftGlobalScope", "Test", "UUIDs", "ZMQ"]
-git-tree-sha1 = "8b40a779af31dd70f7e75b4aca1c5d6c312738c7"
+git-tree-sha1 = "64afa8fe079bdefcea145a16e3a1809846734d67"
 uuid = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
-version = "1.19.0"
+version = "1.20.0"
 
 [[IniFile]]
 deps = ["Test"]
@@ -204,10 +204,10 @@ uuid = "7eb4fadd-790c-5f42-8a69-bfa0b872bfbf"
 version = "1.0.2"
 
 [[MbedTLS]]
-deps = ["BinaryProvider", "Dates", "Distributed", "Libdl", "Random", "Sockets", "Test"]
-git-tree-sha1 = "2d94286a9c2f52c63a16146bb86fd6cdfbf677c6"
+deps = ["BinaryProvider", "Dates", "Libdl", "Random", "Sockets"]
+git-tree-sha1 = "85f5947b53c8cfd53ccfa3f4abae31faa22c2181"
 uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "0.6.8"
+version = "0.7.0"
 
 [[Missings]]
 deps = ["SparseArrays", "Test"]
@@ -237,7 +237,7 @@ uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
 version = "0.3.6"
 
 [[Pkg]]
-deps = ["Dates", "LibGit2", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
+deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[PooledArrays]]
