@@ -1,15 +1,18 @@
 # Bug Tagging
 
-Usually, a bug tag, is a way of linking a failing test with a known
-bug. Generally speaking though, it is a many-to-many relation between two
-types of object, niether of which may be a 'bug'.
+Usually, a bug tag, is a way of linking a test with a known bug or ticket. It
+contains the identity of a test and the identity of a bug.
+
+This can be generalised to a relation between two types of object, niether of
+which may be a 'bug' or a test. So we could call these 'relation tags' or
+similar.
 
 Some testing and issue tracking frameworks have a way of defining
 relationships between objects, others don't. Most however, allow one to make
 comments on issues or tests (or other objects). JDP can parse these comments
 and extract bug tags from them.
 
-## Tagging in OpenQA
+## OpenQA
 
 In OpenQA we can tag test failures with bug references by commenting on a job
 with something like:
@@ -25,7 +28,7 @@ or
 
     generic-349:bsc#1128319, generic-350 : bsc#1128321
 
-or even
+or even, where each line creates two tags
 
     * test01, test02: bug#1
     * test03:bug#2,bug#3
@@ -36,13 +39,27 @@ anti-tags, see below). There is also some flexibility in how you write the
 test names. For example `/` will be substituted with `-`, allowing you to use
 either.
 
+Test names can be quoted with back ticks which tells the propagation script
+that this is a propagated tag (see next section). The effect is that the
+script will not propagate this tag.
+
+    `generic-420`: boo#123456
+
+There is also an alternative syntax for bug references using a `@`.
+
+    generic-420: boo@123456
+
+OpenQA does not recognise this as a bug tag and the propagation script only
+views it as an 'advisory' tag. Tests marked with this will still be considered
+untagged.
+
 The full rules are in the [`JDP.BugRefsParser`](@ref).
 
 ## Propagation
 	
 The 'Propagate Bug Tags' script will automatically copy bug tags from older or
-similar test results. It checks if the test name and bug architecture match,
-if they don't, then it won't copy the bug.
+similar test results. It checks if the test name, test status and bug
+architecture match, if they don't, then it won't copy the bug.
 
 It also checks if the bug or issue is still 'open'. If it is not open then
 only an advisory notice will be posted, which won't be interpreted as a bug
@@ -55,16 +72,18 @@ tag by OpenQA or any other JDP reports.
 
 When bug tags are propagated you will see a comment like the following.
 
-!!! tip "JDP wrote N days ago"
+---
 
-    This is an automated message from [JDP](https://gitlab.suse.de/rpalethorpe/jdp/blob/master/notebooks/Propagate%20Bug%20Tags.ipynb)
+This is an automated message from [JDP]()
     
-    The following bug tags have been propagated: 
+The following bug tags have been propagated:
     
-    - `generic-349`: bsc#1128319 [**P5 - None**(*Normal*) NEW: Bug title 1]
-	    + From fstests:btrfs:generic-349 @ some-job-name@ppc64le-virtio
-    - `generic-350`: bsc#1128321 [**P5 - None**(*Normal*) NEW: Bug title 2]
-	    + From fstests:btrfs:generic-350 @ some-job-name@aarch64
+- `generic-349`: [bsc#1128319]() [**P5 - None**(*Normal*) NEW: Bug title 1]
+  + From [fstests:btrfs:generic-349]() @ `some-job-name@ppc64le-virtio`
+- `generic-350`: [bsc#1128321]() [**P5 - None**(*Normal*) NEW: Bug title 2]
+  + From [fstests:btrfs:generic-350]() @ `some-job-name@aarch64`
+
+---
 
 There are two ways to prevent an old tag from being propagating to new jobs.
 One is to add an 'anti-tag', like:
@@ -80,7 +99,7 @@ anti-tag (and update the cache) then propagation should continue.
     You should write the `!` immediately after the `:`. Do not insert
     white-space between them.
 
-Another way to stop propagation is to delete[1] the original tag(s)
+Another way to stop propagation is to delete[^1] the original tag(s).
 
 Propagted bug tags will be ignored by the script during future
 propagations. This means that the 'From' line should link to the test where
@@ -88,6 +107,14 @@ the original tag was added. This also means that if the original tag is
 deleted then propagation will stop.
 
 [^1]: Or modify the comment, by adding backticks around the test names
+
+## Redmine
+
+Redmine has no architecture field (at least in older versions), so one must
+specify the architecture as 'tags' in the issue subject or title. Tags are
+simply words surrounded by square brackets and look like the following.
+
+    [aarch64][ppc64le][s390x][x86_64]
 
 ## Advanced Tagging (Not implemented yet)
 
