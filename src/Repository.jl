@@ -323,7 +323,8 @@ end
 function get_temp_flag(name::String)::Union{String, Nothing}
     with_conn() do conn
         key = "temp-flags-$name"
-        String(get(conn, key))
+        s = get(conn, key)
+        s === nothing ? s : String(s)
     end
 end
 
