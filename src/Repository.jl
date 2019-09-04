@@ -215,7 +215,9 @@ function mload(keys, ::Type{I})::Vector{I} where {I <: AbstractItem}
     if isempty(keys)
         I[]
     else
+        use_threads = VERSION >= v"1.3.0" && Threads.nthreads() > 1
         ret = Vector{I}(undef, length(keys))
+        tasks = use_threads ? Vector{Task}(undef, length(keys)) : nothing
 
         with_conn() do conn
             Redis.execute_command_without_reply(conn, ["mget", keys...])
@@ -239,10 +241,26 @@ function mload(keys, ::Type{I})::Vector{I} where {I <: AbstractItem}
                 @assert item[end-1] == 0x0d && item[end] == 0x0a "crlf should follow"
                 resize!(item, length(item)-2)
 
-                try
-                    ret[i] = BSON.Document(IOBuffer(item), I)[I.name.name]
-                catch exception
-                    @error "Raising item" key exception
+                if use_threads
+                    tasks[i] = Threads.@spawn begin
+                          ret[i] = BSON.Document(IOBuffer(item), I)[I.name.name]
+                    end
+                else
+                    try
+                        ret[i] = BSON.Document(IOBuffer(item), I)[I.name.name]
+                    catch exception
+                        @error "Raising item" key exception
+                    end
+                end
+            end
+
+            if use_threads
+                for t in tasks
+                    try
+                        wait(t)
+                    catch exception
+                        @error "Raising item" key exception
+                    end
                 end
             end
         end
