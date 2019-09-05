@@ -2,11 +2,9 @@
 
 [[BSONqs]]
 deps = ["Mmap"]
-git-tree-sha1 = "4394bfd7dd78a192adbc76bd234aafa5e96af5b8"
-repo-rev = "qs"
-repo-url = "https://github.com/richiejp/BSONqs.jl.git"
+git-tree-sha1 = "72fa6be4f9764158d604b42f04439352d4851b87"
 uuid = "d4e7598c-6ff7-5b24-8fdc-8d1c0c33c9cf"
-version = "0.6.0"
+version = "0.6.1"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -91,7 +89,7 @@ version = "0.8.0"
 
 [[Documenter]]
 deps = ["Base64", "Dates", "DocStringExtensions", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Markdown", "REPL", "Test", "Unicode"]
-git-tree-sha1 = "84b56abd692b780e6b9956adb3a53e08554de9f8"
+git-tree-sha1 = "46e9fa44ad4e9c622abfea16036a9d3f1d60578e"
 repo-rev = "master"
 repo-url = "https://github.com/JuliaDocs/Documenter.jl.git"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
@@ -126,9 +124,9 @@ version = "0.8.5"
 
 [[Highlights]]
 deps = ["DocStringExtensions", "InteractiveUtils", "REPL"]
-git-tree-sha1 = "7c11ddfe03e192ec33aec1d78838ed039320ae27"
+git-tree-sha1 = "2fa66a8c9343124ad7bf79ef3804f6965ee7c71d"
 uuid = "eafb193a-b7ab-5a9e-9068-77385905fa72"
-version = "0.4.1"
+version = "0.4.3"
 
 [[IJulia]]
 deps = ["Base64", "Conda", "Dates", "InteractiveUtils", "JSON", "Markdown", "MbedTLS", "Pkg", "Printf", "REPL", "Random", "SoftGlobalScope", "Test", "UUIDs", "ZMQ"]
@@ -170,9 +168,9 @@ version = "0.21.0"
 
 [[JuliaInterpreter]]
 deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
-git-tree-sha1 = "a4bb251f96cb22141cff4185b724c2e4f46245d2"
+git-tree-sha1 = "1441c3e4a94263389f8a6e26f1d502540ca6e8c5"
 uuid = "aa1ae85d-cabe-5617-a682-6adf51b2e16a"
-version = "0.7.0"
+version = "0.7.1"
 
 [[LibGit2]]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
@@ -210,10 +208,9 @@ uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
 version = "0.7.0"
 
 [[Missings]]
-deps = ["SparseArrays", "Test"]
-git-tree-sha1 = "f0719736664b4358aa9ec173077d4285775f8007"
+git-tree-sha1 = "29858ce6c8ae629cf2d733bffa329619a1c843d0"
 uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
-version = "0.4.1"
+version = "0.4.2"
 
 [[Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
@@ -232,12 +229,12 @@ version = "1.1.0"
 
 [[Parsers]]
 deps = ["Dates", "Test"]
-git-tree-sha1 = "db2b35dedab3c0e46dc15996d170af07a5ab91c9"
+git-tree-sha1 = "ef0af6c8601db18c282d092ccbd2f01f3f0cd70b"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "0.3.6"
+version = "0.3.7"
 
 [[Pkg]]
-deps = ["Dates", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
+deps = ["Dates", "LibGit2", "Markdown", "Printf", "REPL", "Random", "SHA", "UUIDs"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[PooledArrays]]
@@ -279,9 +276,9 @@ version = "0.5.2"
 
 [[Revise]]
 deps = ["CodeTracking", "Distributed", "FileWatching", "JuliaInterpreter", "LibGit2", "LoweredCodeUtils", "OrderedCollections", "Pkg", "REPL", "UUIDs", "Unicode"]
-git-tree-sha1 = "34e80fba701ce58064b3b5f4b32027ad3dc136ba"
+git-tree-sha1 = "3ea49472d265bc250bb14100ba54090fcf11e9e6"
 uuid = "295af30f-e4ad-537b-8983-00126c2a3abe"
-version = "2.1.8"
+version = "2.1.10"
 
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
