@@ -33,6 +33,7 @@ makedocs(
     format = Documenter.HTML(assets = ["assets/favicon.ico"]),
     sitename = "JDP",
     clean = args["clean"],
-    pages = pages
+    pages = pages,
+    repo = "https://github.com/richiejp/jdp"
 )
 
