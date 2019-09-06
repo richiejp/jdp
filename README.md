@@ -41,8 +41,9 @@ used with any type of data for most any type of workflow or reporting.
 
 # Install
 
-The goal is to do this in a single command, but for now it takes a few
-more.
+I don't recommend using Docker for development or regular use on your
+workstation (see installing from Git). However it is very useful for
+deployment to an automated production environment.
 
 !!! note
 
@@ -52,8 +53,7 @@ more.
 ## Docker
 
 You can install using Docker by doing the following from the directory where
-you cloned this repo. This is probably the easiest way if you just want to
-quickly try it out.
+you cloned this repo.
 
 ```sh
 docker build -t jdp:latest -f install/Dockerfile .
@@ -66,8 +66,8 @@ pre-built image from hub.docker.com (it may not be up to date).
 docker pull suserichiejp/jdp:latest
 ```
 
-Then you can inject the access details for the data cache server if you have
-them. Using the data cache can save a lot of time.
+Then you can inject the access details for a central data cache server if you
+have them.
 
 ```sh
 docker build -t jdp:latest -f install/Dockerfile-slave \
@@ -86,31 +86,57 @@ docker run -it -p 8889:8889 jdp:latest
 ```
 
 With a bit of luck you will see a message from Jupyter describing what to do
-next. The Docker image also contains two volumes which you may mount. See the
-Dockerfile for more info.
+next.
 
-You can use the Docker image for developing JDP itself by mounting the `src`
-volume. However this is probably not a good long term solution.
+By default JDP will create a local Redis instance automatically inside the
+container. Redis will save its data within the Docker volume
+`/home/jdp/data`. Unless you mount this volume your data cache is likely to
+get deleted. It is also possible to configure JDP to connect to an existing
+Redis server; see `conf/data.toml` and `install/Dockerfile-production`.
 
-## Other
+You can use the Docker image for developing JDP itself by mounting the
+`/home/jdp/src` volume.
 
-You can use install/Dockerfile as a guide. Also check `conf/*.toml`.
+## Git (from source)
 
-You can run JDP directly from the git checkout. Just install the deps listed
-in the Dockerfile and modify the conf files (which should include there own
-documentation).
+Installing from source should be fairly easy, it just requires a few none
+Julia based dependencies. What you need depends on the trackers you intend to
+use and whether you want to use Jupyter.
+
+!!! tip
+
+	You can also use `install/Dockerfile(-base)` as a guide. Also check
+	`conf/*.toml`.
+
+You must install Redis unless you provide a remote Redis address in
+`conf/data.toml`.
+
+Generally speaking, if you want to use Jupyter 'notebooks', then you should
+install Jupyter notebook and client packages. However there are alternatives
+to Jupyter client, which may also load and edit Jupyter notebooks.
+
+Also install the latest stable release of Julia. JDP currently bundles an
+'upstream' version of Julia in the `install` directory. You will probably have
+difficulties using your distribution's Julia version.
+
+If you wish to use the OpenQA integration then install `openQA-client`. Same
+goes for `mailx`.
+
+Finally, if you installed Jupyter or equivalent, run `julia
+install/install.jl` to setup `IJulia`. Otherwise this is not necessary.
 
 # Usage
 
 ## With Jupyter
 
 If you are using the Docker image then just browse to
-[localhost:8889](http://localhost:8889). If not then start Jupyter yourself.
+[localhost:8889](http://localhost:8889). If not then run `jupyter notebook` in
+the JDP directory.
 
-Open either the `notebooks/Report-DataFrames.ipynb` or `notebooks/Propagate
+Open either the `notebooks/Report-Status-Diff.ipynb` or `notebooks/Propagate
 Bug Tags.ipynb` Jupyter notebooks which are (hopefully) self documenting. I
 have only tested them with Jupyter itself, but there are fancier alternatives
-such as JupyterLab and, of course, Emacs.
+such as JupyterLab.
 
 ## Other
 
@@ -119,6 +145,8 @@ in a julia REPL you could run
 
 ```julia
 include("src/init.jl")
+
+using JDP: Repository, Trackers.OpenQA, ... etc.
 ```
 
 Also the `run` directory contains scripts which are intended to automate
@@ -130,6 +158,10 @@ run/all.jl`.
 JDP is automated using SUSE's internal Gitlab CI instance. Which automates
 building and testing the containers as well as deployment and the execution of
 various scripts/services. See `install/gitlab-ci.*`.
+
+There is also a [public pipeline](https://gitlab.com/Palethorpe/jdp/pipelines)
+on GitLab.com, which publishes the public [documentation and
+reports](https://palethorpe.gitlab.io/jdp/).
 
 # Documentation
 
