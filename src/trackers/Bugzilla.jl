@@ -14,6 +14,7 @@ using JDP.Tracker
 import JDP.Functional: cmap
 using JDP.Repository
 using JDP.BugRefs
+using JDP.Metarules
 
 # Work around https://github.com/JuliaWeb/HTTP.jl/pull/383
 const MONSTER = Dict("workaround" => "cookie")
@@ -109,6 +110,8 @@ function to_md(bug::Dict)::MD
 
     MD(Paragraph([Bold(prio), "(", Italic(sevr), ") ", stat, ": ", desc]))
 end
+
+Metarules.extract(bug::Bug) = Metarules.extract(bug.short_desc)
 
 function Repository.refresh(t::Tracker.Instance{Session}, bref::BugRefs.Ref)::Bug
     ses = Tracker.ensure_login!(t)

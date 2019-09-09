@@ -31,6 +31,7 @@ using JDP.Repository
     include("trackers/Trackers.jl")
     include("trackers/OpenQA.jl")
     include("BugRefs.jl")
+    include("Metarules.jl")
     include("Integration.jl")
 end
 

@@ -11,6 +11,7 @@ include("Lazy.jl")
 include("trackers/Tracker.jl")
 include("BugRefsParser.jl")
 include("BugRefs.jl")
+include("Metarules.jl")
 include("Repository.jl")
 include("Spammer.jl")
 

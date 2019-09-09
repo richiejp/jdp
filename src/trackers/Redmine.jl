@@ -11,6 +11,7 @@ import JDP.Tracker
 import JDP.Functional: cmap
 import JDP.Repository
 import JDP.BugRefs
+import JDP.Metarules
 
 mutable struct Session <: Tracker.AbstractSession
     uri::Templates.Template
@@ -54,6 +55,8 @@ Bug(i::Dict) = Bug(i["id"],
                    i["subject"])
 
 tags(issue::Bug) = map(m -> m[1], eachmatch(r"\[([\w\s-]+)\]", issue.short_desc))
+
+Metarules.extract(bug::Bug) = Metarules.extract(bug.short_desc)
 
 Base.show(io::IO, ::MIME"text/markdown", issue::Bug) =
     write(io, "**", issue.priority, "** ", issue.status, ": ", issue.short_desc)
