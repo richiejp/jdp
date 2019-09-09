@@ -61,9 +61,12 @@ The 'Propagate Bug Tags' script will automatically copy bug tags from older or
 similar test results. It checks if the test name, test status and bug
 architecture match, if they don't, then it won't copy the bug.
 
-It also checks if the bug or issue is still 'open'. If it is not open then
-only an advisory notice will be posted, which won't be interpreted as a bug
-tag by OpenQA or any other JDP reports.
+The bug status has an effect on the type of message which is posted. If the
+bug is not open then only an advisory notice will be posted, which won't be
+interpreted as a bug tag by OpenQA or any other JDP reports.
+
+It also checks if [Metarules](#Metarules-1), defined in the bug, are satisfied
+(see below).
 
 !!! warning
 
@@ -108,6 +111,10 @@ deleted then propagation will stop.
 
 [^1]: Or modify the comment, by adding backticks around the test names
 
+## Bugzilla
+
+The hardware field is used to specify the architecture.
+
 ## Redmine
 
 Redmine has no architecture field (at least in older versions), so one must
@@ -115,6 +122,38 @@ specify the architecture as 'tags' in the issue subject or title. Tags are
 simply words surrounded by square brackets and look like the following.
 
     [aarch64][ppc64le][s390x][x86_64]
+
+## Metarules
+
+Meta rules look similar to architecture tags except that they specify a field
+name and an operation type. The architecture can also be specified as meta
+rule:
+
+```julia
+[arch=aarch64]
+```
+
+These can be placed in a bug or issue title. They will ensure that the bug is
+only propagated to jobs which match the rule. The field specified on the left
+hand side of the operator (`=`) is the name of an OpenQA job var. On the right
+is a value. Either side may be quoted, which is necessary if the value is
+numeric or is a string containing special characters.
+
+Here is another example, which matches against the flavor and public cloud.
+
+```julia
+[public_cloud="1", flavor=GCE]
+```
+
+These are two rules, which must both match. There is also a regex matching
+operator `~`.
+
+```julia
+[product~"^sle-12"]
+```
+
+In this case `PRODUCT` must start with "sle-12". The var names are case
+insensitive.
 
 ## Advanced Tagging (Not implemented yet)
 
