@@ -105,8 +105,8 @@ use and whether you want to use Jupyter.
 
 !!! tip
 
-	You can also use `install/Dockerfile(-base)` as a guide. Also check
-	`conf/*.toml`.
+    You can also use `install/Dockerfile(-base)` as a guide. Also check
+    `conf/*.toml`.
 
 You must install Redis unless you provide a remote Redis address in
 `conf/data.toml`.
