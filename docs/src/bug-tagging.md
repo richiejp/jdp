@@ -142,17 +142,17 @@ numeric or is a string containing special characters.
 Here is another example, which matches against the flavor and public cloud.
 
 ```julia
-[public_cloud="1", flavor=GCE]
+[public_cloud=1, flavor=GCE]
 ```
 
 These are two rules, which must both match. There is also a regex matching
 operator `~`.
 
 ```julia
-[product~"^sle-12"]
+[version~"^12"]
 ```
 
-In this case `PRODUCT` must start with "sle-12". The var names are case
+In this case `VERSION` must start with "12". The var names are case
 insensitive.
 
 ## Advanced Tagging (Not implemented yet)

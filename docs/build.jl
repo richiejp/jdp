@@ -16,6 +16,7 @@ pages = [
     "User Preferences" => "user-preferences.md",
     "Reference" => [
         "BugRefs" => "bugrefs.md",
+        "Metarules" => "metarules.md",
         "Conf" => "conf.md",
         "Functional" => "functional.md",
         "Repository" => "repository.md",
