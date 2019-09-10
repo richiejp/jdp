@@ -1,5 +1,7 @@
 #!julia
 
+include(joinpath(@__DIR__, "../src/init-pkg.jl"))
+
 using Dates
 using JSON
 
