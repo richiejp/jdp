@@ -1,15 +1,19 @@
 # JDP
 
-In simple terms; JDP makes creating test result reports (amongst other things)
-easy.
+Process and view data from many different sources. Regardless of how reliable
+those sources are or what algorithms and data structures you wish to use.
 
-In less simple terms, JDP is an Extensible, sometimes automated, test/bug
-review and reporting development environment. The broader aim is to *make
-prototyping arbitrary reporting and inter-tool workflows cheap* so that
-experimentation in this area has a convex payoff.
+JDP can fit into a fully automated pipeline, be used interactively or both.
 
-* JDP may be used as a library in a larger project or as an
-  application/service[^1].
+The broader aim is to *make prototyping arbitrary reporting and inter-tool
+workflows cheap*. So that we can perform many experiments with a high risk of
+failure. While incurring a limited cost for failed experiments and an
+unlimited payoff for successful ones.
+
+* JDP processes can be incrementally developed in an interactive, graphical
+  environment (Jupyter).
+* JDP may be used as a library in a larger project.
+* JDP has a distributed, highly-available data cache.
 * JDP is not a polished product for non-technical users, but you can use it to
   make that.
 * JDP makes data from multiple sources/trackers easily accessible, but it is
